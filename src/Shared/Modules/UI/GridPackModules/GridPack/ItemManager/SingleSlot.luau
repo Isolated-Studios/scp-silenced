@@ -1,0 +1,202 @@
+--// Services
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+
+--// Classes
+local ItemManager = require(script.Parent)
+
+--// Packages
+local Signal = require(script.Parent.Parent.Parent.signal)
+
+--// Types
+local Types = require(script.Parent.Parent.Types)
+
+--// SingleSlot Class
+local SingleSlot = setmetatable({}, ItemManager)
+SingleSlot.__index = SingleSlot
+
+--[=[
+	@class SingleSlot
+]=]
+--[=[
+	@prop GuiElement GuiObject
+	@readonly
+	The SingleSlot's GUI element.
+
+	@within SingleSlot
+]=]
+--[=[
+	@prop Item ItemObject
+	@readonly
+	The current Item in the SingleSlot.
+
+	@within SingleSlot
+]=]
+--[=[
+	@prop ItemChanged RBXScriptSignal
+	@readonly
+	@tag Signal
+	An event signal that fires every time a new Item replaces the old Item.
+
+	@within SingleSlot
+]=]
+
+--[=[
+	Creates a new SingleSlot ItemManager object.
+
+	@within SingleSlot
+]=]
+function SingleSlot.new(properties: Types.SingleSlotProperties): Types.SingleSlotObject
+	local self = setmetatable(ItemManager.new(properties), SingleSlot)
+	self.GuiElement = self:_createGuiElement(properties)
+	
+	self.Item = nil
+	self.ItemChanged = Signal.new()
+	
+	self.AppliedHighlight = false
+	self._trove:Add(RunService.RenderStepped:Connect(function()
+		local highlight = nil
+		for _, h in self.Highlights do -- select the last priority, can't use #self.Highlights because it's not an array
+			highlight = h
+		end
+		if highlight and not self.AppliedHighlight then
+			self.AppliedHighlight = true
+			TweenService:Create(self.GuiElement.Vignette, TweenInfo.new(0.1), {ImageColor3 = highlight.Color}):Play()
+			TweenService:Create(self.GuiElement.Vignette.UIStroke, TweenInfo.new(0.1), {Color = highlight.Color}):Play()
+		elseif highlight == nil and self.AppliedHighlight then
+			self.AppliedHighlight = false
+			TweenService:Create(self.GuiElement.Vignette, TweenInfo.new(0.1), {ImageColor3 = Color3.fromRGB(64, 64, 64)}):Play()
+			TweenService:Create(self.GuiElement.Vignette.UIStroke, TweenInfo.new(0.1), {Color = Color3.fromRGB(64, 64, 64)}):Play()
+		end
+	end))
+
+	return self
+end
+
+--[=[
+	@private
+	Creates a new SingleSlot GUI element.
+
+	@within SingleSlot
+]=]
+function SingleSlot:_createGuiElement(properties: Types.SingleSlotProperties): { GuiObject }
+	local container = self._trove:Add(self.Assets.Slot:Clone())
+	container.Name = "SingleSlot"
+
+	container.AnchorPoint = properties.AnchorPoint
+	container.Position = properties.Position
+	container.Size = properties.Size
+	
+	container.Visible = self.Visible
+
+	container.Parent = properties.Parent
+
+	return container
+end
+
+--[=[
+	Gets the AbsolutePosition property from the ItemManager's GUI element.
+
+	@tag ItemManager Override
+	@within SingleSlot
+]=]
+function SingleSlot:GetOffset(itemRotation: number): Vector2
+	local rotationOffset = Vector2.zero
+	if itemRotation % 2 == 1 then
+		rotationOffset = Vector2.new(self.GuiElement.AbsoluteSize.Y, self.GuiElement.AbsoluteSize.X) / 2 - self.GuiElement.AbsoluteSize / 2
+	end
+
+	return self.GuiElement.AbsolutePosition - rotationOffset
+end
+
+--[=[
+	Gets the AbsoluteSize of the slot.
+
+	@tag ItemManager Override
+	@within SingleSlot
+]=]
+function SingleSlot:GetSizeScale(): Vector2
+	return self.GuiElement.AbsoluteSize
+end
+
+--[=[
+	Gets the AbsoluteSize of an Item with the ItemManager's size scale.
+
+	@tag ItemManager Override
+	@within SingleSlot
+]=]
+function SingleSlot:GetAbsoluteSizeFromItemSize(itemSize: Vector2, itemRotation: number): Vector2
+	--if itemRotation % 2 == 1 or itemRotation % 2 == 3 then
+	--	print('okay')
+	--	return Vector2.new(self.GuiElement.AbsoluteSize.Y, self.GuiElement.AbsoluteSize.X)
+	--else
+		return self.GuiElement.AbsoluteSize
+	--end
+end
+
+--[=[
+	Converts an AbsolutePosition to a ItemManager position.
+
+	@tag ItemManager Override
+	@within SingleSlot
+]=]
+function SingleSlot:GetItemManagerPositionFromAbsolutePosition(absolutePosition: Vector2, itemSize: Vector2, itemRotation: number, originalPosition: Vector2): Vector2
+	local rotationOffset = Vector2.zero
+	if itemRotation % 2 == 1 then
+		rotationOffset = Vector2.new(itemSize.Y, itemSize.X) / 2 - itemSize / 2
+	end
+
+	return -rotationOffset
+end
+
+--[=[
+	Checks if an Item is colliding. Use the `at` parameter to override the collision check position, else it will use the Item's position.
+
+	@tag ItemManager Override
+	@within SingleSlot
+]=]
+function SingleSlot:IsColliding(item: Types.ItemObject, ignoredItems: { Types.ItemObject }, at: Vector2?): boolean
+	if table.find(ignoredItems, self.Item) then
+		return false
+	end
+
+	return self.Item ~= nil
+end
+
+--[=[
+	Changes the current item in the SingleSlot.
+
+	@tag ItemManager Override
+	@within SingleSlot
+]=]
+function SingleSlot:ChangeItem(item: Types.ItemObject, tween: bool)
+	assert(item.ItemManager == nil, "Could not add item: Item is already in another ItemManager")
+	if not tween then tween = true end
+	if self.Item then
+		self:RemoveItem()
+	end
+	
+	--print(item.ItemElement.Position)
+	
+	self.Item = item
+	self.ItemChanged:Fire(item)
+	
+	item.ItemManagerChanged:Fire(self, tween)
+end
+
+--[=[
+	Removes the item from the SingleSlot.
+
+	@tag ItemManager Override
+	@within SingleSlot
+]=]
+function SingleSlot:RemoveItem()
+	if self.Item then
+		self.Item.ItemManagerChanged:Fire(nil)
+	end
+	
+	self.Item = nil
+	self.ItemChanged:Fire(nil)
+end
+
+return SingleSlot

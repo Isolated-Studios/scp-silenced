@@ -1,0 +1,23 @@
+{
+  "name": "argon-codebase",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "$path": "src/Shared"
+    },
+    "ServerScriptService": {
+      "$path": "src/Server"
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "$path": "src/Client"
+      },
+      "$properties": {
+        "CameraMode": "LockFirstPerson",
+        "CharacterUseJumpPower": false,
+        "CameraMaxZoomDistance": 128,
+        "EnableMouseLockOption": false
+      }
+    }
+  }
+}

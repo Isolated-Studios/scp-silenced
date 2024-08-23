@@ -1,0 +1,30 @@
+local module = {}
+local PhysicsService = game:GetService("PhysicsService")
+function module.Init()
+	PhysicsService:RegisterCollisionGroup("Character")
+	PhysicsService:RegisterCollisionGroup("Item")
+	PhysicsService:RegisterCollisionGroup("Viewmodel")
+	PhysicsService:RegisterCollisionGroup("ViewmodelCasing")
+	PhysicsService:RegisterCollisionGroup("A")
+	PhysicsService:RegisterCollisionGroup("B")
+	
+	PhysicsService:CollisionGroupSetCollidable("Character","Item",false)
+	PhysicsService:CollisionGroupSetCollidable("Character","Character",false)
+	PhysicsService:CollisionGroupSetCollidable("Viewmodel","Character",false)
+	PhysicsService:CollisionGroupSetCollidable("Viewmodel","Viewmodel",false)
+	PhysicsService:CollisionGroupSetCollidable("Viewmodel","Default",false)
+	PhysicsService:CollisionGroupSetCollidable("A","B",false)
+	PhysicsService:CollisionGroupSetCollidable("Viewmodel","A",false)
+	PhysicsService:CollisionGroupSetCollidable("Viewmodel","B",false)
+	PhysicsService:CollisionGroupSetCollidable("Character","A",false)
+	PhysicsService:CollisionGroupSetCollidable("Character","B",false)
+	
+	PhysicsService:CollisionGroupSetCollidable("ViewmodelCasing","Item",false)
+	PhysicsService:CollisionGroupSetCollidable("ViewmodelCasing","Character",false)
+	PhysicsService:CollisionGroupSetCollidable("ViewmodelCasing","Default",true)
+	PhysicsService:CollisionGroupSetCollidable("ViewmodelCasing","A",false)
+	PhysicsService:CollisionGroupSetCollidable("ViewmodelCasing","B",false)
+	PhysicsService:CollisionGroupSetCollidable("ViewmodelCasing","ViewmodelCasing",true)
+	PhysicsService:CollisionGroupSetCollidable("ViewmodelCasing","Viewmodel",true)
+end
+return module

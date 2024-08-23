@@ -1,0 +1,19 @@
+local Settings = {
+	GrenadeType = "Incendiary"; -- What grenade config to grab from when exploding
+	BulletTemplate = "M14 Incendiary"; -- Tracer that is fired
+	LandType = 1; -- 0 = Destroy when landed | 1 = Grenade-ify when landed | 2 = Turn into a tool when landed
+	MaxBounces = 0; -- Amount of times tracer will bounce before landing
+	ThrowPower = { -- Power of the toss respective to the Cursor arrows
+		[1] = 40,
+		[2] = 80,
+		[3] = 120
+	};
+	
+	TravelSpeed = 200; -- How fast the projectile is
+	Acceleration = Vector3.new(0,-workspace.Gravity/2,0); -- the environmental force applied to bullet
+	
+	EquipSpeed = 0.1; -- Speed of equipping in seconds
+	
+	BindToHand = true; 
+}
+return Settings
