@@ -34,8 +34,8 @@ local CameraModifiers = {}
 	Adds a camera modifier for the next frame frame.
 	perm => if false/nil, the modifiation will be reversed next frame.
 ]]
-function module.AddModifier(cframe: CFrame, permanent: boolean)
-	table.insert(CameraModifiers, {cframe, permanent == true})
+function module.AddModifier(cframe: CFrame, perm: boolean)
+	table.insert(CameraModifiers, {cframe, perm == true})
 end
 
 local function initializeCamera()

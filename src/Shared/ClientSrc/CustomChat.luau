@@ -17,7 +17,7 @@ function module.Init()
 	local RunService = game:GetService("RunService")
 	local GeneralChannel: TextChannel = TextChatService:WaitForChild("TextChannels").RBXGeneral
 	local ChatInputBarConfiguration = TextChatService:WaitForChild("ChatInputBarConfiguration")
-	
+
 	--local textstring = ""
 	--GeneralChannel:SendAsync("hi")
 	--UIS.InputBegan:Connect(function(i,gpe)
@@ -36,8 +36,8 @@ function module.Init()
 	--		print(textstring)
 	--	end
 	--end)
-	
-	TextChatService.OnIncomingMessage = function(Message: TextChatMessage, Character: PartorCharacter)
+
+	TextChatService.OnIncomingMessage = function(Message: TextChatMessage, Character: Part | Model)
 		local TextTable = string.split(Message.Text," ")
 		local newText = ""
 		for _,Word in ipairs (TextTable) do
@@ -56,7 +56,7 @@ function module.Init()
 				newText = newText.." "..Word
 			end
 		end
-		
+
 		Message.Text = newText
 		--if Message.Status == Enum.TextChatMessageStatus.Success then
 			--textstring = ""

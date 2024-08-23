@@ -19,7 +19,7 @@ local CameraModifiers = {}
 	Adds a camera modifier for the next frame frame.
 	perm => if false/nil, the modifiation will be reversed next frame.
 ]]
-function module.AddModifier(cframe: Cframe, perm: boolean)
+function module.AddModifier(cframe: CFrame, perm: boolean)
 	table.insert(CameraModifiers, {cframe, perm == true})
 end
 
@@ -31,10 +31,10 @@ function module.LoadChar(Character)
 	local function NumLerp(num1: number, num2: number, rate: number) : number
 		return num1 + (num2-num1)*rate
 	end
-	
+
 	local Humanoid: Humanoid = Character:WaitForChild("Humanoid")
 	local HRP = Character:WaitForChild("HumanoidRootPart")
-	
+
 	local function CalculateCurve(Base : number, Set : number) : number
 		return math.sin(t * Base) * Set
 	end
@@ -50,15 +50,15 @@ function module.LoadChar(Character)
 	local function GetSwayVal(x:number, y:number) : CFrame
 		return CFrame.new(Vector3.new(x, y, 0), Vector3.new(x*.95, y*.95, ViewbobConfig.CustomSwayZVal.Value)) + Camera.CFrame.Position
 	end
-	
+
 	local function ConvCFrameToOrientation(_CFrame: CFrame)
 		local setX, setY, setZ = _CFrame:ToOrientation()
 		return Vector3.new(math.deg(setX), math.deg(setY), math.deg(setZ))
 	end
-	
+
 	local function CameraUpdt(dt)
 		--if Character:FindFirstChildOfClass("Tool") then return end
-		
+
 		local Head = Character:FindFirstChild("Head")
 		if Humanoid.Health <= 0 or Humanoid:GetAttribute("DownedRagdolling") then
 			if Character:FindFirstChild("Ragdoll") then
@@ -67,7 +67,7 @@ function module.LoadChar(Character)
 			Camera.CFrame = Head.CFrame * CFrame.Angles(0, math.rad(-90), 0) * CFrame.new(0, 0, -0.5)
 			return
 		end
-		
+
 		if Humanoid.Health <= 0 and Character:FindFirstChild("Ragdoll") then
 			local charHead = Character["Ragdoll"].Value:FindFirstChild("Head")
 			if charHead then
@@ -86,17 +86,17 @@ function module.LoadChar(Character)
 			t += dt * Vel * 0.05
 
 			x = math.cos(t * ViewbobConfig.BaseSway.Value) * ViewbobConfig.SetSway.Value
-			y = math.sin(t * ViewbobConfig.BaseSway.Value) * ViewbobConfig.SetSway.Value 
+			y = math.sin(t * ViewbobConfig.BaseSway.Value) * ViewbobConfig.SetSway.Value
 			sway = GetSwayVal(x,y)
 
 			Drift = GetMouseDrift(Drift, MouseDelta, dt)
 			CurrentVel = Vel
-			
+
 		--module.AddModifier(
 		--	CFrame.new(0, CalculateCurve(ViewbobConfig.BaseFreq.Value, ViewbobConfig.SetFreq.Value) * Vel / ViewbobConfig.BaseMult.Value, 0)
 		--		* CFrame.Angles(0, 0, math.rad(CalculateCurve(ViewbobConfig.BaseRot.Value, ViewbobConfig.SetRot.Value) * Vel / ViewbobConfig.BaseMult.Value) + math.rad(Drift))
 		--)
-		
+
 		local base = ViewbobConfig.BaseRot.Value
 		local set = ViewbobConfig.SetRot.Value * 0.01
 		module.AddModifier(
@@ -113,13 +113,13 @@ function module.LoadChar(Character)
 		--	Limiter -= 1/ViewbobConfig.FPSRate.Value
 		--end
 	end
-	
+
 	local tempInverse = CFrame.new()
 	local cameraModifier = CFrame.new()
 	local tempCameraModifier = CFrame.new()
 	RunService:BindToRenderStep("ReverseTempCameraModifier", Enum.RenderPriority.Camera.Value - 2, function()
 		Camera.CFrame *= tempInverse
-		
+
 		cameraModifier = CFrame.new()
 		tempCameraModifier = CFrame.new()
 		for _, modifier in CameraModifiers do
@@ -130,7 +130,7 @@ function module.LoadChar(Character)
 			end
 		end
 		CameraModifiers = {}
-		
+
 		tempInverse = tempCameraModifier:Inverse()
 	end)
 	RunService:BindToRenderStep("UpdateCameraBobbing", Enum.RenderPriority.Camera.Value + 1, function(dt)
