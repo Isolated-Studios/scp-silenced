@@ -78,7 +78,7 @@ local charPartToViewmodelPart = {
 
 --local bannedAccessories = {"Vest","Belt"}
 
-function module.playAnimation(Anim: Animation, fade: float?, weight: float?, speed: float?)
+function module.playAnimation(Anim: Animation, fade: number?, weight: number?, speed: number?)
 	if not VMAnimator or VMAnimator.Parent == nil then return end
 	local LoadedAnimation = LoadedAnimations[Anim]
 	if not LoadedAnimation then
@@ -89,7 +89,7 @@ function module.playAnimation(Anim: Animation, fade: float?, weight: float?, spe
 	return LoadedAnimation
 end
 
-function module.playCharAnimation(Anim: Animation, fade: float?, weight: float?, speed: float?)
+function module.playCharAnimation(Anim: Animation, fade: number?, weight: number?, speed: number?)
 	if not Animator or Animator.Parent == nil then return end
 	local LoadedAnimation = LoadedCharAnimations[Anim]
 	if not LoadedAnimation then
@@ -259,7 +259,7 @@ function module.LoadChar(Character)
 			end)
 		elseif newstate == Enum.HumanoidStateType.Freefall then
 			local viewmodeljump = TweenService:Create(jumpswaygoal, TweenInfo.new(0.5/Sensitivity, Enum.EasingStyle.Sine), {Value = CFrame.new(0,0,0)*CFrame.Angles(math.rad(7.5)*SwaySize,0,0)}) ; viewmodeljump:Play() ; game.Debris:AddItem(viewmodeljump, 2)
-		end	
+		end
 	end)
 
 	local ShoveFunction = Shove.Event:Connect(function(Force,rotForce)
@@ -432,7 +432,7 @@ function module.LoadChar(Character)
 					GripWeld.Part0 = Viewmodel.RightArm
 				end
 
-				if Settings.GripWeldPosition then 
+				if Settings.GripWeldPosition then
 					GripWeld.C0 = CFrame.new(Settings.GripWeldPosition)*CFrame.Angles(GripWeld.C0.Rotation:ToEulerAnglesXYZ())
 				end
 
@@ -452,7 +452,7 @@ function module.LoadChar(Character)
 						Bolt.C1 = BackBoltC1
 					end
 				end
-				
+
 				print(`T-4 : {os.clock() - T}`)
 
 				VMup = Settings.UpOffset or 0
@@ -473,7 +473,7 @@ function module.LoadChar(Character)
 					["Unequip"] = {VMUnequip,CharUnequip},
 					["Hold"] = {VMHold,CharHold},
 				}
-				
+
 				print(`T-5 : {os.clock() - T}`)
 
 				local eventBehavior = {
@@ -517,7 +517,7 @@ function module.LoadChar(Character)
 						end
 					end
 				end
-				
+
 
 				print(`T-6 : {os.clock() - T}`)
 
@@ -570,7 +570,7 @@ function module.LoadChar(Character)
 				else
 					animationHandle("Hold","Play")
 				end
-				
+
 				print("TOOL FULLY LOADED")
 
 				local UnequipToolEvent = UnequipTool.Event:Once(function(t)
@@ -634,14 +634,14 @@ function module.LoadChar(Character)
 		local updatedSwaySpring = SwaySpring:update(dt)
 		local updatedHandleSpring = HandleSpring:update(dt)
 		Viewmodel:PivotTo(Camera.CFrame:ToWorldSpace(Offset.Value))
-		
+
 		--if Character and not Character:FindFirstChildOfClass("Tool") or Character and Character:FindFirstChildOfClass("Tool") and Character:FindFirstChildOfClass("Tool"):GetAttribute("ToolSource") ~= "Gun" and Player.PlayerGui.MouseUI["Crosshair"].Value > 0 then
 		if Character and Character:FindFirstChildOfClass("Tool") then
 			ShowArms = false
 			if Character:FindFirstChildOfClass("Tool"):GetAttribute("ToolSource") == "Gun" then
 				if Player.PlayerGui and Player.PlayerGui:FindFirstChild("MouseUI") and Player.PlayerGui.MouseUI:FindFirstChild("Dot") then
 					Player.PlayerGui.MouseUI["Dot"]["Crosshair"].GroupTransparency = AimSpring.Position
-					Player.PlayerGui.MouseUI["Dot"].BackgroundTransparency = 1	
+					Player.PlayerGui.MouseUI["Dot"].BackgroundTransparency = 1
 					Player.PlayerGui.MouseUI["Dot"]["UIStroke"].Transparency = 1
 				end
 			end
@@ -649,18 +649,18 @@ function module.LoadChar(Character)
 			if Player.PlayerGui and Player.PlayerGui:FindFirstChild("MouseUI") and Player.PlayerGui.MouseUI:FindFirstChild("Dot") then
 				Player.PlayerGui.MouseUI["Dot"]["Crosshair"].GroupTransparency = AimSpring.Position
 				Player.PlayerGui.MouseUI["Crosshair"].Value = 0
-				Player.PlayerGui.MouseUI["Dot"].BackgroundTransparency = 0	
+				Player.PlayerGui.MouseUI["Dot"].BackgroundTransparency = 0
 				Player.PlayerGui.MouseUI["Dot"]["UIStroke"].Transparency = 0.8
 			end
 			ShowArms = true
 		end
-		
+
 		if ShowArms then
 			LocalTransparency = math.max(0, LocalTransparency - dt / LocalTransparencyTransitionTime)
 		else
 			LocalTransparency = math.min(1, LocalTransparency + dt / LocalTransparencyTransitionTime)
 		end
-		
+
 		if Humanoid and Running and Humanoid:GetState() ~= Enum.HumanoidStateType.Freefall and Humanoid:GetState() ~= Enum.HumanoidStateType.Landed then
 			local WalkSpeed = MovementModule:GetWalkSpeed()
 			walksway = walksway:Lerp(
@@ -713,9 +713,9 @@ function module.LoadChar(Character)
 			VMlook = 0
 		end
 
-		local finalcf = 
-			(Camera.CFrame:ToWorldSpace(Offset.Value)*walksway*jumpsway*strafesway * 
-				CFrame.Angles(math.rad(sway.Y*SwaySize),math.rad(sway.X*SwaySize)/10,math.rad(sway.Z*SwaySize)/2)) 
+		local finalcf =
+			(Camera.CFrame:ToWorldSpace(Offset.Value)*walksway*jumpsway*strafesway *
+				CFrame.Angles(math.rad(sway.Y*SwaySize),math.rad(sway.X*SwaySize)/10,math.rad(sway.Z*SwaySize)/2))
 			+ (Viewmodel.PrimaryPart.CFrame.UpVector*VMup)
 			+ (Viewmodel.PrimaryPart.CFrame.RightVector*VMright)
 			+ (Viewmodel.PrimaryPart.CFrame.LookVector*VMlook)
@@ -741,9 +741,9 @@ function module.LoadChar(Character)
 		end
 
 		if Viewmodel:FindFirstChild("MotorModel") and Viewmodel["MotorModel"]:FindFirstChild("Handle") then
-			Viewmodel["MotorModel"]["Handle"].CFrame = Viewmodel["MotorModel"]["Handle"].CFrame*CFrame.Angles(updatedHandleSpring.x/6,updatedHandleSpring.y/6,updatedHandleSpring.z/6)	
+			Viewmodel["MotorModel"]["Handle"].CFrame = Viewmodel["MotorModel"]["Handle"].CFrame*CFrame.Angles(updatedHandleSpring.x/6,updatedHandleSpring.y/6,updatedHandleSpring.z/6)
 		end
-		
+
 		--LeftHandIK.WorldCFrame = Viewmodel.LeftArm.CFrame * CFrame.new(0, -1.1, 0) * CFrame.fromEulerAnglesYXZ(0, math.pi, 0)
 		--RightHandIK.WorldCFrame = Viewmodel.RightArm.CFrame * CFrame.new(0, -1.1, 0) * CFrame.fromEulerAnglesYXZ(0, math.pi, 0)
 	end)
