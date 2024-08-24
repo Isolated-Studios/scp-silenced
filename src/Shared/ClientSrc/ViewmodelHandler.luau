@@ -36,6 +36,7 @@ local Humanoid = nil
 local RootPart = nil
 local RightHand = nil
 local Character = nil
+local ViewModel = nil
 local Sensitivity = 1
 local SwaySize = 1
 local SwayDividend = 16
@@ -77,6 +78,10 @@ local charPartToViewmodelPart = {
 }
 
 --local bannedAccessories = {"Vest","Belt"}
+
+function module.getViewModel()
+	return ViewModel
+end
 
 function module.playAnimation(Anim: Animation, fade: number?, weight: number?, speed: number?)
 	if not VMAnimator or VMAnimator.Parent == nil then return end
@@ -145,9 +150,9 @@ local Player = game.Players.LocalPlayer
 function module.LoadChar(Character)
 	LoadedAnimations = {}
 	local Camera = workspace.CurrentCamera
-	local Viewmodel = PrimeViewmodel:Clone()
-	Viewmodel.Parent = Camera
-	Viewmodel.PrimaryPart = Viewmodel.CameraPart
+	ViewModel = PrimeViewmodel:Clone()
+	ViewModel.Parent = Camera
+	ViewModel.PrimaryPart = ViewModel.CameraPart
 
 	local evilLightingPart = ReplicatedStorage:WaitForChild("EvilLightingPart"):Clone()
 	evilLightingPart.Parent = Camera
@@ -166,7 +171,7 @@ function module.LoadChar(Character)
 	Humanoid = Character:WaitForChild("Humanoid")
 	local BodyColor = Character:WaitForChild("BodyColor")
 	Animator = Humanoid:WaitForChild("Animator")
-	VMAnimator = Viewmodel.Humanoid.Animator
+	VMAnimator = ViewModel.Humanoid.Animator
 	RootPart = Character:WaitForChild("HumanoidRootPart")
 	RightHand = Character:WaitForChild("RightHand")
 	--LeftHandIK = RootPart:WaitForChild("LeftHandIKTarget")
@@ -203,18 +208,18 @@ function module.LoadChar(Character)
 				end
 			end
 			if string.find(Clothing.Name,"Left") then
-				armBind(Clothing,Viewmodel.LeftArm)
+				armBind(Clothing,ViewModel.LeftArm)
 			elseif string.find(Clothing.Name,"Right") then
-				armBind(Clothing,Viewmodel.RightArm)
+				armBind(Clothing,ViewModel.RightArm)
 			end
 			local ActualClothing = Instance.new("ObjectValue")
 			ActualClothing.Name = "ActualClothing"
 			ActualClothing.Value = Model
 			ActualClothing.Parent = Clothing
-			Clothing.Parent = Viewmodel
+			Clothing.Parent = ViewModel
 		end
 	end
-	for _,clothing in pairs(Viewmodel:GetChildren()) do
+	for _,clothing in pairs(ViewModel:GetChildren()) do
 		if clothing:IsA("Model") and clothing:GetAttribute("TargetPart") then
 			clothing:Destroy()
 		end
@@ -224,11 +229,11 @@ function module.LoadChar(Character)
 			addClothing(clothing)
 		end
 	end
-	Viewmodel.LeftArm.Color = BodyColor.LeftArmColor3
-	Viewmodel.RightArm.Color = BodyColor.RightArmColor3
+	ViewModel.LeftArm.Color = BodyColor.LeftArmColor3
+	ViewModel.RightArm.Color = BodyColor.RightArmColor3
 	local bodyColorChange = BodyColor.Changed:Connect(function()
-		Viewmodel.LeftArm.Color = BodyColor.LeftArmColor3
-		Viewmodel.RightArm.Color = BodyColor.RightArmColor3
+		ViewModel.LeftArm.Color = BodyColor.LeftArmColor3
+		ViewModel.RightArm.Color = BodyColor.RightArmColor3
 	end)
 
 	local runChange = Humanoid.Running:Connect(function(speed)
@@ -269,7 +274,7 @@ function module.LoadChar(Character)
 		end
 		SwaySpring:shove(Force/divisor)
 		if rotForce then
-			local GripWeld = Viewmodel["RightArm"]["RightArm"]
+			local GripWeld = ViewModel["RightArm"]["RightArm"]
 			--GripWeld.C0 = CFrame.new(GripWeld.C0.Position)*CFrame.Angles(0,0,0)
 			--GripWeld.C1 = CFrame.new(GripWeld.C1.Position)*CFrame.Angles(0,0,0)
 			HandleSpring:shove(rotForce/divisor/2)
@@ -296,23 +301,23 @@ function module.LoadChar(Character)
 	end)
 
 	local ChangeGripFunction = ChangeGrip.Event:Connect(function(Part0)
-		if Viewmodel.RightArm:FindFirstChild("GripWeld") then
-			local GripWeld = Viewmodel.RightArm["GripWeld"]
+		if ViewModel.RightArm:FindFirstChild("GripWeld") then
+			local GripWeld = ViewModel.RightArm["GripWeld"]
 			GripWeld.Part0 = Part0
 		end
 	end)
 
 	local charChildAdd = Character.ChildAdded:Connect(function(Tool)
-		if Tool:IsA("Tool") and not Tool:GetAttribute("Removing") and not Viewmodel:FindFirstChild("MotorModel") then
+		if Tool:IsA("Tool") and not Tool:GetAttribute("Removing") and not ViewModel:FindFirstChild("MotorModel") then
 			local T = os.clock()
 			if RightHand:FindFirstChild("RightGrip") then Character["RightHand"]["RightGrip"]:Destroy() end
-			if not Tool:FindFirstChild("Handle") and Viewmodel:FindFirstChild("MotorModel") then Humanoid:UnequipTools() return end
+			if not Tool:FindFirstChild("Handle") and ViewModel:FindFirstChild("MotorModel") then Humanoid:UnequipTools() return end
 			local GripWeld = Instance.new("Motor6D")
 			GripWeld.Name = "GripWeld"
 			GripWeld.C1 = Tool.Grip
-			GripWeld.C0 = Viewmodel.RightArm.Grip.CFrame
-			GripWeld.Parent = Viewmodel.UpperTorso
-			GripWeld.Part0 = Viewmodel.UpperTorso
+			GripWeld.C0 = ViewModel.RightArm.Grip.CFrame
+			GripWeld.Parent = ViewModel.UpperTorso
+			GripWeld.Part0 = ViewModel.UpperTorso
 			GripWeld.Part1 = Tool.Handle
 
 			local MotorModel = Instance.new("Model")
@@ -321,7 +326,7 @@ function module.LoadChar(Character)
 			MotorModelTool.Name = "Tool"
 			MotorModelTool.Parent = MotorModel
 			MotorModel.Name = "MotorModel"
-			MotorModel.Parent = Viewmodel
+			MotorModel.Parent = ViewModel
 			for _,toolPart in pairs(Tool:GetChildren()) do
 				if toolPart:IsA("BasePart") then
 					toolPart.CanCollide = false
@@ -359,9 +364,9 @@ function module.LoadChar(Character)
 			end
 
 			local function destroyMotorModels ()
-				for _,motormodels in pairs(Viewmodel:GetChildren()) do
+				for _,motormodels in pairs(ViewModel:GetChildren()) do
 					if motormodels.Name == "MotorModel" then
-						for _,motorPart in pairs(Viewmodel.MotorModel:GetChildren()) do
+						for _,motorPart in pairs(ViewModel.MotorModel:GetChildren()) do
 							if motorPart:IsA("BasePart") or motorPart:IsA("Configuration") then
 								motorPart.Parent = motormodels.Tool.Value
 								if motorPart:IsA("BasePart") then
@@ -390,14 +395,12 @@ function module.LoadChar(Character)
 				local ToolObjects = Tools:FindFirstChild(Tool:GetAttribute("ToolName"))
 				if Tool:GetAttribute("ToolSource") and ToolSource[Tool:GetAttribute("ToolSource")] then
 					local MMT = 0
-					for _, motormodels in pairs(Viewmodel:GetChildren()) do
+					for _, motormodels in pairs(ViewModel:GetChildren()) do
 						if motormodels.Name == "MotorModel" then
 							MMT += 1
 						end
 					end
 					if MMT > 1 then destroyMotorModels() return end
-					local Source = require(ToolSource[Tool:GetAttribute("ToolSource")])
-					Source.Init(Tool, ToolObjects, Character, Viewmodel)
 				end
 				print(`T-2 : {os.clock() - T}`)
 
@@ -428,8 +431,8 @@ function module.LoadChar(Character)
 				end
 
 				if Settings.BindToHand then
-					GripWeld.Parent = Viewmodel.RightArm
-					GripWeld.Part0 = Viewmodel.RightArm
+					GripWeld.Parent = ViewModel.RightArm
+					GripWeld.Part0 = ViewModel.RightArm
 				end
 
 				if Settings.GripWeldPosition then
@@ -593,21 +596,21 @@ function module.LoadChar(Character)
 	local charChildRemove = Character.ChildRemoved:Connect(function(Tool)
 		if Tool:IsA("Tool") then
 			-- // Unequip Tool
-			if Viewmodel.UpperTorso:FindFirstChild("GripWeld") then
+			if ViewModel.UpperTorso:FindFirstChild("GripWeld") then
 				VMup = 0
 				VMright = 0
 				VMlook = 0
 				VMsway = 1
 				VMaimsway = 0.1
 				task.wait()
-				if Viewmodel:FindFirstChild("UpperTorso") and Viewmodel.UpperTorso:FindFirstChild("GripWeld") and Viewmodel.UpperTorso.GripWeld.Part1 == Tool:FindFirstChild("Handle") then
-					Viewmodel.UpperTorso.GripWeld:Destroy()
+				if ViewModel:FindFirstChild("UpperTorso") and ViewModel.UpperTorso:FindFirstChild("GripWeld") and ViewModel.UpperTorso.GripWeld.Part1 == Tool:FindFirstChild("Handle") then
+					ViewModel.UpperTorso.GripWeld:Destroy()
 				end
 			end
 			AimSpring.Target = 0
 		elseif Tool:IsA("Model") and Tool:GetAttribute("TargetPart") then
 			-- // Unequip Clothing
-			for _,VMclothing in pairs(Viewmodel:GetChildren()) do
+			for _,VMclothing in pairs(ViewModel:GetChildren()) do
 				if VMclothing:IsA("Model") and VMclothing:GetAttribute("TargetPart")and VMclothing.ActualClothing.Value == Tool then
 					VMclothing:Destroy()
 				end
@@ -618,7 +621,7 @@ function module.LoadChar(Character)
 	local HandleTransform = nil
 	local OriginalTransform = nil
 	local AimTransform = nil
-	Viewmodel:SetAttribute("CloseToWall",false)
+	ViewModel:SetAttribute("CloseToWall",false)
 	RunService:BindToRenderStep("UpdateViewModel", Enum.RenderPriority.Camera.Value + 2, function(dt)
 		for _, part in ipairs(Character:GetDescendants()) do
 			if not part:IsA("BasePart") then continue end
@@ -628,12 +631,12 @@ function module.LoadChar(Character)
 				part.LocalTransparencyModifier = 1
 			end
 		end
-		CameraModule.AddModifier(Viewmodel.CameraPart.HumanoidRootPart.Transform) -- apply camera animations
+		CameraModule.AddModifier(ViewModel.CameraPart.HumanoidRootPart.Transform) -- apply camera animations
 		evilLightingPart:PivotTo(Camera.CFrame)
 		local MouseDelta = UserInputService:GetMouseDelta()
 		local updatedSwaySpring = SwaySpring:update(dt)
 		local updatedHandleSpring = HandleSpring:update(dt)
-		Viewmodel:PivotTo(Camera.CFrame:ToWorldSpace(Offset.Value))
+		ViewModel:PivotTo(Camera.CFrame:ToWorldSpace(Offset.Value))
 
 		--if Character and not Character:FindFirstChildOfClass("Tool") or Character and Character:FindFirstChildOfClass("Tool") and Character:FindFirstChildOfClass("Tool"):GetAttribute("ToolSource") ~= "Gun" and Player.PlayerGui.MouseUI["Crosshair"].Value > 0 then
 		if Character and Character:FindFirstChildOfClass("Tool") then
@@ -671,17 +674,17 @@ function module.LoadChar(Character)
 		end
 		sway = sway:Lerp(Vector3.new(MouseDelta.X/2,MouseDelta.Y/2,MouseDelta.X/4), 3*Sensitivity*dt)
 		if RootPart and Humanoid then
-			wallcheckFilterList = {Viewmodel,Character}
+			wallcheckFilterList = {ViewModel,Character}
 			wallcheckParams.FilterDescendantsInstances = wallcheckFilterList
 			local wallcheckDistance = 1.8
 			local raycastResult = workspace:Raycast(RootPart.Position+RootPart.CFrame.RightVector*.8+Vector3.new(0,2,0), RootPart.CFrame.LookVector * (wallcheckDistance), wallcheckParams)
 			if raycastResult and not raycastResult.Instance.Parent:FindFirstChildOfClass("Humanoid") and not raycastResult.Instance.Parent.Parent:FindFirstChildOfClass("Humanoid") then
-				if not Viewmodel:GetAttribute("CloseToWall") then
-					Viewmodel:SetAttribute("CloseToWall",true)
+				if not ViewModel:GetAttribute("CloseToWall") then
+					ViewModel:SetAttribute("CloseToWall",true)
 				end
 			else
-				if Viewmodel:GetAttribute("CloseToWall") then
-					Viewmodel:SetAttribute("CloseToWall",false)
+				if ViewModel:GetAttribute("CloseToWall") then
+					ViewModel:SetAttribute("CloseToWall",false)
 				end
 			end
 			local walkingLeanForward = 0
@@ -716,18 +719,18 @@ function module.LoadChar(Character)
 		local finalcf =
 			(Camera.CFrame:ToWorldSpace(Offset.Value)*walksway*jumpsway*strafesway *
 				CFrame.Angles(math.rad(sway.Y*SwaySize),math.rad(sway.X*SwaySize)/10,math.rad(sway.Z*SwaySize)/2))
-			+ (Viewmodel.PrimaryPart.CFrame.UpVector*VMup)
-			+ (Viewmodel.PrimaryPart.CFrame.RightVector*VMright)
-			+ (Viewmodel.PrimaryPart.CFrame.LookVector*VMlook)
+			+ (ViewModel.PrimaryPart.CFrame.UpVector*VMup)
+			+ (ViewModel.PrimaryPart.CFrame.RightVector*VMright)
+			+ (ViewModel.PrimaryPart.CFrame.LookVector*VMlook)
 		finalcf *= CFrame.new(updatedSwaySpring.X,updatedSwaySpring.Y,updatedSwaySpring.Z)
 		finalcf *= CFrame.new(updatedHandleSpring.Z/4,updatedHandleSpring.Y/4,updatedHandleSpring.X/4)
-		Viewmodel:PivotTo(finalcf)
+		ViewModel:PivotTo(finalcf)
 
-		if Viewmodel:FindFirstChild("MotorModel") and Viewmodel["MotorModel"]:FindFirstChild("Handle") then
-			local Handle = Viewmodel["MotorModel"]["Handle"]
-			local HandleTransform = Viewmodel:GetPrimaryPartCFrame():ToObjectSpace(Handle.CFrame)
+		if ViewModel:FindFirstChild("MotorModel") and ViewModel["MotorModel"]:FindFirstChild("Handle") then
+			local Handle = ViewModel["MotorModel"]["Handle"]
+			local HandleTransform = ViewModel:GetPrimaryPartCFrame():ToObjectSpace(Handle.CFrame)
 			OriginalTransform = HandleTransform * HandleTransform:Inverse()
-			if Viewmodel["MotorModel"]["Handle"]:FindFirstChild("Aim") then
+			if ViewModel["MotorModel"]["Handle"]:FindFirstChild("Aim") then
 				local AimPart = Handle["Aim"]
 				AimTransform = AimPart.WorldCFrame:ToObjectSpace(Handle.CFrame) * HandleTransform:Inverse()
 
@@ -740,8 +743,8 @@ function module.LoadChar(Character)
 			Offset.Value = CFrame.new(0,0,0)
 		end
 
-		if Viewmodel:FindFirstChild("MotorModel") and Viewmodel["MotorModel"]:FindFirstChild("Handle") then
-			Viewmodel["MotorModel"]["Handle"].CFrame = Viewmodel["MotorModel"]["Handle"].CFrame*CFrame.Angles(updatedHandleSpring.x/6,updatedHandleSpring.y/6,updatedHandleSpring.z/6)
+		if ViewModel:FindFirstChild("MotorModel") and ViewModel["MotorModel"]:FindFirstChild("Handle") then
+			ViewModel["MotorModel"]["Handle"].CFrame = ViewModel["MotorModel"]["Handle"].CFrame*CFrame.Angles(updatedHandleSpring.x/6,updatedHandleSpring.y/6,updatedHandleSpring.z/6)
 		end
 
 		--LeftHandIK.WorldCFrame = Viewmodel.LeftArm.CFrame * CFrame.new(0, -1.1, 0) * CFrame.fromEulerAnglesYXZ(0, math.pi, 0)
@@ -762,7 +765,7 @@ function module.LoadChar(Character)
 		ChangeGripFunction:Disconnect()
 		RunService:UnbindFromRenderStep("UpdateViewModel")
 		Running = false
-		Viewmodel:Destroy()
+		ViewModel:Destroy()
 		evilLightingPart:Destroy()
 	end)
 end

@@ -40,7 +40,6 @@ end
 loadModule(ClientSrc.InteractHandler)
 loadModule(ClientSrc.DragHandler)
 loadModule(ClientSrc.Cursor)
-loadModule(ClientSrc.ViewmodelHandler)
 loadModule(ClientSrc.HotbarHandler)
 loadModule(ClientSrc.HUD)
 loadModule(ClientSrc.Replication)
@@ -55,6 +54,8 @@ loadModule(ClientSrc.MechanismHandler)
 loadModule(ClientSrc.EnvironmentalDamage)
 loadModule(ClientSrc.Movement)
 loadModule(ClientSrc.Camera)
+loadModule(ClientSrc.ViewmodelHandler)
+loadModule(ClientSrc.ToolManager)
 loadModule(ClientSrc.Blood)
 
 -- Load and initialize your UI from the "Init()" function.
