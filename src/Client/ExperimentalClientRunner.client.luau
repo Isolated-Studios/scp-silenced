@@ -55,7 +55,7 @@ loadModule(ClientSrc.EnvironmentalDamage)
 loadModule(ClientSrc.Movement)
 loadModule(ClientSrc.Camera)
 loadModule(ClientSrc.ViewmodelHandler)
-loadModule(ClientSrc.ToolManager)
+loadModule(ClientSrc.ToolHandler)
 loadModule(ClientSrc.Blood)
 
 -- Load and initialize your UI from the "Init()" function.

@@ -14,7 +14,7 @@ function module.LoadChar(char)
 			local ToolObjects = Tools:FindFirstChild(Tool:GetAttribute("ToolName"))
 			if Tool:GetAttribute("ToolSource") and script:FindFirstChild(Tool:GetAttribute("ToolSource")) then
 				local Source = require(script[Tool:GetAttribute("ToolSource")])
-				Source.Init(Tool, ToolObjects, Character, Viewmodel)
+				Source.Init(Tool, ToolObjects, Character, ViewModelHandler.getViewModel())
 			end
 		end
 	end)
