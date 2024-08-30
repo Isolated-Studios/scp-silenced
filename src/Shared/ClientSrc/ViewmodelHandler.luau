@@ -391,7 +391,6 @@ function module.LoadChar(Character)
 			end)
 
 			if Tools:FindFirstChild(Tool:GetAttribute("ToolName")) then
-				print(`T-1 : {os.clock() - T}`)
 				local ToolObjects = Tools:FindFirstChild(Tool:GetAttribute("ToolName"))
 				if Tool:GetAttribute("ToolSource") and ToolSource[Tool:GetAttribute("ToolSource")] then
 					local MMT = 0
@@ -402,7 +401,6 @@ function module.LoadChar(Character)
 					end
 					if MMT > 1 then destroyMotorModels() return end
 				end
-				print(`T-2 : {os.clock() - T}`)
 
 				local Sounds = ToolObjects.Sounds
 				local Handle = MotorModel.Handle
@@ -456,7 +454,6 @@ function module.LoadChar(Character)
 					end
 				end
 
-				print(`T-4 : {os.clock() - T}`)
 
 				VMup = Settings.UpOffset or 0
 				VMright = Settings.RightOffset or 0
@@ -464,12 +461,6 @@ function module.LoadChar(Character)
 				VMsway = Settings.Sway or 1
 				VMaimsway = Settings.AimSway or 0.1
 
-				local animationEvents = {
-					["FirstEquip"] = CTF.getAllAnimationEventNames(VMFirstEquip),
-					["Equip"] = CTF.getAllAnimationEventNames(VMEquip),
-					["Unequip"] = CTF.getAllAnimationEventNames(VMUnequip),
-					["Hold"] = CTF.getAllAnimationEventNames(VMHold),
-				}
 				animationTable = {
 					["FirstEquip"] = {VMFirstEquip,CharFirstEquip},
 					["Equip"] = {VMEquip,CharEquip},
@@ -477,52 +468,56 @@ function module.LoadChar(Character)
 					["Hold"] = {VMHold,CharHold},
 				}
 
-				print(`T-5 : {os.clock() - T}`)
+				task.defer(function()
+					local animationEvents = {
+						["FirstEquip"] = CTF.getAllAnimationEventNames(VMFirstEquip),
+						["Equip"] = CTF.getAllAnimationEventNames(VMEquip),
+						["Unequip"] = CTF.getAllAnimationEventNames(VMUnequip),
+						["Hold"] = CTF.getAllAnimationEventNames(VMHold),
+					}
 
-				local eventBehavior = {
-					["LoadGate"] = function()
-						CTF.playSound(Sounds,"GateOpen",Handle,true,true)
-					end,
-					["LoadGateClose"] = function()
-						CTF.playSound(Sounds,"GateClose",Handle,true,true)
-					end,
-					["EjectShell"] = function()
-						CTF.playSound(Sounds,"Eject",Handle,true,true)
-					end,
-					["InsertShell"] = function()
-						CTF.playSound(Sounds,"Insert",Handle,true,true)
-					end,
-					["MagOut"] = function()
-						CTF.playSound(Sounds,"MagOut",Handle,true,true)
-					end,
-					["MagIn"] = function()
-						CTF.playSound(Sounds,"MagIn",Handle,true,true)
-					end,
-					["BoltBack"] = function()
-						CTF.playSound(Sounds,"BoltBack",Handle,true,true)
-					end,
-					["BoltForward"] = function()
-						CTF.playSound(Sounds,"BoltForward",Handle,true,true)
-					end,
-				}
+					local eventBehavior = {
+						["LoadGate"] = function()
+							CTF.playSound(Sounds,"GateOpen",Handle,true,true)
+						end,
+						["LoadGateClose"] = function()
+							CTF.playSound(Sounds,"GateClose",Handle,true,true)
+						end,
+						["EjectShell"] = function()
+							CTF.playSound(Sounds,"Eject",Handle,true,true)
+						end,
+						["InsertShell"] = function()
+							CTF.playSound(Sounds,"Insert",Handle,true,true)
+						end,
+						["MagOut"] = function()
+							CTF.playSound(Sounds,"MagOut",Handle,true,true)
+						end,
+						["MagIn"] = function()
+							CTF.playSound(Sounds,"MagIn",Handle,true,true)
+						end,
+						["BoltBack"] = function()
+							CTF.playSound(Sounds,"BoltBack",Handle,true,true)
+						end,
+						["BoltForward"] = function()
+							CTF.playSound(Sounds,"BoltForward",Handle,true,true)
+						end,
+					}
 
-				for animName,animation in pairs(animationTable) do
-					local VManimation = animation[1]
-					local animationEvents = animationEvents[animName]
-					if VManimation and animationEvents then
-						for _,event in pairs(animationEvents) do
-							local eventFunction = VManimation:GetMarkerReachedSignal(event):Connect(function(parameter)
-								if eventBehavior[event] then
-									eventBehavior[event](parameter)
-								end
-							end)
-							table.insert(animationEventsList,eventFunction)
+					for animName,animation in pairs(animationTable) do
+						local VManimation = animation[1]
+						local animationEvents = animationEvents[animName]
+						if VManimation and animationEvents then
+							for _,event in pairs(animationEvents) do
+								local eventFunction = VManimation:GetMarkerReachedSignal(event):Connect(function(parameter)
+									if eventBehavior[event] then
+										eventBehavior[event](parameter)
+									end
+								end)
+								table.insert(animationEventsList,eventFunction)
+							end
 						end
 					end
-				end
-
-
-				print(`T-6 : {os.clock() - T}`)
+				end)
 
 				if Settings.EquipSpeed then
 					if VMAnimations:FindFirstChild("FirstEquip") and not Tool:GetAttribute("FirstEquipActivated") then
@@ -544,7 +539,6 @@ function module.LoadChar(Character)
 					end
 				end
 
-				print(`T-7 : {os.clock() - T}`)
 				if VMAnimations:FindFirstChild("FirstEquip") and not Tool:GetAttribute("FirstEquipActivated") then
 					Tool:SetAttribute("FirstEquipActivated",true)
 					local inputsThatCancel = {
@@ -573,8 +567,6 @@ function module.LoadChar(Character)
 				else
 					animationHandle("Hold","Play")
 				end
-
-				print("TOOL FULLY LOADED")
 
 				local UnequipToolEvent = UnequipTool.Event:Once(function(t)
 					if t ~= Tool then return end
