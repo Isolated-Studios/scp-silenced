@@ -27,22 +27,21 @@ local function getLimb (HitPart)
 	end
     return HitLimb
 end
-function module.Damage (
-	
-	Damage:number, 
-	HitHumanoid:humanoid, 
-	HitPart:object, 
-	Killer:player, 
-	CanDown:number,
-	Twitch:boolean, 
-	HeadshotFactor:number, 
-	AP:number, 
-	Blood:bool, 
-	Direction:vector3, 
-	GibChance:number,
-	Sever:bool, 
-	noLimbDamageAdjust:bool, 
-	LegMultiplier:number
+function module.Damage(
+	Damage: number,
+	HitHumanoid: Humanoid,
+	HitPart: Instance,
+	Killer: Player,
+	CanDown: number,
+	Twitch: boolean,
+	HeadshotFactor: number,
+	AP: number,
+	Blood: boolean,
+	Direction: Vector3,
+	GibChance: number,
+	Sever: boolean,
+	noLimbDamageAdjust: boolean,
+	LegMultiplier: number
 )
 	if not Damage or not HitHumanoid or HitHumanoid:GetAttribute("DownedRagdolling") then return end
    	local originalDamage = Damage
@@ -50,17 +49,16 @@ function module.Damage (
 	if not LegMultiplier then LegMultiplier = 0.75 end
 	--if Killer and Killer.Character and Killer.Character == HitHumanoid.Parent then return end
     if Killer and not HitHumanoid.Parent:GetAttribute("TestRig") then
-        HitHumanoid.Parent:SetAttribute("InCombat",true)
-        HitHumanoid:SetAttribute("InCombat",true)
-		HitHumanoid:SetAttribute("Killer",Killer.Name)
-		
+		HitHumanoid.Parent:SetAttribute("InCombat", true)
+		HitHumanoid:SetAttribute("InCombat", true)
+		HitHumanoid:SetAttribute("Killer", Killer.Name)
+
 		local hitPlayer = game.Players:GetPlayerFromCharacter(HitHumanoid.Parent)
 		if Killer ~= hitPlayer and TeamHandler.Check(Killer,hitPlayer) == 0 then return end
-		
 	end
-	
+
 	local Absorption = HitHumanoid:GetAttribute("Absorption") or 0
-	
+
     if HitPart then
         HitLimb = getLimb(HitPart)
         if HeadshotFactor and HitLimb == "Head" then
@@ -68,34 +66,34 @@ function module.Damage (
 			--	Damage = ArmorDamage(HitHumanoid, "HelmetHealth", Damage, false)
 			--	Damage = Damage+(originalDamage*HeadshotFactor)
 			--else
-				Damage = Damage+(originalDamage*HeadshotFactor)
+			Damage = Damage + (originalDamage * HeadshotFactor)
 			--end
 		elseif HitLimb == "Leg" and not noLimbDamageAdjust then
-			Damage = Damage*LegMultiplier
+			Damage = Damage * LegMultiplier
 		end
     end
   --  if VestHit and HitHumanoid:GetAttribute("VestHealth") > 0 and HitHumanoid:GetAttribute("VestType") > 0 then
-   --     if HitHumanoid:GetAttribute("VestType") == 1 and HitLimb == "Torso" or 
-   --         HitHumanoid:GetAttribute("VestType") == 2 and (HitLimb == "Torso" or HitLimb == "Arm") or 
+   --     if HitHumanoid:GetAttribute("VestType") == 1 and HitLimb == "Torso" or
+   --         HitHumanoid:GetAttribute("VestType") == 2 and (HitLimb == "Torso" or HitLimb == "Arm") or
    --         HitHumanoid:GetAttribute("VestType") == 3 and (HitLimb == "Torso" or HitLimb == "Arm" or HitLimb == "Leg") then
    --         Damage = ArmorDamage(HitHumanoid, "VestHealth", Damage, true)
    --     end
    -- end
 	if Blood and Direction and HitPart then
-		BloodEvent:FireAllClients(Direction,HitPart.Position,HitHumanoid.Parent,HitPart.Parent,Damage)
+		BloodEvent:FireAllClients(Direction, HitPart.Position, HitHumanoid.Parent, HitPart.Parent, Damage)
 	end -- CAUSES LAG
-	
+
 	if Absorption > Damage and Absorption > 0 then
-		HitHumanoid:SetAttribute("Absorption",math.abs(Damage-Absorption))
+		HitHumanoid:SetAttribute("Absorption", math.abs(Damage - Absorption))
 	else
-		HitHumanoid:SetAttribute("Absorption",0)
+		HitHumanoid:SetAttribute("Absorption", 0)
 	end
-	
-	Damage = math.clamp(Damage-Absorption,0,math.huge)
+
+	Damage = math.clamp(Damage - Absorption, 0, math.huge)
 	Damage = math.round(Damage)
-	if (Damage >= HitHumanoid.Health) then
+	if Damage >= HitHumanoid.Health then
 		if CanDown and HitLimb ~= "Head" and not HitHumanoid:GetAttribute("DownedOnce") and HitHumanoid.Health > 0 then
-			HitHumanoid:SetAttribute("DownStart",CanDown)
+			HitHumanoid:SetAttribute("DownStart", CanDown)
 			HitHumanoid.Health = 0.001
 		else
 			HitHumanoid.Health = 0
@@ -109,19 +107,19 @@ function module.Damage (
 		end
 		if HitPart and Direction and not HitPart.Anchored then
 			HitPart:SetNetworkOwner()
-			HitPart:ApplyImpulse(Direction*Damage*5)
+			HitPart:ApplyImpulse(Direction * Damage * 5)
 		end
-		if GibChance and HitPart and Direction and math.random(1,100) <= GibChance*100 then
-			GoreEvent:FireAllClients(HitPart,HitHumanoid.Parent,Sever,Direction)
+		if GibChance and HitPart and Direction and math.random(1, 100) <= GibChance * 100 then
+			GoreEvent:FireAllClients(HitPart, HitHumanoid.Parent, Sever, Direction)
 		end
 	end
-	if HitHumanoid.Health <= 0 and HitPart and GibChance and Direction and math.random(1,100) <= GibChance*100 then
-		GoreEvent:FireAllClients(HitPart,HitHumanoid.Parent,Sever,Direction)
+	if HitHumanoid.Health <= 0 and HitPart and GibChance and Direction and math.random(1, 100) <= GibChance * 100 then
+		GoreEvent:FireAllClients(HitPart, HitHumanoid.Parent, Sever, Direction)
 	end
-	
+
     if Twitch then
         local twitchAnim = Instance.new("Animation")
-		twitchAnim.AnimationId = "rbxassetid://" .. twitchAnimTable[Random.new():NextInteger(1,#twitchAnimTable)]
+		twitchAnim.AnimationId = "rbxassetid://" .. twitchAnimTable[Random.new():NextInteger(1, #twitchAnimTable)]
 		local twitch = HitHumanoid:LoadAnimation(twitchAnim)
 		twitch.Priority = Enum.AnimationPriority.Action4
 	    twitch:Play(0, 0.3, 1)

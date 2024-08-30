@@ -49,10 +49,10 @@ SingleSlot.__index = SingleSlot
 function SingleSlot.new(properties: Types.SingleSlotProperties): Types.SingleSlotObject
 	local self = setmetatable(ItemManager.new(properties), SingleSlot)
 	self.GuiElement = self:_createGuiElement(properties)
-	
+
 	self.Item = nil
 	self.ItemChanged = Signal.new()
-	
+
 	self.AppliedHighlight = false
 	self._trove:Add(RunService.RenderStepped:Connect(function()
 		local highlight = nil
@@ -86,7 +86,7 @@ function SingleSlot:_createGuiElement(properties: Types.SingleSlotProperties): {
 	container.AnchorPoint = properties.AnchorPoint
 	container.Position = properties.Position
 	container.Size = properties.Size
-	
+
 	container.Visible = self.Visible
 
 	container.Parent = properties.Parent
@@ -169,18 +169,18 @@ end
 	@tag ItemManager Override
 	@within SingleSlot
 ]=]
-function SingleSlot:ChangeItem(item: Types.ItemObject, tween: bool)
+function SingleSlot:ChangeItem(item: Types.ItemObject, tween: boolean)
 	assert(item.ItemManager == nil, "Could not add item: Item is already in another ItemManager")
 	if not tween then tween = true end
 	if self.Item then
 		self:RemoveItem()
 	end
-	
+
 	--print(item.ItemElement.Position)
-	
+
 	self.Item = item
 	self.ItemChanged:Fire(item)
-	
+
 	item.ItemManagerChanged:Fire(self, tween)
 end
 
@@ -194,7 +194,7 @@ function SingleSlot:RemoveItem()
 	if self.Item then
 		self.Item.ItemManagerChanged:Fire(nil)
 	end
-	
+
 	self.Item = nil
 	self.ItemChanged:Fire(nil)
 end

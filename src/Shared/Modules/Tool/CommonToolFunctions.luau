@@ -57,36 +57,36 @@ local TransparencyIgnoreIndex = {
 }
 local MatToHole = {
 	[Enum.Material.Concrete] = 		"NormalHit",
-	[Enum.Material.Marble] = 		"NormalHit", 
-	[Enum.Material.Granite] =		"NormalHit", 
-	[Enum.Material.Brick] = 		"NormalHit", 
-	[Enum.Material.Cobblestone] = 	"NormalHit", 
-	[Enum.Material.Slate] = 		"NormalHit", 
-	[Enum.Material.Metal] = 					"MetalHit", 
-	[Enum.Material.DiamondPlate] = 				"MetalHit", 
-	[Enum.Material.CorrodedMetal] = 			"MetalHit", 
-	[Enum.Material.Grass] = 		"NormalHit", 
-	[Enum.Material.LeafyGrass] = 	"NormalHit", 
-	[Enum.Material.Snow] = 			"NormalHit", 
-	[Enum.Material.Ice] = 			"NormalHit", 
-	[Enum.Material.Pebble] = 		"NormalHit", 
-	[Enum.Material.Water] = 		"NormalHit", 
-	[Enum.Material.Ground] =		"NormalHit", 
-	[Enum.Material.Asphalt] = 		"NormalHit", 
-	[Enum.Material.Basalt] = 		"NormalHit", 
-	[Enum.Material.WoodPlanks] = 							"WoodHit", 
-	[Enum.Material.Wood] = 									"WoodHit", 
-	[Enum.Material.Fabric] = 		"NormalHit", 
+	[Enum.Material.Marble] = 		"NormalHit",
+	[Enum.Material.Granite] =		"NormalHit",
+	[Enum.Material.Brick] = 		"NormalHit",
+	[Enum.Material.Cobblestone] = 	"NormalHit",
+	[Enum.Material.Slate] = 		"NormalHit",
+	[Enum.Material.Metal] = 					"MetalHit",
+	[Enum.Material.DiamondPlate] = 				"MetalHit",
+	[Enum.Material.CorrodedMetal] = 			"MetalHit",
+	[Enum.Material.Grass] = 		"NormalHit",
+	[Enum.Material.LeafyGrass] = 	"NormalHit",
+	[Enum.Material.Snow] = 			"NormalHit",
+	[Enum.Material.Ice] = 			"NormalHit",
+	[Enum.Material.Pebble] = 		"NormalHit",
+	[Enum.Material.Water] = 		"NormalHit",
+	[Enum.Material.Ground] =		"NormalHit",
+	[Enum.Material.Asphalt] = 		"NormalHit",
+	[Enum.Material.Basalt] = 		"NormalHit",
+	[Enum.Material.WoodPlanks] = 							"WoodHit",
+	[Enum.Material.Wood] = 									"WoodHit",
+	[Enum.Material.Fabric] = 		"NormalHit",
 	[Enum.Material.Air] = 			"NormalHit",
-	[Enum.Material.SmoothPlastic] = "NormalHit", 
-	[Enum.Material.Plastic] = 		"NormalHit", 
-	[Enum.Material.Sand] = 			"NormalHit", 
-	[Enum.Material.Sandstone] = 	"NormalHit", 
-	[Enum.Material.Glass] = 					"MetalHit", 
-	[Enum.Material.ForceField] = 				"MetalHit", 
+	[Enum.Material.SmoothPlastic] = "NormalHit",
+	[Enum.Material.Plastic] = 		"NormalHit",
+	[Enum.Material.Sand] = 			"NormalHit",
+	[Enum.Material.Sandstone] = 	"NormalHit",
+	[Enum.Material.Glass] = 					"MetalHit",
+	[Enum.Material.ForceField] = 				"MetalHit",
 	[Enum.Material.Mud] = 			"NormalHit",
-	[Enum.Material.Foil] = 			"NormalHit", 
-	[Enum.Material.CrackedLava] = 	"NormalHit", 
+	[Enum.Material.Foil] = 			"NormalHit",
+	[Enum.Material.CrackedLava] = 	"NormalHit",
 	[Enum.Material.Neon] = 			"NormalHit",
 }
 
@@ -147,7 +147,7 @@ function module.createBulletHole (raycastResult,hitPerson,isPellet,randomValue)
 			end
 		end
 		BulletHole.Anchored = true
-		--BulletHoleWeld:Destroy() 
+		--BulletHoleWeld:Destroy()
 		if BulletHole:FindFirstChild("BulletHoleDecal") then
 			TweenService:Create(BulletHole.BulletHoleDecal,TweenInfo.new(1,Enum.EasingStyle.Linear),{Transparency = 1}):Play()
 		end
@@ -174,13 +174,13 @@ CasterBehavior.CosmeticBulletContainer = workspace.TracerCollection
 
 BulletCaster = FastCast.new()
 BulletCaster.RayHit:Connect(function(cast, raycastResult,segmentVelocity,cosmeticBulletObject)
-	
+
 	if cosmeticBulletObject:IsA("Model") then
 		for _,part in pairs(cosmeticBulletObject:GetChildren()) do
 			if part:IsA("BasePart") then part.Transparency = 1 end
 		end
 	end
-	
+
 	if cast.Throwable then
 		if cast.Bounces and cast.Bounces > cast.MaxBounces or cast.MaxBounces == 0 then
 			if not cast.Fake then
@@ -193,17 +193,17 @@ BulletCaster.RayHit:Connect(function(cast, raycastResult,segmentVelocity,cosmeti
 			if not cast.Fake then
 				replicate = "realButNoReplication"
 			end
-			
+
 			local newCast = module.castBullet(
-				cast.Tool, 
+				cast.Tool,
 				raycastResult.Position+raycastResult.Normal*0.1,
-				newNormal, 
-				segmentVelocity.Magnitude*0.6, 
-				cast.MaxDistance - cast.StateInfo.DistanceCovered, 
-				cast:GetAcceleration(), 
-				cast.RayInfo.CosmeticBulletObject.Name, 
-				cast.Character, 
-				cast.isPellet, 
+				newNormal,
+				segmentVelocity.Magnitude*0.6,
+				cast.MaxDistance - cast.StateInfo.DistanceCovered,
+				cast:GetAcceleration(),
+				cast.RayInfo.CosmeticBulletObject.Name,
+				cast.Character,
+				cast.isPellet,
 				cast.randomValue,
 				replicate)
 			--newCast.RayInfo.CosmeticBulletObject = cast.RayInfo.CosmeticBulletObject
@@ -219,8 +219,8 @@ BulletCaster.RayHit:Connect(function(cast, raycastResult,segmentVelocity,cosmeti
 			end
 		end
 	end
-	
-	
+
+
 	local hitPerson = nil
 	--if not cast.Fake then
 		local HitPart = raycastResult.Instance
@@ -269,7 +269,7 @@ function module.getAllAnimationEventNames(animation): table
 	local markers: table = {}
 	if animation then
 		local ks: KeyframeSequence = SequenceProvider:GetKeyframeSequenceAsync(animation.Animation.AnimationId)
-		local function recurse(parent: Instance): void
+		local function recurse(parent: Instance)
 			for _, child in pairs(parent:GetChildren()) do
 				if (child:IsA("KeyframeMarker")) then
 					table.insert(markers, tostring(child))
@@ -298,29 +298,29 @@ function module.HideParts (Hive,Transparency)
 	end
 end
 
-function module.playSound (Sounds:object,SoundName:string,parent:object,replicate:bool, ApplyRandomPitch:bool, pitch)
+function module.playSound (Sounds: Sound | Instance, SoundName: string?, parent: Instance, replicate: boolean, ApplyRandomPitch: boolean, pitch: number?)
 	assert(Sounds ~= nil, "Sound is nil.")
 	local Sound = Sounds
 	if SoundName then
 		Sound = Sounds[SoundName]
 	end
 	assert(Sound:IsA("Sound") == true, `{Sound:GetFullName()} is not a Sound.`)
-	
+
 	local NewSound = Sound:Clone()
 	NewSound.Parent = parent
 	NewSound:Play()
-	
+
 	if pitch and replicate then
 		NewSound.PlaybackSpeed = pitch
 	end
-	
-	if ApplyRandomPitch then 
-		NewSound.PlaybackSpeed = Random.new():NextNumber(NewSound.PlaybackSpeed - 0.1, NewSound.PlaybackSpeed + 0.1) 
+
+	if ApplyRandomPitch then
+		NewSound.PlaybackSpeed = Random.new():NextNumber(NewSound.PlaybackSpeed - 0.1, NewSound.PlaybackSpeed + 0.1)
 	end
 	Debris:AddItem(NewSound,NewSound.TimeLength)
 
 	if replicate then
-		SoundEvent:FireServer(Sound, NewSound.Parent, ApplyRandomPitch) 
+		SoundEvent:FireServer(Sound, NewSound.Parent, ApplyRandomPitch)
 	end
 end
 
@@ -361,11 +361,11 @@ function module.dropItem (Character,Tool)
 		Humanoid:UnequipTools()
 	end
 	ResetIcons:Fire(Tool)
-	
+
 	if Tool:GetAttribute("ToolType") == 12 then
 		SetItemHolder:FireServer(Tool,"Capacity",Tool.Holder.Capacity.Value)
 	end
-	
+
 	local Origin = HRP.Position
 	local HRPCFrame = HRP.CFrame
 	local CastFailed = true
@@ -411,7 +411,7 @@ function module.flashGun (FlashPoint, flashLight, sendToServer)
 			flashLight.Enabled = false
 		end)
 	end
-	
+
 	if sendToServer then
 		FlashGunEvent:FireServer(FlashPoint,flashLight)
 	end
@@ -429,11 +429,11 @@ function module.castBullet (Tool,Origin,Direction,TravelSpeed,MaxDistance,Accele
 	CasterBehavior.CosmeticBulletTemplate = Tracers[BulletTemplate]
 	CasterBehavior.CosmeticBulletContainer = workspace.TracerCollection
 	--BulletCaster.VisualizeCasts = true
-	
+
 	if not replicate and Tool:FindFirstChild("Handle") and Tool.Handle:FindFirstChild("Flash") then
 		Origin = Tool.Handle.Flash.WorldPosition
 	end
-	
+
 	local Cast = BulletCaster:Fire(Origin,Direction,TravelSpeed,CasterBehavior)
 	Cast.Tool = Tool
 	Cast.Direction = Direction

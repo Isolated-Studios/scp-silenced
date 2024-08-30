@@ -16,7 +16,7 @@ local Trove = require(script.Parent.Parent.trove)
 local guiInset = GuiService:GetGuiInset()
 
 --// Types
-local Types = require(script.Parent.Types)                                                                                                
+local Types = require(script.Parent.Types)
 
 --// Item Class
 local Item = {}
@@ -119,7 +119,7 @@ local listingButtonFunctions = {
 	["Repair"] = function()
 
 	end,
-	
+
 	["EmptyMag"] = function(Tool,Character,Settings)
 		if Settings.AmmoType and Character:FindFirstChild("Ammo") and Character.Ammo:FindFirstChild(Settings.AmmoType) then
 			local valueToRestore = Tool.Holder.Mag.Value
@@ -128,11 +128,11 @@ local listingButtonFunctions = {
 			Character.Humanoid:UnequipTools()
 		end
 	end,
-	
+
 	["Attachments"] = function()
-		
+
 	end,
-	
+
 	["Properties"] = function(Tool,Character,Settings)
 		local settingsToList = {}
 		for key, value in pairs(Settings) do
@@ -143,7 +143,7 @@ local listingButtonFunctions = {
 		end)
 		--print(settingsToList)
 	end,
-	
+
 	["Drop"] = function(Tool,Character,Settings)
 		CTF.dropItem(Character,Tool)
 	end,
@@ -154,25 +154,25 @@ function Item.new(properties: Types.ItemProperties): Types.ItemObject
 	self._trove = Trove.new()
 	self._itemManagerTrove = self._trove:Add(Trove.new())
 	self._draggingTrove = self._trove:Add(Trove.new())
-	
+
 	self.Assets = properties.Assets or {}
 	if self.Assets.Item == nil then
 		self.Assets.Item = self:_createDefaultItemAsset()
 	end
-	
+
 	self.Position = properties.Position or Vector2.zero
 	self.LastItemManagerParentAbsolutePosition = Vector2.zero
 	self.PositionChanged = Signal.new()
 	self.Size = properties.Size or Vector2.new(2, 2)
 	self.Rotation = properties.Rotation or 0
 	self.PotentialRotation = self.Rotation
-	
+
 	self.ItemElement = self:_generateItemElement()
-	
+
 	self.Metadata = properties.Metadata or {}
-	
-	self.ItemElement.InteractionButton.Size = UDim2.fromScale(sizingEquation(self.Size.X),sizingEquation(self.Size.Y)) 
-	self.ItemElement.Image.Size = UDim2.fromScale(sizingEquation(self.Size.X),sizingEquation(self.Size.Y)) 
+
+	self.ItemElement.InteractionButton.Size = UDim2.fromScale(sizingEquation(self.Size.X),sizingEquation(self.Size.Y))
+	self.ItemElement.Image.Size = UDim2.fromScale(sizingEquation(self.Size.X),sizingEquation(self.Size.Y))
 	self.ItemElement.Image.Image = properties.Metadata.Image or "rbxassetid://13687530419"
 	self.ItemElement.Tool.Value = self.Metadata.Tool
 	self.ItemElement:SetAttribute("ToolName",self.Metadata.Name)
@@ -182,36 +182,36 @@ function Item.new(properties: Types.ItemProperties): Types.ItemObject
 	self.ItemManagerChanged = Signal.new()
 	self.HoveringItemManager = nil
 	self.HoveringItemManagerChanged = Signal.new()
-	
+
 	self.MouseClicked = Signal.new() -- modded signal to check for MouseButton1 clicks.
-	
+
 	self.MoveMiddleware = properties.MoveMiddleware
 	self.RenderMiddleware = properties.RenderMiddleware
-	
+
 	self.IsDraggable = true
 	self.IsDragging = false
 	self.DragStart = 0
 	self.MouseDraggingPivot = Vector2.zero
 
 	self.RotateKeyCode = Enum.KeyCode.R
-	
+
 	-- Remove item from current ItemManager when item gets destroyed
 	self._trove:Add(function()
 		if self.ItemManager then
 			self.ItemManager:RemoveItem(self)
 		end
 	end)
-	
+
 	-- Apply sizing when the item's ItemManager changes
 	self._trove:Add(self.ItemManagerChanged:Connect(function(itemManager: Types.ItemManagerObject?, useTween: boolean?)
 		self._itemManagerTrove:Clean()
-		
+
 		if self.ItemManager then
 			self.LastItemManagerParentAbsolutePosition = self.ItemManager.GuiElement.Parent.AbsolutePosition
 		end
 
 		self.ItemManager = itemManager
-		
+
 		if self.ItemManager ~= nil then
 			self.ItemElement.Visible = self.ItemManager.Visible
 
@@ -225,7 +225,7 @@ function Item.new(properties: Types.ItemProperties): Types.ItemObject
 			self._itemManagerTrove:Add(self.ItemManager.GuiElement:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
 				self:_updateItemToItemManagerDimentions(true, true, false, false)
 			end))
-			
+
 			self._itemManagerTrove:Add(self.ItemManager.VisibilityChanged:Connect(function(isVisible)
 				self.ItemElement.Visible = isVisible
 			end))
@@ -235,14 +235,14 @@ function Item.new(properties: Types.ItemProperties): Types.ItemObject
 			self.ItemElement.Parent = nil
 		end
 	end))
-	
+
 	-- Update the cursor pivot when the item gets resized
 	self._trove:Add(self.ItemElement:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
 		if self.IsDragging then
 			self:_updateDraggingPosition()
 		end
 	end))
-	
+
 	local interactionButton = self.ItemElement:FindFirstChild("InteractionButton")
 	assert(interactionButton, "Couldn't find a button named \"InteractionButton\" in the ItemElement")
 
@@ -252,7 +252,7 @@ function Item.new(properties: Types.ItemProperties): Types.ItemObject
 			hideListing(listingUI)
 		end
 	end))
-	
+
 	self._highlight = nil
 	self._trove:Add(interactionButton.MouseButton1Down:Connect(function()
 		-- Check if item is in an ItemManager, if there is then start dragging
@@ -261,13 +261,13 @@ function Item.new(properties: Types.ItemProperties): Types.ItemObject
 			self.IsDragging = true
 			self.DragStart = tick()
 			self.ItemManager.ItemHeld:Fire(self)
-			
+
 			-- Get mouse pivot to item
 			local mousePosition = UserInputService:GetMouseLocation() - guiInset
 			local itemStart = self.ItemElement.AbsolutePosition
 			local itemEnd = itemStart + self.ItemElement.AbsoluteSize
 			self.MouseDraggingPivot = (mousePosition - itemStart) / (itemEnd - itemStart)
-			
+
 			TweenService:Create(self.ItemElement.Vignette, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {ImageTransparency = 0.8, BackgroundTransparency = 0.1}):Play()
 			TweenService:Create(self.ItemElement.Vignette.UIStroke, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {Transparency = 0.2}):Play()
 			self.ItemElement.ZIndex += 10
@@ -280,7 +280,7 @@ function Item.new(properties: Types.ItemProperties): Types.ItemObject
 					end
 				end
 			end))
-			
+
 			-- Create drop highlight
 			local highlightSize = self.Size
 			if self.PotentialRotation % 2 == 1 then
@@ -294,7 +294,7 @@ function Item.new(properties: Types.ItemProperties): Types.ItemObject
 			self:_updateDraggingPosition()
 		end
 	end))
-	
+
 	self._trove:Add(interactionButton.MouseButton2Down:Connect(function()
 		if self.ItemManager ~= nil then
 			if self.IsDragging then
@@ -316,7 +316,7 @@ function Item.new(properties: Types.ItemProperties): Types.ItemObject
 			end
 		end
 	end))
-	
+
 	for _,button in pairs(game.Players.LocalPlayer.PlayerGui.Inventory.Main.ListingUI:GetChildren()) do
 		if button:IsA("TextButton") then
 			self._trove:Add(button.MouseButton1Down:Connect(function()
@@ -350,7 +350,7 @@ function Item.new(properties: Types.ItemProperties): Types.ItemObject
 					end
 				end
 			end
-			
+
 			-- Check collision in hovering ItemManager and apply highlight color
 			local currentItemManager = self.HoveringItemManager or self.ItemManager
 			--if currentItemManager then
@@ -367,7 +367,7 @@ function Item.new(properties: Types.ItemProperties): Types.ItemObject
 			if tick() - self.DragStart <= 0.1 then
 				isClick = true
 			end
-			
+
 			if not isClick then
 				-- Check if the item is colliding, if not add the item to the itemManager
 				local currentItemManager = self.HoveringItemManager or self.ItemManager
@@ -399,7 +399,7 @@ function Item.new(properties: Types.ItemProperties): Types.ItemObject
 							TweenService:Create(self.SwitchItem.ItemElement.Vignette, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {ImageTransparency = 0.95}):Play()
 							TweenService:Create(self.SwitchItem.ItemElement.Vignette.UIStroke, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {Transparency = 0.8}):Play()
 							self.ItemManager:RemoveItem(self)
-							
+
 							-- Move item
 							local oldPosition, oldRotation, oldSize = self.SwitchItem.Position, self.SwitchItem.Rotation, self.SwitchItem.Size
 							self.SwitchItem.Position = self.Position
@@ -419,13 +419,13 @@ function Item.new(properties: Types.ItemProperties): Types.ItemObject
 								self.SwitchItem:_updateItemToItemManagerDimentions(true, true, true, true)
 							end
 						end
-						
+
 						-- Move item
 						local oldPosition, oldRotation, oldSize = self.Position, self.Rotation, self.Size
 						self.Position = gridPos
 						self.PositionChanged:Fire(gridPos)
 						self.Rotation = self.PotentialRotation
-						
+
 						-- Switch ItemManager if the item was hovering above one
 						if newItemManager or self.SwitchItem then
 							self:SetItemManager(self.HoveringItemManager, true, {oldPosition, oldRotation, oldSize})
@@ -453,7 +453,7 @@ function Item.new(properties: Types.ItemProperties): Types.ItemObject
 				self.ItemManager.ItemMoved:Fire(self)
 				self.MouseClicked:Fire()
 			end
-			
+
 			self.SwitchItem = nil
 
 			TweenService:Create(self.ItemElement.Vignette, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {ImageTransparency = 0.95, BackgroundTransparency = 1, ImageColor3 = Color3.new(1, 1, 1)}):Play()
@@ -470,7 +470,7 @@ function Item.new(properties: Types.ItemProperties): Types.ItemObject
 	if self.RenderMiddleware then
 		self.RenderMiddleware(self.ItemElement)
 	end
-	
+
 	return self
 end
 
@@ -552,7 +552,7 @@ function Item:_updateDraggingPosition()
 	local gridPos = currentItemManager:GetItemManagerPositionFromAbsolutePosition(self.ItemElement.AbsolutePosition, self.Size, self.PotentialRotation, self.Position)
 	self._highlight.Position = gridPos
 	local isColliding = currentItemManager:IsColliding(self, { self }, gridPos, self.PotentialRotation)
-	
+
 	local CollidedItem = currentItemManager.Items ~= nil and (currentItemManager:GetItemsInRegion(gridPos, Vector2.new(1, 1), 0, {self}))[1]
 	if CollidedItem then
 		if not (
@@ -587,7 +587,7 @@ function Item:_updateDraggingPosition()
 		end
 		self.SwitchItem = nil
 	end
-	
+
 	if currentItemManager.GridSize then
 		local sizeX, sizeY = self.Size.X, self.Size.Y
 		if self.PotentialRotation % 2 == 1 then
@@ -643,14 +643,14 @@ function Item:Rotate(quartersOf360: number)
 	TweenService:Create(self.ItemElement, TweenInfo.new(0.25, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Rotation = self.PotentialRotation * 90}):Play()
 end
 
-function Item:Drop(bypassDrag: bool)
-	
+function Item:Drop(bypassDrag: boolean)
+
 	local listingUI = game.Players.LocalPlayer.PlayerGui.Inventory.Main.ListingUI
 	hideListing(listingUI)
-	
+
 	if (self.IsDragging == true or bypassDrag) and self.ItemManager ~= nil then
 		self.IsDragging = false
-		
+
 		-- Check if the item is colliding, if not add the item to the itemManager
 		local currentItemManager = self.HoveringItemManager or self.ItemManager
 		local gridPos = currentItemManager:GetItemManagerPositionFromAbsolutePosition(self.ItemElement.AbsolutePosition, self.Size, self.PotentialRotation, self.Position)
@@ -748,7 +748,7 @@ end
 
 	@within Item
 ]=]
-function Item:_updateItemToItemManagerDimentions(applyPosition: boolean?, applySize: boolean?, usePositionTween: boolean?, useSizeTween: boolean?, itemManager: Types.ItemManagerObject?)	
+function Item:_updateItemToItemManagerDimentions(applyPosition: boolean?, applySize: boolean?, usePositionTween: boolean?, useSizeTween: boolean?, itemManager: Types.ItemManagerObject?)
 	local selectedItemManager = itemManager or self.ItemManager
 	if applyPosition then
 		local rotationOffset = Vector2.zero
@@ -765,7 +765,7 @@ function Item:_updateItemToItemManagerDimentions(applyPosition: boolean?, applyS
 			self.ItemElement.Position = elementPosition
 		end
 	end
-	
+
 	if selectedItemManager.GuiElement.Name == "SingleSlot" and self.PotentialRotation > 0 then
 		if self.PotentialRotation == 1 then
 			self:Rotate(-1,self.PotentialRotation)
@@ -775,15 +775,15 @@ function Item:_updateItemToItemManagerDimentions(applyPosition: boolean?, applyS
 			self:Rotate(1,self.PotentialRotation)
 		end
 	end
-	
+
 	if applySize then
 		local absoluteElementSize = selectedItemManager:GetAbsoluteSizeFromItemSize(self.Size, self.Rotation)
 		local elementSize = UDim2.fromOffset(absoluteElementSize.X, absoluteElementSize.Y)
 		local interactionButtonSize = UDim2.fromScale(sizingEquation(self.Size.X),sizingEquation(self.Size.Y))
-		local imageSize = UDim2.fromScale(sizingEquation(self.Size.X),sizingEquation(self.Size.Y)) 
+		local imageSize = UDim2.fromScale(sizingEquation(self.Size.X),sizingEquation(self.Size.Y))
 		if selectedItemManager.Metadata.imageSize then
 			imageSize = selectedItemManager.Metadata.imageSize
-		end 
+		end
 		if useSizeTween then
 			TweenService:Create(self.ItemElement, TweenInfo.new(0.25, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Size = elementSize}):Play()
 			TweenService:Create(self.ItemElement.InteractionButton, TweenInfo.new(0.25, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Size = interactionButtonSize}):Play()
@@ -814,7 +814,7 @@ function Item:SetItemManager(itemManager: Types.ItemManagerObject, transfer: boo
 	while self.ItemManager ~= nil do
 		task.wait()
 	end
-	
+
 	if itemManager.Items then
 		return itemManager:AddItem(self, nil, true, transfer)
 	else
