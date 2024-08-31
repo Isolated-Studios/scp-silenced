@@ -762,23 +762,4 @@ function module.LoadChar(Character)
 	end)
 end
 
---function module.Init()
---	local Emotes = PlayerAssets:WaitForChild("Animations"):WaitForChild("Viewmodel"):WaitForChild("Emotes")
---	for _,Emote in pairs(Emotes:GetChildren()) do
---		if Emote:IsA("Animation") then
---				local EmoteAnimation = module.loadAnimation(Emote)
---			for _,emoteSound in pairs(Emote:GetChildren()) do
---				if emoteSound:IsA("Sound") then
---					EmoteAnimation:GetMarkerReachedSignal(emoteSound.Name):Connect(function()
---						if RootPart then
---							CTF.playSound(Emote,emoteSound.Name,RootPart,true,true)
---						end
---					end)
---				end
---			end
---			--EmoteAnimation:Play()
---		end
---	end
---end
-
 return module
