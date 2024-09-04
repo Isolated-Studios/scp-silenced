@@ -72,9 +72,9 @@ function module.Init(Character)
 	end
 	Clothingify(Character, HairLooks.Male.Hair)
 
-	Character.ChildAdded:Connect(function(Model)
-		if Model:IsA("Model") then
-			Clothingify(Character, Model, true)
+	Character.ChildAdded:Connect(function(Child)
+		if Child:GetAttribute("TargetPart") then
+			Clothingify(Character, Child, true)
 		end
 	end)
 end
