@@ -392,7 +392,7 @@ function module.LoadChar(Character)
 
 			if Tools:FindFirstChild(Tool:GetAttribute("ToolName")) then
 				local ToolObjects = Tools:FindFirstChild(Tool:GetAttribute("ToolName"))
-				if Tool:GetAttribute("ToolSource") and ToolSource[Tool:GetAttribute("ToolSource")] then
+				if Tool:GetAttribute("ToolSource") then
 					local MMT = 0
 					for _, motormodels in pairs(ViewModel:GetChildren()) do
 						if motormodels.Name == "MotorModel" then
