@@ -1,18 +1,22 @@
+local RunService = game:GetService("RunService")
+local CollectionService = game:GetService("CollectionService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local module = {}
+
 function module.Init ()
 	local MaxDistance = 50
 	local MinDistance = 4
 	local Camera = workspace.CurrentCamera
-	local RunService = game:GetService("RunService")
-	local CollectionService = game:GetService("CollectionService")
-	local ReplicatedStorage = game:GetService("ReplicatedStorage")
-	local BeamSettingsFolder = ReplicatedStorage:WaitForChild("Configs"):WaitForChild("LightBeams")
-	local PrimeLightBeam = ReplicatedStorage:WaitForChild("Objects"):WaitForChild("Environment"):WaitForChild("LightBeam")
+	local BeamSettingsFolder = ReplicatedStorage.Configs.LightBeams
+	local PrimeLightBeam = ReplicatedStorage.Objects.Environment.LightBeam
+	local evilLightingPart = ReplicatedStorage.EvilLightingPart:Clone()
+	evilLightingPart.Parent = Camera
 	local LightParams = RaycastParams.new()
 	LightParams.FilterType = Enum.RaycastFilterType.Exclude
 	local VolumetricBeams = {}
-	
+
 	local function UpdateVolumetricBeams()
+		evilLightingPart:PivotTo(Camera.CFrame)
 		for Beam, Details in VolumetricBeams do
 			local NormalizedSourcePartPosition = Vector3.new(Details.SourcePart.Position.X, 0, Details.SourcePart.Position.Z)
 			local NormalizedSubjectPosition
@@ -27,8 +31,8 @@ function module.Init ()
 			})
 		end
 	end
-	
-	for _,LightPart in pairs(CollectionService:GetTagged("BeamLight")) do
+
+	for _, LightPart in pairs(CollectionService:GetTagged("BeamLight")) do
 		if LightPart:IsA("BasePart") and (LightPart:FindFirstChildOfClass("PointLight") or LightPart:FindFirstChildOfClass("SpotLight") or LightPart:FindFirstChildOfClass("SurfaceLight")) then
 			local Attachment0 = Instance.new("Attachment")
 			local Attachment1 = Instance.new("Attachment")
@@ -47,7 +51,7 @@ function module.Init ()
 			if LightPart:GetAttribute("BeamType") and BeamSettingsFolder:FindFirstChild(LightPart:GetAttribute("BeamType")) then
 				local Configs = require(BeamSettingsFolder[LightPart:GetAttribute("BeamType")])
 				LightBeam.Width0 = Configs.Width0 or 1
-				LightBeam.Width1 = Configs.Width1 or 50	
+				LightBeam.Width1 = Configs.Width1 or 50
 				if Configs.Direction then
 					direction = LightPart.CFrame[Configs.Direction] or -LightPart.CFrame.UpVector
 					if Configs.Reverse then direction = -direction end
@@ -67,7 +71,7 @@ function module.Init ()
 			end)
 		end
 	end
-	
+
 	RunService.RenderStepped:Connect(UpdateVolumetricBeams)
 end
 return module

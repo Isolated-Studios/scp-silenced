@@ -1,42 +1,40 @@
-local module = {}
-
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local UIS = game:GetService("UserInputService")
+local module = {}
 
-local Tooling = ReplicatedStorage:WaitForChild("Tooling")
-local Tools = Tooling:WaitForChild("Tools")
-local PlayerAssets = ReplicatedStorage:WaitForChild("PlayerAssets")
-local Events = ReplicatedStorage:WaitForChild("Events")
-local ViewmodelEvents = Events:WaitForChild("Viewmodel")
+local Tooling = ReplicatedStorage.Tooling
+local Tools = Tooling.Tools
+local PlayerAssets = ReplicatedStorage.PlayerAssets
+local Events = ReplicatedStorage.Events
+local ViewmodelEvents = Events.Viewmodel
 
-local Shove = ViewmodelEvents:WaitForChild("Shove")
-local Aim = ViewmodelEvents:WaitForChild("Aim")
-local ChangeGrip = ViewmodelEvents:WaitForChild("ChangeGrip")
-local UnequipTool = ViewmodelEvents:WaitForChild("UnequipTool")
+local Shove = ViewmodelEvents.Shove
+local Aim = ViewmodelEvents.Aim
+local ChangeGrip = ViewmodelEvents.ChangeGrip
+local UnequipTool = ViewmodelEvents.UnequipTool
 
-local ToolSource = Tooling:WaitForChild("ToolSource")
-local Modules = ReplicatedStorage:WaitForChild("Modules")
-local FolderViewmodels = PlayerAssets:WaitForChild("Viewmodels")
-local PrimeViewmodel = FolderViewmodels:WaitForChild("AwesomeViewModel")
+local Modules = ReplicatedStorage.Modules
+local FolderViewmodels = PlayerAssets.Viewmodels
+local PrimeViewmodel = FolderViewmodels.AwesomeViewModel
 
-local ToolModules = Modules:WaitForChild("Tool")
-local UIModules = Modules:WaitForChild("UI")
+local ToolModules = Modules.Tool
+local UIModules = Modules.UI
 
 local CameraModule = require(script.Parent.Camera)
 local MovementModule = require(script.Parent.Movement)
-local springModule = require(ToolModules:WaitForChild("spring"))
-local spring2Module = require(ToolModules:WaitForChild("spring2"))
-local CTF = require(ToolModules:WaitForChild("CommonToolFunctions"))
-local KeybindHandler = require(UIModules:WaitForChild("KeybindHandler"))
+local springModule = require(ToolModules.spring)
+local spring2Module = require(ToolModules.spring2)
+local CommonToolFunctions = require(ToolModules.CommonToolFunctions)
+local KeybindHandler = require(UIModules.KeybindHandler)
 
 local Humanoid = nil
 local RootPart = nil
 local RightHand = nil
-local Character = nil
-local ViewModel = nil
+local Character: Model? = nil
+local ViewModel: Model? = nil
 local Sensitivity = 1
 local SwaySize = 1
 local SwayDividend = 16
@@ -77,54 +75,12 @@ local charPartToViewmodelPart = {
 	["LeftHand"] = 		"HandAttachment",
 }
 
---local bannedAccessories = {"Vest","Belt"}
-
-function module.getViewModel()
+function module.getViewModel(): Model?
 	return ViewModel
 end
 
-function module.playAnimation(Anim: Animation, fade: number?, weight: number?, speed: number?)
-	if not VMAnimator or VMAnimator.Parent == nil then return end
-	local LoadedAnimation = LoadedAnimations[Anim]
-	if not LoadedAnimation then
-		LoadedAnimation = VMAnimator:LoadAnimation(Anim)
-		LoadedAnimations[Anim] = LoadedAnimation
-	end
-	LoadedAnimation:Play(fade, weight, speed)
-	return LoadedAnimation
-end
-
-function module.playCharAnimation(Anim: Animation, fade: number?, weight: number?, speed: number?)
-	if not Animator or Animator.Parent == nil then return end
-	local LoadedAnimation = LoadedCharAnimations[Anim]
-	if not LoadedAnimation then
-		LoadedAnimation = Animator:LoadAnimation(Anim)
-		LoadedCharAnimations[Anim] = LoadedAnimation
-	end
-	LoadedAnimation:Play(fade, weight, speed)
-	return LoadedAnimation
-end
-
-function module.stopAnimation(Anim: Animation)
-	if not VMAnimator or VMAnimator.Parent == nil then return end
-	local LoadedAnimation = LoadedAnimations[Anim]
-	if LoadedAnimation then
-		LoadedAnimation:Stop()
-		return LoadedAnimation
-	end
-end
-
-function module.stopCharAnimation(Anim: Animation)
-	if not Animator or Animator.Parent == nil then return end
-	local LoadedAnimation = LoadedCharAnimations[Anim]
-	if LoadedAnimation then
-		LoadedAnimation:Stop()
-		return LoadedAnimation
-	end
-end
-
 --- Load animation if not already loaded and return it.
-function module.getAnimation(Anim: Animation)
+function module.getAnimation(Anim: Animation): AnimationTrack
 	if not VMAnimator or VMAnimator.Parent == nil then return end
 	local LoadedAnimation = LoadedAnimations[Anim]
 	if not LoadedAnimation then
@@ -135,7 +91,7 @@ function module.getAnimation(Anim: Animation)
 end
 
 --- Load character animation if not already loaded and return it.
-function module.getCharAnimation(Anim: Animation)
+local function getCharAnimation(Anim: Animation): AnimationTrack
 	if not Animator or Animator.Parent == nil then return end
 	local LoadedAnimation = LoadedCharAnimations[Anim]
 	if not LoadedAnimation then
@@ -154,9 +110,6 @@ function module.LoadChar(Character)
 	ViewModel.Parent = Camera
 	ViewModel.PrimaryPart = ViewModel.CameraPart
 
-	local evilLightingPart = ReplicatedStorage:WaitForChild("EvilLightingPart"):Clone()
-	evilLightingPart.Parent = Camera
-
 	local VMup = 0
 	local VMright = 0
 	local VMlook = 0
@@ -167,7 +120,7 @@ function module.LoadChar(Character)
 	local AimSpring = spring2Module.new(0)
 	AimSpring.Damper = 1
 	AimSpring.Speed = 16
-	local Offset = script:WaitForChild("Offset")
+	local Offset = CFrame.identity
 	Humanoid = Character:WaitForChild("Humanoid")
 	local BodyColor = Character:WaitForChild("BodyColor")
 	Animator = Humanoid:WaitForChild("Animator")
@@ -177,7 +130,7 @@ function module.LoadChar(Character)
 	--LeftHandIK = RootPart:WaitForChild("LeftHandIKTarget")
 	--RightHandIK = RootPart:WaitForChild("RightHandIKTarget")
 
-	local function armBind (Clothing,Arm)
+	local function armBind(Clothing, Arm)
 		local attachment = Arm[charPartToViewmodelPart[Clothing:GetAttribute("TargetPart")]]
 		local weld = Clothing:WaitForChild("BodyWeld",3)
 		if not weld then return end
@@ -194,8 +147,8 @@ function module.LoadChar(Character)
 		end
 	end
 
-	local function addClothing (Model)
-		if Model:GetAttribute("TargetPart") and string.find(Model:GetAttribute("TargetPart"),"Arm") then
+	local function addClothing(Model)
+		if Model:GetAttribute("TargetPart") and string.find(Model:GetAttribute("TargetPart"), "Arm") then
 			local Clothing = Model:Clone()
 			--Clothing:ScaleTo(0.9)
 			Clothing.Parent = ReplicatedStorage
@@ -219,12 +172,12 @@ function module.LoadChar(Character)
 			Clothing.Parent = ViewModel
 		end
 	end
-	for _,clothing in pairs(ViewModel:GetChildren()) do
+	for _, clothing in ipairs(ViewModel:GetChildren()) do
 		if clothing:IsA("Model") and clothing:GetAttribute("TargetPart") then
 			clothing:Destroy()
 		end
 	end
-	for _,clothing in pairs(Character:GetChildren()) do
+	for _, clothing in ipairs(Character:GetChildren()) do
 		if clothing:IsA("Model") then
 			addClothing(clothing)
 		end
@@ -309,7 +262,6 @@ function module.LoadChar(Character)
 
 	local charChildAdd = Character.ChildAdded:Connect(function(Tool)
 		if Tool:IsA("Tool") and not Tool:GetAttribute("Removing") and not ViewModel:FindFirstChild("MotorModel") then
-			local T = os.clock()
 			if RightHand:FindFirstChild("RightGrip") then Character["RightHand"]["RightGrip"]:Destroy() end
 			if not Tool:FindFirstChild("Handle") and ViewModel:FindFirstChild("MotorModel") then Humanoid:UnequipTools() return end
 			local GripWeld = Instance.new("Motor6D")
@@ -413,19 +365,19 @@ function module.LoadChar(Character)
 				local VMFirstEquip = nil
 				local VMUnequip = nil
 				local CharUnequip = nil
-				local CharHold = module.getAnimation(VMAnimations.Hold)
-				local VMHold = module.getCharAnimation(CharacterAnimations.Hold)
+				local VMHold = module.getAnimation(VMAnimations.Hold)
+				local CharHold = getCharAnimation(CharacterAnimations.Hold)
 				if VMAnimations:FindFirstChild("FirstEquip") then
 					VMFirstEquip = module.getAnimation(VMAnimations.FirstEquip)
-					CharFirstEquip = module.getCharAnimation(CharacterAnimations.FirstEquip)
+					CharFirstEquip = getCharAnimation(CharacterAnimations.FirstEquip)
 				end
 				if VMAnimations:FindFirstChild("Equip") then
 					VMEquip = module.getAnimation(VMAnimations.Equip)
-					CharEquip = module.getCharAnimation(CharacterAnimations.Equip)
+					CharEquip = getCharAnimation(CharacterAnimations.Equip)
 				end
 				if VMAnimations:FindFirstChild("Unequip") then
 					VMUnequip = module.getAnimation(VMAnimations.Unequip)
-					CharUnequip = module.getCharAnimation(CharacterAnimations.Unequip)
+					CharUnequip = getCharAnimation(CharacterAnimations.Unequip)
 				end
 
 				if Settings.BindToHand then
@@ -470,36 +422,36 @@ function module.LoadChar(Character)
 
 				task.defer(function()
 					local animationEvents = {
-						["FirstEquip"] = CTF.getAllAnimationEventNames(VMFirstEquip),
-						["Equip"] = CTF.getAllAnimationEventNames(VMEquip),
-						["Unequip"] = CTF.getAllAnimationEventNames(VMUnequip),
-						["Hold"] = CTF.getAllAnimationEventNames(VMHold),
+						["FirstEquip"] = CommonToolFunctions.getAllAnimationEventNames(VMFirstEquip),
+						["Equip"] = CommonToolFunctions.getAllAnimationEventNames(VMEquip),
+						["Unequip"] = CommonToolFunctions.getAllAnimationEventNames(VMUnequip),
+						["Hold"] = CommonToolFunctions.getAllAnimationEventNames(VMHold),
 					}
 
 					local eventBehavior = {
 						["LoadGate"] = function()
-							CTF.playSound(Sounds,"GateOpen",Handle,true,true)
+							CommonToolFunctions.playSound(Sounds,"GateOpen",Handle,true,true)
 						end,
 						["LoadGateClose"] = function()
-							CTF.playSound(Sounds,"GateClose",Handle,true,true)
+							CommonToolFunctions.playSound(Sounds,"GateClose",Handle,true,true)
 						end,
 						["EjectShell"] = function()
-							CTF.playSound(Sounds,"Eject",Handle,true,true)
+							CommonToolFunctions.playSound(Sounds,"Eject",Handle,true,true)
 						end,
 						["InsertShell"] = function()
-							CTF.playSound(Sounds,"Insert",Handle,true,true)
+							CommonToolFunctions.playSound(Sounds,"Insert",Handle,true,true)
 						end,
 						["MagOut"] = function()
-							CTF.playSound(Sounds,"MagOut",Handle,true,true)
+							CommonToolFunctions.playSound(Sounds,"MagOut",Handle,true,true)
 						end,
 						["MagIn"] = function()
-							CTF.playSound(Sounds,"MagIn",Handle,true,true)
+							CommonToolFunctions.playSound(Sounds,"MagIn",Handle,true,true)
 						end,
 						["BoltBack"] = function()
-							CTF.playSound(Sounds,"BoltBack",Handle,true,true)
+							CommonToolFunctions.playSound(Sounds,"BoltBack",Handle,true,true)
 						end,
 						["BoltForward"] = function()
-							CTF.playSound(Sounds,"BoltForward",Handle,true,true)
+							CommonToolFunctions.playSound(Sounds,"BoltForward",Handle,true,true)
 						end,
 					}
 
@@ -580,7 +532,7 @@ function module.LoadChar(Character)
 				Humanoid:UnequipTools()
 				warn("Invalid ToolName: "..Tool:GetAttribute("ToolName"))
 			end
-		elseif Tool:IsA("Model") then
+		elseif Tool:GetAttribute("TargetPart") then
 			addClothing(Tool)
 		end
 	end)
@@ -624,11 +576,10 @@ function module.LoadChar(Character)
 			end
 		end
 		CameraModule.AddModifier(ViewModel.CameraPart.HumanoidRootPart.Transform) -- apply camera animations
-		evilLightingPart:PivotTo(Camera.CFrame)
 		local MouseDelta = UserInputService:GetMouseDelta()
 		local updatedSwaySpring = SwaySpring:update(dt)
 		local updatedHandleSpring = HandleSpring:update(dt)
-		ViewModel:PivotTo(Camera.CFrame:ToWorldSpace(Offset.Value))
+		ViewModel:PivotTo(Camera.CFrame:ToWorldSpace(Offset))
 
 		--if Character and not Character:FindFirstChildOfClass("Tool") or Character and Character:FindFirstChildOfClass("Tool") and Character:FindFirstChildOfClass("Tool"):GetAttribute("ToolSource") ~= "Gun" and Player.PlayerGui.MouseUI["Crosshair"].Value > 0 then
 		if Character and Character:FindFirstChildOfClass("Tool") then
@@ -709,7 +660,7 @@ function module.LoadChar(Character)
 		end
 
 		local finalcf =
-			(Camera.CFrame:ToWorldSpace(Offset.Value)*walksway*jumpsway*strafesway *
+			(Camera.CFrame:ToWorldSpace(Offset)*walksway*jumpsway*strafesway *
 				CFrame.Angles(math.rad(sway.Y*SwaySize),math.rad(sway.X*SwaySize)/10,math.rad(sway.Z*SwaySize)/2))
 			+ (ViewModel.PrimaryPart.CFrame.UpVector*VMup)
 			+ (ViewModel.PrimaryPart.CFrame.RightVector*VMright)
@@ -728,11 +679,11 @@ function module.LoadChar(Character)
 
 			end
 			if AimTransform then
-				Offset.Value = OriginalTransform:Lerp(AimTransform, AimSpring.Position)
+				Offset = OriginalTransform:Lerp(AimTransform, AimSpring.Position)
 			end
 		else
 			AimSpring.Target = 0
-			Offset.Value = CFrame.new(0,0,0)
+			Offset = CFrame.new(0,0,0)
 		end
 
 		if ViewModel:FindFirstChild("MotorModel") and ViewModel["MotorModel"]:FindFirstChild("Handle") then
@@ -758,7 +709,6 @@ function module.LoadChar(Character)
 		RunService:UnbindFromRenderStep("UpdateViewModel")
 		Running = false
 		ViewModel:Destroy()
-		evilLightingPart:Destroy()
 	end)
 end
 
