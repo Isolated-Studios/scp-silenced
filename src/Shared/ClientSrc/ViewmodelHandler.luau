@@ -660,13 +660,13 @@ function module.LoadChar(Character)
 		end
 
 		local finalcf =
-			(Camera.CFrame:ToWorldSpace(Offset)*walksway*jumpsway*strafesway *
-				CFrame.Angles(math.rad(sway.Y*SwaySize),math.rad(sway.X*SwaySize)/10,math.rad(sway.Z*SwaySize)/2))
+			(Camera.CFrame:ToWorldSpace(Offset)--*walksway*jumpsway*strafesway *
+				-- CFrame.Angles(math.rad(sway.Y*SwaySize),math.rad(sway.X*SwaySize)/10,math.rad(sway.Z*SwaySize)/2))
 			+ (ViewModel.PrimaryPart.CFrame.UpVector*VMup)
 			+ (ViewModel.PrimaryPart.CFrame.RightVector*VMright)
-			+ (ViewModel.PrimaryPart.CFrame.LookVector*VMlook)
-		finalcf *= CFrame.new(updatedSwaySpring.X,updatedSwaySpring.Y,updatedSwaySpring.Z)
-		finalcf *= CFrame.new(updatedHandleSpring.Z/4,updatedHandleSpring.Y/4,updatedHandleSpring.X/4)
+			+ (ViewModel.PrimaryPart.CFrame.LookVector*VMlook))
+		-- finalcf *= CFrame.new(updatedSwaySpring.X,updatedSwaySpring.Y,updatedSwaySpring.Z)
+		-- finalcf *= CFrame.new(updatedHandleSpring.Z/4,updatedHandleSpring.Y/4,updatedHandleSpring.X/4)
 		ViewModel:PivotTo(finalcf)
 
 		if ViewModel:FindFirstChild("MotorModel") and ViewModel["MotorModel"]:FindFirstChild("Handle") then
