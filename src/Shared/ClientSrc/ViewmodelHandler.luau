@@ -35,11 +35,12 @@ local RootPart = nil
 local RightHand = nil
 local Character: Model? = nil
 local ViewModel: Model? = nil
+local ViewModelAnimator: Animator? = nil
 local Sensitivity = 1
 local SwaySize = 1
 local SwayDividend = 16
 
-local VMAnimator, Animator = nil
+local Animator = nil
 local LoadedAnimations: {AnimationTrack}, LoadedCharAnimations: {AnimationTrack} = {}, {}
 local Running = false
 
@@ -79,12 +80,16 @@ function module.getViewModel(): Model?
 	return ViewModel
 end
 
+function module.getViewModelAnimator(): Animator?
+	return ViewModelAnimator
+end
+
 --- Load animation if not already loaded and return it.
 function module.getAnimation(Anim: Animation): AnimationTrack
-	if not VMAnimator or VMAnimator.Parent == nil then return end
+	if not ViewModelAnimator or ViewModelAnimator.Parent == nil then return end
 	local LoadedAnimation = LoadedAnimations[Anim]
 	if not LoadedAnimation then
-		LoadedAnimation = VMAnimator:LoadAnimation(Anim)
+		LoadedAnimation = ViewModelAnimator:LoadAnimation(Anim)
 		LoadedAnimations[Anim] = LoadedAnimation
 	end
 	return LoadedAnimation
@@ -107,6 +112,7 @@ function module.LoadChar(Character)
 	LoadedAnimations = {}
 	local Camera = workspace.CurrentCamera
 	ViewModel = PrimeViewmodel:Clone()
+	ViewModelAnimator = ViewModel.Humanoid.Animator
 	ViewModel.Parent = Camera
 	ViewModel.PrimaryPart = ViewModel.CameraPart
 
@@ -124,7 +130,6 @@ function module.LoadChar(Character)
 	Humanoid = Character:WaitForChild("Humanoid")
 	local BodyColor = Character:WaitForChild("BodyColor")
 	Animator = Humanoid:WaitForChild("Animator")
-	VMAnimator = ViewModel.Humanoid.Animator
 	RootPart = Character:WaitForChild("HumanoidRootPart")
 	RightHand = Character:WaitForChild("RightHand")
 	--LeftHandIK = RootPart:WaitForChild("LeftHandIKTarget")
@@ -293,54 +298,27 @@ function module.LoadChar(Character)
 			end
 			MotorModel.Handle.Anchored = true
 
-			local animationTable = {}
-			local function animationHandle (animation,action,num,secondNum)
-				if not num then num = 0 end
-				if not secondNum then secondNum = num end
-				local animPair = animationTable[animation]
-				if not animPair then return end
-				local VManim = animPair[1]
-				local Charanim = animPair[2]
-				if VManim and Charanim then
-					if action == "Play" then
-						VManim:Play(num)
-						Charanim:Play(secondNum)
-					elseif action == "Stop" then
-						VManim:Stop(num)
-						Charanim:Stop(secondNum)
-					elseif action == "Speed" then
-						VManim:AdjustSpeed(num)
-						Charanim:AdjustSpeed(secondNum)
-					end
-				end
-			end
-
-			local function destroyMotorModels ()
-				for _,motormodels in pairs(ViewModel:GetChildren()) do
-					if motormodels.Name == "MotorModel" then
-						for _,motorPart in pairs(ViewModel.MotorModel:GetChildren()) do
-							if motorPart:IsA("BasePart") or motorPart:IsA("Configuration") then
-								motorPart.Parent = motormodels.Tool.Value
-								if motorPart:IsA("BasePart") then
-									motorPart.CanCollide = false
-									motorPart.Anchored = false
-								end
-							end
-						end
-						motormodels:Destroy()
-						animationHandle("Hold","Stop")
-					end
-				end
-			end
-
-			local animationEventsList = {}
-			Tool.AncestryChanged:Once(function()
-				destroyMotorModels()
-				animationHandle("Unequip","Stop")
-				for _,animationEvent in pairs(animationEventsList) do
-					animationEvent:Disconnect()
-				end
-			end)
+			-- local animationTable = {}
+			-- local function animationHandle (animation,action,num,secondNum)
+			-- 	if not num then num = 0 end
+			-- 	if not secondNum then secondNum = num end
+			-- 	local animPair = animationTable[animation]
+			-- 	if not animPair then return end
+			-- 	local VManim = animPair[1]
+			-- 	local Charanim = animPair[2]
+			-- 	if VManim and Charanim then
+			-- 		if action == "Play" then
+			-- 			VManim:Play(num)
+			-- 			Charanim:Play(secondNum)
+			-- 		elseif action == "Stop" then
+			-- 			VManim:Stop(num)
+			-- 			Charanim:Stop(secondNum)
+			-- 		elseif action == "Speed" then
+			-- 			VManim:AdjustSpeed(num)
+			-- 			Charanim:AdjustSpeed(secondNum)
+			-- 		end
+			-- 	end
+			-- end
 
 			if Tools:FindFirstChild(Tool:GetAttribute("ToolName")) then
 				local ToolObjects = Tools:FindFirstChild(Tool:GetAttribute("ToolName"))
@@ -357,28 +335,6 @@ function module.LoadChar(Character)
 				local Sounds = ToolObjects.Sounds
 				local Handle = MotorModel.Handle
 				local Settings = require(ToolObjects.Settings)
-				local CharacterAnimations = ToolObjects.CharacterAnimations
-				local VMAnimations = ToolObjects.VMAnimations
-				local CharEquip = nil
-				local VMEquip = nil
-				local CharFirstEquip = nil
-				local VMFirstEquip = nil
-				local VMUnequip = nil
-				local CharUnequip = nil
-				local VMHold = module.getAnimation(VMAnimations.Hold)
-				local CharHold = getCharAnimation(CharacterAnimations.Hold)
-				if VMAnimations:FindFirstChild("FirstEquip") then
-					VMFirstEquip = module.getAnimation(VMAnimations.FirstEquip)
-					CharFirstEquip = getCharAnimation(CharacterAnimations.FirstEquip)
-				end
-				if VMAnimations:FindFirstChild("Equip") then
-					VMEquip = module.getAnimation(VMAnimations.Equip)
-					CharEquip = getCharAnimation(CharacterAnimations.Equip)
-				end
-				if VMAnimations:FindFirstChild("Unequip") then
-					VMUnequip = module.getAnimation(VMAnimations.Unequip)
-					CharUnequip = getCharAnimation(CharacterAnimations.Unequip)
-				end
 
 				if Settings.BindToHand then
 					GripWeld.Parent = ViewModel.RightArm
@@ -470,75 +426,14 @@ function module.LoadChar(Character)
 						end
 					end
 				end)
-
-				if Settings.EquipSpeed then
-					if VMAnimations:FindFirstChild("FirstEquip") and not Tool:GetAttribute("FirstEquipActivated") then
-						animationHandle("FirstEquip","Play")
-						Humanoid:SetAttribute("DisableEquip",true)
-						task.wait(Settings.EquipSpeed)
-						Humanoid:SetAttribute("DisableEquip",nil)
-					else
-						animationHandle("Equip","Play")
-						animationHandle("Equip","Speed",VMEquip.Length/Settings.EquipSpeed,CharEquip.Length/Settings.EquipSpeed)
-
-						task.delay(Settings.EquipSpeed-0.05,function()
-							animationHandle("Equip","Speed",0)
-						end)
-						Humanoid:SetAttribute("DisableEquip",true)
-						task.wait(Settings.EquipSpeed)
-						animationHandle("Equip","Stop")
-						Humanoid:SetAttribute("DisableEquip",nil)
-					end
-				end
-
-				if VMAnimations:FindFirstChild("FirstEquip") and not Tool:GetAttribute("FirstEquipActivated") then
-					Tool:SetAttribute("FirstEquipActivated",true)
-					local inputsThatCancel = {
-						KeybindHandler.Keybind("Reload",Player).Name,
-						KeybindHandler.Keybind("Drop",Player).Name,
-						KeybindHandler.Keybind("Feint",Player).Name,
-						KeybindHandler.Keybind("Sprint",Player).Name,
-						Enum.UserInputType.MouseButton1.Name,
-						Enum.UserInputType.MouseButton2.Name,
-					}
-					local equipInputCancel = nil
-					equipInputCancel = UIS.InputBegan:Connect(function(key,gpe)
-						if gpe then return end
-						if VMFirstEquip.IsPlaying and (table.find(inputsThatCancel,key.UserInputType.Name) or table.find(inputsThatCancel,key.KeyCode.Name)) then
-							animationHandle("FirstEquip","Stop")
-							animationHandle("Hold","Play")
-							equipInputCancel:Disconnect()
-						end
-					end)
-					VMFirstEquip.Stopped:Once(function()
-						if Tool.Parent == Character then
-							animationHandle("FirstEquip","Stop")
-							animationHandle("Hold","Play")
-						end
-					end)
-				else
-					animationHandle("Hold","Play")
-				end
-
-				local UnequipToolEvent = UnequipTool.Event:Once(function(t)
-					if t ~= Tool then return end
-					animationHandle("Hold","Stop")
-					animationHandle("Unequip","Play")
-					if Settings.UnequipSpeed then
-						animationHandle("Unequip","Speed",VMUnequip.Length/Settings.UnequipSpeed,CharUnequip.Length/Settings.UnequipSpeed)
-					end
-				end)
-			else
-				Humanoid:UnequipTools()
-				warn("Invalid ToolName: "..Tool:GetAttribute("ToolName"))
 			end
 		elseif Tool:GetAttribute("TargetPart") then
 			addClothing(Tool)
 		end
 	end)
 
-	local charChildRemove = Character.ChildRemoved:Connect(function(Tool)
-		if Tool:IsA("Tool") then
+	local charChildRemove = Character.ChildRemoved:Connect(function(Child: Model | Tool)
+		if Child:IsA("Tool") then
 			-- // Unequip Tool
 			if ViewModel.UpperTorso:FindFirstChild("GripWeld") then
 				VMup = 0
@@ -547,15 +442,31 @@ function module.LoadChar(Character)
 				VMsway = 1
 				VMaimsway = 0.1
 				task.wait()
-				if ViewModel:FindFirstChild("UpperTorso") and ViewModel.UpperTorso:FindFirstChild("GripWeld") and ViewModel.UpperTorso.GripWeld.Part1 == Tool:FindFirstChild("Handle") then
+				if ViewModel:FindFirstChild("UpperTorso") and ViewModel.UpperTorso:FindFirstChild("GripWeld") and ViewModel.UpperTorso.GripWeld.Part1 == Child:FindFirstChild("Handle") then
 					ViewModel.UpperTorso.GripWeld:Destroy()
 				end
 			end
 			AimSpring.Target = 0
-		elseif Tool:IsA("Model") and Tool:GetAttribute("TargetPart") then
+
+			-- revert motor model and reparent it to original tool
+			for _,motormodels in pairs(ViewModel:GetChildren()) do
+				if motormodels.Name == "MotorModel" then
+					for _,motorPart in pairs(ViewModel.MotorModel:GetChildren()) do
+						if motorPart:IsA("BasePart") or motorPart:IsA("Configuration") then
+							motorPart.Parent = motormodels.Tool.Value
+							if motorPart:IsA("BasePart") then
+								motorPart.CanCollide = false
+								motorPart.Anchored = false
+							end
+						end
+					end
+					motormodels:Destroy()
+				end
+			end
+		elseif Child:IsA("Model") and Child:GetAttribute("TargetPart") then
 			-- // Unequip Clothing
 			for _,VMclothing in pairs(ViewModel:GetChildren()) do
-				if VMclothing:IsA("Model") and VMclothing:GetAttribute("TargetPart")and VMclothing.ActualClothing.Value == Tool then
+				if VMclothing:IsA("Model") and VMclothing:GetAttribute("TargetPart")and VMclothing.ActualClothing.Value == Child then
 					VMclothing:Destroy()
 				end
 			end

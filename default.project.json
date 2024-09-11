@@ -8,6 +8,9 @@
         "$path": "Packages"
       }
     },
+    "ReplicatedFirst": {
+      "$path": "src/ReplicatedFirst"
+    },
     "ServerScriptService": {
       "$path": "src/Server"
     },
