@@ -265,10 +265,11 @@ function module.LoadChar(Character)
 		end
 	end)
 
-	local charChildAdd = Character.ChildAdded:Connect(function(Tool)
+	local charChildAdd = Character.ChildAdded:Connect(function(Tool: Tool)
 		if Tool:IsA("Tool") and not Tool:GetAttribute("Removing") and not ViewModel:FindFirstChild("MotorModel") then
 			if RightHand:FindFirstChild("RightGrip") then Character["RightHand"]["RightGrip"]:Destroy() end
 			if not Tool:FindFirstChild("Handle") and ViewModel:FindFirstChild("MotorModel") then Humanoid:UnequipTools() return end
+			if Tool.RequiresHandle or Tool.CanBeDropped then Humanoid:UnequipTools() error("Attempted to equip tool with RequiresHandle/CanBeDropped set to true") end
 			local GripWeld = Instance.new("Motor6D")
 			GripWeld.Name = "GripWeld"
 			GripWeld.C1 = Tool.Grip
