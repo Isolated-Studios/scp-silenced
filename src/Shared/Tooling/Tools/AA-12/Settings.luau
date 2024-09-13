@@ -32,13 +32,13 @@ local Settings = {
 	BoltBackWhenEmpty = true;
 	ScrollAffectsAim = true;
 	
-	EquipSpeed = 0.65; -- Speed of equipping in seconds
-	UnequipSpeed = 0.65;
+	EquipSpeed = 0.66; -- Speed of equipping in seconds
+	UnequipSpeed = 0.66;
 	AimInSpeed = 0.5; -- Speed of aiming-in in seconds
 	AimOutSpeed = 0.3; -- Speed of aiming-out in seconds
 	--SqueezeTrigger = 0.2; -- How long it takes to squeeze the trigger to fire/bolt gun in seconds (AFFECTS FIRE SPEED)
 	--FireDelay = 0.1; -- Delay after mouse button is clicked to fire gun (AFFECTS FIRE SPEED)
-	Reload1Speed = 3; -- Speed of Reload1's animation in seconds
+	Reload1Speed = 3.07; -- Speed of Reload1's animation in seconds
 	--Reload2Speed = 0.5; -- Speed of Reload2's animation in seconds
 	--Reload3Speed = 0.6; -- Speed of Reload3's animation in seconds
 	--ReloadEmptySpeed = 0.5; -- Speed of ReloadEmpty's animation in seconds. Only works if EmptyReload is true

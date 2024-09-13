@@ -15,6 +15,14 @@ local Character: Model? = nil
 local Humanoid: Humanoid? = nil
 local Animator: Animator? = nil
 
+--[[
+NOTE TO SELF !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	instead of relying on Character.ChildAdded to detect newly added tools, use a new function called EquipTool()
+	paired with UnequipTool() and call them from HotbarHandler so we don't have to rely on events like UnequipTool event
+	lololoolololollol pls dont forget future me plsssssssss
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+]]
+
 function module.LoadChar(char)
 	Character = char
 	Humanoid = char:WaitForChild("Humanoid")
@@ -24,7 +32,6 @@ function module.LoadChar(char)
 	-- code below is still running, that the tool it is running on is the currently equipped one.
 	local lastToolEquipId = 0
 	Character.ChildAdded:Connect(function(Tool: Tool)
-		print(`equipping ----> {Tool:GetFullName()}`)
 		if not Tool:IsA("Tool") then return end
 		local ViewModel = ViewModelHandler.getViewModel()
 		local ViewModelAnimator = ViewModelHandler.getViewModelAnimator()
@@ -107,14 +114,16 @@ function module.LoadChar(char)
 
 		if thisToolEquipId ~= lastToolEquipId then return end
 
+
 		Tool.Unequipped:Once(function()
-			for i, v in pairs(ViewModelAnimator:GetPlayingAnimationTracks()) do
-				print(v.Animation:GetFullName())
-			end
-			-- // play animations for viewmodel AND character
 			ViewModelAnimations["Hold"]:Stop()
 			CharacterAnimations["Hold"]:Stop()
-			print(`unequipping ----> {Tool:GetFullName()}`)
+		end)
+
+		ReplicatedStorage.Events.Viewmodel.UnequipTool.Event:Once(function(t)
+			if t ~= Tool then return end
+			ViewModelAnimations["Hold"]:Stop()
+			CharacterAnimations["Hold"]:Stop()
 			-- play unequip animation at speed { UnequipAnimation.Length / Settings.UnequipSpeed }
 			if Settings.UnequipSpeed then
 				ViewModelAnimations["Unequip"]:Play(nil, nil, ViewModelAnimations["Unequip"].Length / Settings.EquipSpeed)

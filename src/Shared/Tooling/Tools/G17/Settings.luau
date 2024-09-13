@@ -34,7 +34,7 @@ local Settings = {
 
 	EquipSpeed = 0.3; -- Speed of equipping animation in seconds
 	EquipTime = 0.2; -- Time it takes for tool to be usable/unequippable in seconds
-	--UnequipSpeed = 1;
+	UnequipSpeed = 0.5;
 	AimInSpeed = 0.5; -- Speed of aiming-in in seconds
 	AimOutSpeed = 0.3; -- Speed of aiming-out in seconds
 	--SqueezeTrigger = 0.2; -- How long it takes to squeeze the trigger to fire/bolt gun in seconds (AFFECTS FIRE SPEED)

@@ -270,6 +270,7 @@ function module.LoadChar(Character)
 			if RightHand:FindFirstChild("RightGrip") then Character["RightHand"]["RightGrip"]:Destroy() end
 			if not Tool:FindFirstChild("Handle") and ViewModel:FindFirstChild("MotorModel") then Humanoid:UnequipTools() return end
 			if Tool.RequiresHandle or Tool.CanBeDropped then Humanoid:UnequipTools() error("Attempted to equip tool with RequiresHandle/CanBeDropped set to true") end
+
 			local GripWeld = Instance.new("Motor6D")
 			GripWeld.Name = "GripWeld"
 			GripWeld.C1 = Tool.Grip
@@ -442,7 +443,7 @@ function module.LoadChar(Character)
 				VMlook = 0
 				VMsway = 1
 				VMaimsway = 0.1
-				task.wait()
+				-- task.wait()
 				if ViewModel:FindFirstChild("UpperTorso") and ViewModel.UpperTorso:FindFirstChild("GripWeld") and ViewModel.UpperTorso.GripWeld.Part1 == Child:FindFirstChild("Handle") then
 					ViewModel.UpperTorso.GripWeld:Destroy()
 				end
