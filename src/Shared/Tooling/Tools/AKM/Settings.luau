@@ -1,7 +1,7 @@
 local Settings = {
-	Damage = 22; -- Base damage against target
-	RPM = 500; -- The amount of rounds that can theoretically be fired in a minute
-	AP = 0; -- Value between 0 and 1 (0 being no armor penetration, 1 being complete armor penetration)
+	Damage = 25; -- Base damage against target
+	RPM = 550; -- The amount of rounds that can theoretically be fired in a minute
+	AP = .6; -- Value between 0 and 1 (0 being no armor penetration, 1 being complete armor penetration)
 	MagSize = 30; -- The maximum ammount of ammo held in a gun
 	ReloadStyle = 1; -- 0 = single cartridge insert | 1 = mag reload
 	BulletsPerShot = 1; -- The amount of projectiles fired from one shot (Shotgun)
@@ -12,11 +12,11 @@ local Settings = {
 	CanDown = 60; -- If defined, non-headshots will down the target and will bleed out in the number defined.
 	AmmoType = "Rifle"; -- What ammo it takes (Pistol , PDW , Handcannon , Rifle , Shotgun , LMG)
 	Acceleration = Vector3.new(0, -workspace.Gravity, 0); -- the environmental force applied to bullet
-	GibChance = 0.2;
+	GibChance = 0.3;
 	PitchLastBullets = 4; -- If greater than zero will gradually pitch up until fire sound is double in pitch. The number determines how many bullets you must have left before it starts pitching.
 	Weight = 0; -- Does nothing right now
 	
-	AimFOV = 55; -- Field of view when aiming
+	AimFOV = 35; -- Field of view when aiming
 	TravelSpeed = 3000; -- How fast the projectile is
 	Casing = ".45"; -- What casing is ejected from Casings folder
 	BulletTemplate = "OriginalTracer"; -- Tracer that is fired
@@ -32,21 +32,22 @@ local Settings = {
 	BoltBackWhenEmpty = false;
 	ScrollAffectsAim = true;
 	
-	EquipSpeed = 0.5; -- Speed of equipping in seconds
-	UnequipSpeed = 0.6;
-	AimInSpeed = 0.5; -- Speed of aiming-in in seconds
-	AimOutSpeed = 0.3; -- Speed of aiming-out in seconds
+	EquipSpeed = 1.0; -- Speed of equipping in seconds
+	EquipTime = 0.66;
+	UnequipSpeed = 1.0;
+	AimInSpeed = 0.35; -- Speed of aiming-in in seconds
+	AimOutSpeed = 0.35; -- Speed of aiming-out in seconds
 	--SqueezeTrigger = 0.2; -- How long it takes to squeeze the trigger to fire/bolt gun in seconds (AFFECTS FIRE SPEED)
 	--FireDelay = 0.1; -- Delay after mouse button is clicked to fire gun (AFFECTS FIRE SPEED)
-	--Reload1Speed = 0.6; -- Speed of Reload1's animation in seconds
+	Reload1Speed = 3.00; -- Speed of Reload1's animation in seconds
 	--Reload2Speed = 0.5; -- Speed of Reload2's animation in seconds
 	--Reload3Speed = 0.6; -- Speed of Reload3's animation in seconds
-	ReloadEmptySpeed = 2.2; -- Speed of ReloadEmpty's animation in seconds. Only works if EmptyReload is true
+	ReloadEmptySpeed = 3.5; -- Speed of ReloadEmpty's animation in seconds. Only works if EmptyReload is true
 	
-	MinSpread = 1; -- Minimum bullet spread of gun
-	MaxSpread = 20; -- Maximum bullet spread of gun
-	SpreadCost = 4; -- How much is added onto bullet spread
-	SpreadRegenWait = 1; -- How much time in seconds must pass before spread reduces
+	MinSpread = 0; -- Minimum bullet spread of gun
+	MaxSpread = 12; -- Maximum bullet spread of gun
+	SpreadCost = 1; -- How much is added onto bullet spread
+	SpreadRegenWait = 0.5; -- How much time in seconds must pass before spread reduces
 	XRecoilDamp = 0; -- Does nothing right now
 	YRecoilDamp = 0; -- Does nothing right now
 	

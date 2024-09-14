@@ -51,7 +51,7 @@ function module.LoadChar(Character)
 	local CharCrouchWalk = Animator:LoadAnimation(PlayerAnimations:WaitForChild("CrouchWalk"))
 	local CharDownedIdle = Animator:LoadAnimation(PlayerAnimations:WaitForChild("DownedIdle"))
 	local CharDownedWalk = Animator:LoadAnimation(PlayerAnimations:WaitForChild("DownedWalk"))
-	
+
 	local function setWalkSpeed()
 		local directionCorrelation = (HumanoidRootPart.CFrame.LookVector:Dot(TargetDirection))
 		if directionCorrelation ~= directionCorrelation then directionCorrelation = 1 end
@@ -62,11 +62,11 @@ function module.LoadChar(Character)
 			end
 		else
 			walkingBackwards = false
-		end	
+		end
 		local directionalSlowdown = 1 - (math.min(math.abs(directionCorrelation), 0.8) / 0.8)
 		directionalSlowdown = math.min(TweenService:GetValue(directionalSlowdown, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), 0.7)
 		directionalSlowdown -= math.clamp(directionCorrelation, -1, 0)
-		
+
 		local SpeedDebuff = directionalSlowdown * 30
 		if Humanoid:GetAttribute("Swinging") then
 			SpeedDebuff +=-30
@@ -75,8 +75,8 @@ function module.LoadChar(Character)
 		if Humanoid:GetAttribute("FreezeWalkSpeed") then
 			SpeedDebuff = 100
 		end
-		if SpeedDebuff > 100 then 
-			SpeedDebuff = 100 
+		if SpeedDebuff > 100 then
+			SpeedDebuff = 100
 		end
 		SpeedDebuff = SpeedDebuff*0.01
 		if Humanoid:GetAttribute("Running") then
@@ -89,7 +89,7 @@ function module.LoadChar(Character)
 			WalkSpeed = DefaultWalkSpeed-DefaultWalkSpeed*SpeedDebuff
 		end
 	end
-	
+
 	local function regenWait ()
 		local beginningStamina = Humanoid:GetAttribute("Stamina")
 		local startTime = tick()
@@ -105,7 +105,7 @@ function module.LoadChar(Character)
 			regenWait()
 		end
 	end
-	
+
 	local function changeCrouchOffset ()
 		if standingStill and Humanoid:GetAttribute("Crouching") then
 			TweenService:Create(Humanoid,CrouchTweenInfo,{CameraOffset = stillCrouchOffset}):Play()
@@ -115,7 +115,7 @@ function module.LoadChar(Character)
 			TweenService:Create(Humanoid,CrouchTweenInfo,{CameraOffset = noneCrouchOffset}):Play()
 		end
 	end
-	
+
 	local function startCrouching ()
 		if not Humanoid:GetAttribute("Downed") then
 			Humanoid:SetAttribute("Crouching",true)
@@ -126,19 +126,19 @@ function module.LoadChar(Character)
 		Humanoid:SetAttribute("Crouching",false)
 		changeCrouchOffset()
 	end
-	
+
 	local function stopRunning ()
 		if Humanoid:GetAttribute("Running") then
 			Humanoid:SetAttribute("Running", false)
 		end
 	end
-	
+
 	local function startRunning ()
 		if not Humanoid:GetAttribute("Running") and not standingStill and not Humanoid:GetAttribute("Crouching") and not walkingBackwards and UIS:IsKeyDown(KeybindHandler.Keybind("Sprint",Player)) and not Humanoid:GetAttribute("Downed") then
 			Humanoid:SetAttribute("Running",true)
 		end
 	end
-	
+
 	local function beginStaminaGrowth ()
 		staminaGrowthStarted = true
 		regenWait()
@@ -149,18 +149,14 @@ function module.LoadChar(Character)
 			end
 			Humanoid:SetAttribute("Stamina",Humanoid:GetAttribute("Stamina")+1)
 			staminaCheckNumber = Humanoid:GetAttribute("Stamina")
-			if standingStill then
-				task.wait(0.05)
-			else
-				task.wait(0.1)
-			end
+			task.wait(0.05)
 		end
 		staminaGrowthStarted = false
 		if not staminaGrowthStarted then
 			beginStaminaGrowth()
 		end
 	end
-	
+
 	local function beginStaminaDrain ()
 		while Humanoid:GetAttribute("Stamina") > 0 and Humanoid:GetAttribute("Running") do
 			Humanoid:SetAttribute("Stamina",Humanoid:GetAttribute("Stamina")-1)
@@ -185,22 +181,22 @@ function module.LoadChar(Character)
 		end
 	end)
 	Humanoid.AttributeChanged:Connect(function(atr)
-		if atr == "Stamina" then	
+		if atr == "Stamina" then
 			if not staminaGrowthStarted then
 				beginStaminaGrowth()
 			end
 		end
-		
+
 		if atr == "Running" then
 			if Humanoid:GetAttribute("Running") then
 				beginStaminaDrain()
 			end
 		end
-		
+
 		if atr == "Downed" and not Humanoid:GetAttribute("Downed") then
 			--Humanoid.CameraOffset = noneCrouchOffset
 		end
-		
+
 		if Humanoid:GetAttribute("Crouching") and CharCrouchIdle then
 			CharCrouchIdle:Play()
 			if Humanoid.MoveDirection.Magnitude > 0 and CharCrouchWalk and not CrouchWalking then
@@ -212,7 +208,7 @@ function module.LoadChar(Character)
 			CharCrouchIdle:Stop(.2)
 			CharCrouchWalk:Stop(.2)
 		end
-		
+
 		if Humanoid:GetAttribute("Downed") and CharDownedIdle then
 			CharDownedIdle:Play()
 			if Humanoid.MoveDirection.Magnitude > 0 and CharDownedWalk and not DownedWalking then
@@ -225,7 +221,7 @@ function module.LoadChar(Character)
 			CharDownedWalk:Stop(.2)
 		end
 	end)
-	
+
 	local heartBeat = RunService.RenderStepped:Connect(function(dt)
 		-- set target direction
 		TargetDirection = Vector3.new(
@@ -233,7 +229,7 @@ function module.LoadChar(Character)
 			0,
 			(UIS:IsKeyDown(Enum.KeyCode.S) and 1 or 0) - (UIS:IsKeyDown(Enum.KeyCode.W) and 1 or 0)
 		)
-		
+
 		-- calculate camera lean
 		local relativeMoveDir = CFrame.lookAt(Vector3.zero, HumanoidRootPart.CFrame.LookVector * Vector3.new(1, 0, 1)):VectorToObjectSpace(MoveDirection)
 		local CamLeanTarget = CFrame.new(0, 0, 0) * CFrame.Angles(
@@ -243,13 +239,13 @@ function module.LoadChar(Character)
 		)
 		CameraLean = CameraLean:Lerp(CamLeanTarget, dt * 5)
 		CameraModule.AddModifier(CameraLean)
-		
+
 		-- make target relative to looking direction
 		TargetDirection = (HumanoidRootPart.CFrame:VectorToWorldSpace(TargetDirection) * Vector3.new(1, 0, 1)).Unit
 		setWalkSpeed()
 		TargetDirection *= WalkSpeed
 		if TargetDirection ~= TargetDirection then TargetDirection = Vector3.zero end
-		
+
 		-- accelerate MoveDirection towards target
 		local change = MoveDirection:Lerp(TargetDirection, dt * 10) - MoveDirection
 		if change.Magnitude > Acceleration * dt then
@@ -262,18 +258,18 @@ function module.LoadChar(Character)
 		--if MoveDirection.Magnitude > WalkSpeed then
 		--	MoveDirection = MoveDirection.Unit * WalkSpeed
 		--end
-		
+
 		if MoveDirection.Magnitude > 0 then
 			Humanoid.WalkSpeed = MoveDirection.Magnitude
 			Humanoid:Move(MoveDirection.Unit)
 		else
 			Humanoid.WalkSpeed = 0
 		end
-		
+
 		if Humanoid:GetAttribute("Crouching") then
 			stopRunning()
 		end
-		
+
 		if Humanoid.MoveDirection.Magnitude == 0 then
 			standingStill = true
 			if Humanoid:GetAttribute("Crouching") and Humanoid.CameraOffset == movingCrouchOffset then
@@ -286,13 +282,13 @@ function module.LoadChar(Character)
 				changeCrouchOffset()
 			end
 		end
-		
+
 		if Humanoid:GetAttribute("Downed") and Humanoid.CameraOffset ~= downedOffset then
 			--Humanoid.CameraOffset = downedOffset
 		--elseif not Humanoid:GetAttribute("Crouching") and not Humanoid:GetAttribute("Downed") then
 		--	Humanoid.CameraOffset = noneCrouchOffset
 		end
-		
+
 		startRunning()
 		local CameraDirection = HumanoidRootPart.CFrame:toObjectSpace(Camera.CFrame).lookVector
 		local HeldType = nil
@@ -303,14 +299,14 @@ function module.LoadChar(Character)
 			end
 		end
 		LookEvent:FireServer(CameraDirection,LeftShoulder,RightShoulder,Neck,HeldType)
-		
+
 		if Character then
 			Character.LowerTorso.CanCollide = false
 			Character.UpperTorso.CanCollide = false
 			Character.Head.CanCollide = false
 		end
 	end)
-	
+
 	local runChange = Humanoid.Running:Connect(function(speed)
 		if speed > 1 and Humanoid:GetAttribute("Running") then
 			if not CharRun.IsPlaying then
@@ -330,7 +326,7 @@ function module.LoadChar(Character)
 			CrouchWalking = false
 			CharCrouchWalk:Stop(.2)
 		end
-		
+
 		if speed > 1 and Humanoid:GetAttribute("Downed") and CharDownedWalk and not DownedWalking then
 			DownedWalking = true
 			CharDownedWalk:Play(.3)
@@ -339,7 +335,7 @@ function module.LoadChar(Character)
 			CharDownedWalk:Stop(.2)
 		end
 	end)
-	
+
 	local LookEventFunction = LookEvent.OnClientEvent:Connect(function(CameraDirection,LeftShoulder,RightShoulder,Neck,HeldType)
 		if not LeftShoulder or not RightShoulder or not Neck then return end
 		local LimbTweenInfo = TweenInfo.new(0.1,Enum.EasingStyle.Linear,Enum.EasingDirection.Out)
@@ -356,7 +352,7 @@ function module.LoadChar(Character)
 		TweenService:Create(LeftShoulder,	LimbTweenInfo, {C0 = LeftShoulderC0})	:Play()
 		TweenService:Create(RightShoulder,	LimbTweenInfo, {C0 = RightShoulderC0})	:Play()
 	end)
-	
+
 	Humanoid.Died:Once(function()
 		inputBegan:Disconnect()
 		inputEnded:Disconnect()
