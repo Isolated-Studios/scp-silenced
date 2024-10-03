@@ -1,8 +1,8 @@
 local Settings = {
 	Damage = 22; -- Base damage against target
-	RPM = 1000; -- The amount of rounds that can theoretically be fired in a minute
+	RPM = 600; -- The amount of rounds that can theoretically be fired in a minute
 	AP = 0; -- Value between 0 and 1 (0 being no armor penetration, 1 being complete armor penetration)
-	MagSize = 16; -- The maximum ammount of ammo held in a gun
+	MagSize = 30; -- The maximum ammount of ammo held in a gun
 	ReloadStyle = 1; -- 0 = single cartridge insert | 1 = mag reload
 	BulletsPerShot = 1; -- The amount of projectiles fired from one shot (Shotgun)
 	BurstAmount = 1; -- The amount of times fired per shot
@@ -21,7 +21,7 @@ local Settings = {
 	Casing = ".45"; -- What casing is ejected from Casings folder
 	BulletTemplate = "OriginalTracer"; -- Tracer that is fired
 	
-	Automatic = false; -- Holding down the mouse button will cause the gun to continuously fire
+	Automatic = true; -- Holding down the mouse button will cause the gun to continuously fire
 	Bolted = false; -- Must manually chamber a round
 	AutomaticBolt = false; -- Automatically bolt the gun if Bolted is true
 	HeldWhenSqueezed = false; -- Must hold down the mouse button to squeeze a trigger if SqueezeTrigger is real
@@ -32,8 +32,9 @@ local Settings = {
 	BoltBackWhenEmpty = true;
 	ScrollAffectsAim = true;
 	
-	EquipSpeed = 0.3; -- Speed of equipping in seconds
-	--UnequipSpeed = 1;
+	EquipSpeed = 0.86; -- Speed of equipping in seconds
+	EquipTime = 0.5;
+	UnequipSpeed = 0.5;
 	AimInSpeed = 0.5; -- Speed of aiming-in in seconds
 	AimOutSpeed = 0.3; -- Speed of aiming-out in seconds
 	--SqueezeTrigger = 0.2; -- How long it takes to squeeze the trigger to fire/bolt gun in seconds (AFFECTS FIRE SPEED)
@@ -43,8 +44,8 @@ local Settings = {
 	--Reload3Speed = 0.6; -- Speed of Reload3's animation in seconds
 	--ReloadEmptySpeed = 0.5; -- Speed of ReloadEmpty's animation in seconds. Only works if EmptyReload is true
 	
-	MinSpread = 1; -- Minimum bullet spread of gun
-	MaxSpread = 20; -- Maximum bullet spread of gun
+	MinSpread = 0; -- Minimum bullet spread of gun
+	MaxSpread = 4.5; -- Maximum bullet spread of gun
 	SpreadCost = 4; -- How much is added onto bullet spread
 	SpreadRegenWait = 1; -- How much time in seconds must pass before spread reduces
 	XRecoilDamp = 0; -- Does nothing right now
@@ -57,8 +58,8 @@ local Settings = {
 	LongFallOffMult = 0.50; -- Damage Multiplier applied to when damage enters the Long Fall Off Zone.
 	
 	CameraShove = Vector3.new(4,0.01,0.2); -- Shove applied to camera when recoiled
-	LinearShove = Vector3.new(-0.1,0.1,.1); -- Linear shove applied to viewmodel when recoiled
-	AngularShove = Vector3.new(5,0,0); -- Angular shove applied to viewmodel when recoiled
+	LinearShove = Vector3.new(-0.1,0,.1); -- Linear shove applied to viewmodel when recoiled
+	AngularShove = Vector3.new(1,0.1,0.2); -- Angular shove applied to viewmodel when recoiled
 	
 	HighlightColor = Color3.fromRGB(100, 210, 210);
 	Size = Vector2.new(1,1); -- Does nothing right now

@@ -33,8 +33,8 @@ local Settings = {
 	ScrollAffectsAim = true;
 
 	EquipSpeed = 1; -- Speed of equipping in seconds
-	EquipTime = 0.66;
-	UnequipSpeed = 1;
+	EquipTime = 0.75;
+	UnequipSpeed = 0.75;
 	AimInSpeed = 0.35; -- Speed of aiming-in in seconds
 	AimOutSpeed = 0.35; -- Speed of aiming-out in seconds
 	--SqueezeTrigger = 0.2; -- How long it takes to squeeze the trigger to fire/bolt gun in seconds (AFFECTS FIRE SPEED)
@@ -42,7 +42,7 @@ local Settings = {
 	Reload1Speed = 3.07; -- Speed of Reload1's animation in seconds
 	--Reload2Speed = 0.5; -- Speed of Reload2's animation in seconds
 	--Reload3Speed = 0.6; -- Speed of Reload3's animation in seconds
-	ReloadEmptySpeed = 3.50; -- Speed of ReloadEmpty's animation in seconds. Only works if EmptyReload is true
+	ReloadEmptySpeed = 3.83; -- Speed of ReloadEmpty's animation in seconds. Only works if EmptyReload is true
 
 	MinSpread = 8; -- Minimum bullet spread of gun
 	MaxSpread = 16; -- Maximum bullet spread of gun
