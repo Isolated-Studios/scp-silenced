@@ -40,8 +40,6 @@ local Sensitivity = 1
 local SwaySize = 1
 local SwayDividend = 16
 
-local Animator = nil
-local LoadedAnimations: {AnimationTrack}, LoadedCharAnimations: {AnimationTrack} = {}, {}
 local Running = false
 
 local sway = Vector3.new(0,0,0)
@@ -84,32 +82,9 @@ function module.getViewModelAnimator(): Animator?
 	return ViewModelAnimator
 end
 
---- Load animation if not already loaded and return it.
-function module.getAnimation(Anim: Animation): AnimationTrack
-	if not ViewModelAnimator or ViewModelAnimator.Parent == nil then return end
-	local LoadedAnimation = LoadedAnimations[Anim]
-	if not LoadedAnimation then
-		LoadedAnimation = ViewModelAnimator:LoadAnimation(Anim)
-		LoadedAnimations[Anim] = LoadedAnimation
-	end
-	return LoadedAnimation
-end
-
---- Load character animation if not already loaded and return it.
-local function getCharAnimation(Anim: Animation): AnimationTrack
-	if not Animator or Animator.Parent == nil then return end
-	local LoadedAnimation = LoadedCharAnimations[Anim]
-	if not LoadedAnimation then
-		LoadedAnimation = Animator:LoadAnimation(Anim)
-		LoadedCharAnimations[Anim] = LoadedAnimation
-	end
-	return LoadedAnimation
-end
-
 local Player = game.Players.LocalPlayer
 
 function module.LoadChar(Character)
-	LoadedAnimations = {}
 	local Camera = workspace.CurrentCamera
 	ViewModel = PrimeViewmodel:Clone()
 	ViewModelAnimator = ViewModel.Humanoid.Animator
@@ -129,7 +104,6 @@ function module.LoadChar(Character)
 	local Offset = CFrame.identity
 	Humanoid = Character:WaitForChild("Humanoid")
 	local BodyColor = Character:WaitForChild("BodyColor")
-	Animator = Humanoid:WaitForChild("Animator")
 	RootPart = Character:WaitForChild("HumanoidRootPart")
 	RightHand = Character:WaitForChild("RightHand")
 	--LeftHandIK = RootPart:WaitForChild("LeftHandIKTarget")
@@ -280,10 +254,6 @@ function module.LoadChar(Character)
 			GripWeld.Part1 = Tool.Handle
 
 			local MotorModel = Instance.new("Model")
-			local MotorModelTool = Instance.new("ObjectValue")
-			MotorModelTool.Value = Tool
-			MotorModelTool.Name = "Tool"
-			MotorModelTool.Parent = MotorModel
 			MotorModel.Name = "MotorModel"
 			MotorModel.Parent = ViewModel
 			for _,toolPart in pairs(Tool:GetChildren()) do
@@ -291,7 +261,7 @@ function module.LoadChar(Character)
 					toolPart.CanCollide = false
 					toolPart.Anchored = false
 				end
-				if not table.find(IgnoreToolCameraing,toolPart.Name) then
+				if not table.find(IgnoreToolCameraing, toolPart.Name) then
 					toolPart.Parent = MotorModel
 					if toolPart:IsA("BasePart") then
 						toolPart.CollisionGroup = "Viewmodel"
@@ -299,6 +269,22 @@ function module.LoadChar(Character)
 				end
 			end
 			MotorModel.Handle.Anchored = true
+
+			local function destroyMotorModel()
+				if not MotorModel then return end
+				for _, Child in pairs(MotorModel:GetChildren()) do
+					Child.Parent = Tool
+					if Child:IsA("BasePart") then
+						Child.CanCollide = false
+						Child.Anchored = false
+					end
+				end
+				MotorModel:Destroy()
+				MotorModel = nil
+			end
+
+			Tool.Unequipped:Once(destroyMotorModel)
+			Tool.Destroying:Once(destroyMotorModel)
 
 			-- local animationTable = {}
 			-- local function animationHandle (animation,action,num,secondNum)
@@ -324,16 +310,6 @@ function module.LoadChar(Character)
 
 			if Tools:FindFirstChild(Tool:GetAttribute("ToolName")) then
 				local ToolObjects = Tools:FindFirstChild(Tool:GetAttribute("ToolName"))
-				if Tool:GetAttribute("ToolSource") then
-					local MMT = 0
-					for _, motormodels in pairs(ViewModel:GetChildren()) do
-						if motormodels.Name == "MotorModel" then
-							MMT += 1
-						end
-					end
-					if MMT > 1 then destroyMotorModels() return end
-				end
-
 				local Sounds = ToolObjects.Sounds
 				local Handle = MotorModel.Handle
 				local Settings = require(ToolObjects.Settings)
@@ -449,22 +425,6 @@ function module.LoadChar(Character)
 				end
 			end
 			AimSpring.Target = 0
-
-			-- revert motor model and reparent it to original tool
-			for _,motormodels in pairs(ViewModel:GetChildren()) do
-				if motormodels.Name == "MotorModel" then
-					for _,motorPart in pairs(ViewModel.MotorModel:GetChildren()) do
-						if motorPart:IsA("BasePart") or motorPart:IsA("Configuration") then
-							motorPart.Parent = motormodels.Tool.Value
-							if motorPart:IsA("BasePart") then
-								motorPart.CanCollide = false
-								motorPart.Anchored = false
-							end
-						end
-					end
-					motormodels:Destroy()
-				end
-			end
 		elseif Child:IsA("Model") and Child:GetAttribute("TargetPart") then
 			-- // Unequip Clothing
 			for _,VMclothing in pairs(ViewModel:GetChildren()) do

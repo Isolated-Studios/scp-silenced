@@ -32,9 +32,9 @@ local Settings = {
 	BoltBackWhenEmpty = true;
 	--ScrollAffectsAim = true;
 
-	EquipSpeed = 0.3; -- Speed of equipping animation in seconds
+	EquipSpeed = 0.716; -- Speed of equipping animation in seconds
 	EquipTime = 0.2; -- Time it takes for tool to be usable/unequippable in seconds
-	-- UnequipSpeed = 0.5;
+	UnequipSpeed = 0.45;
 	AimInSpeed = 0.5; -- Speed of aiming-in in seconds
 	AimOutSpeed = 0.3; -- Speed of aiming-out in seconds
 	--SqueezeTrigger = 0.2; -- How long it takes to squeeze the trigger to fire/bolt gun in seconds (AFFECTS FIRE SPEED)
@@ -58,8 +58,8 @@ local Settings = {
 	LongFallOffMult = 0.50; -- Damage Multiplier applied to when damage enters the Long Fall Off Zone.
 
 	CameraShove = Vector3.new(4,0.01,0.2); -- Shove applied to camera when recoiled
-	LinearShove = Vector3.new(-0.1,0.1,.1); -- Linear shove applied to viewmodel when recoiled
-	AngularShove = Vector3.new(5,0,0); -- Angular shove applied to viewmodel when recoiled
+	LinearShove = Vector3.new(0,0,0); -- Linear shove applied to viewmodel when recoiled
+	AngularShove = Vector3.new(0,0,0); -- Angular shove applied to viewmodel when recoiled
 
 	HighlightColor = Color3.fromRGB(100, 210, 210);
 	Size = Vector2.new(4,3);

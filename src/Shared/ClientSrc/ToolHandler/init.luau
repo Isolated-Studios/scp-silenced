@@ -118,6 +118,14 @@ function module.LoadChar(char)
 		Tool.Unequipped:Once(function()
 			ViewModelAnimations["Hold"]:Stop()
 			CharacterAnimations["Hold"]:Stop()
+
+			task.wait(0.1)
+			for _, animation in pairs(ViewModelAnimations) do
+				animation:Destroy()
+			end
+			for _, animation in pairs(CharacterAnimations) do
+				animation:Destroy()
+			end
 		end)
 
 		ReplicatedStorage.Events.Viewmodel.UnequipTool.Event:Once(function(t)
@@ -126,8 +134,8 @@ function module.LoadChar(char)
 			CharacterAnimations["Hold"]:Stop()
 			-- play unequip animation at speed { UnequipAnimation.Length / Settings.UnequipSpeed }
 			if Settings.UnequipSpeed then
-				ViewModelAnimations["Unequip"]:Play(nil, nil, ViewModelAnimations["Unequip"].Length / Settings.EquipSpeed)
-				CharacterAnimations["Unequip"]:Play(nil, nil, CharacterAnimations["Unequip"].Length / Settings.EquipSpeed)
+				CharacterAnimations["Unequip"]:Play(nil, nil, CharacterAnimations["Unequip"].Length / Settings.UnequipSpeed)
+				ViewModelAnimations["Unequip"]:Play(nil, nil, ViewModelAnimations["Unequip"].Length / Settings.UnequipSpeed)
 				task.delay(Settings.EquipSpeed + 0.1, function() -- this is to guarantee that the animation doesn't play forever if it fails to load
 					ViewModelAnimations["Unequip"]:Stop()
 					CharacterAnimations["Unequip"]:Stop()

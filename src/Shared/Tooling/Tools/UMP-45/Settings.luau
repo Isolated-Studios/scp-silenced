@@ -29,7 +29,7 @@ local Settings = {
 	RunAndGun = false; -- Running does not interrupt firing and bolting
 	RunAndReload = true; -- Running does not interrupt reloading
 	EmptyReload = true; -- Will use the ReloadEmpty animation when reloading if the mag is at zero
-	BoltBackWhenEmpty = true;
+	BoltBackWhenEmpty = false;
 	ScrollAffectsAim = true;
 	
 	EquipSpeed = 0.86; -- Speed of equipping in seconds
