@@ -53,10 +53,10 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 	local Camera = workspace.CurrentCamera
 	local Humanoid = Character:WaitForChild("Humanoid")
 	local HRP = Character:WaitForChild("HumanoidRootPart")
-	
+
 	--UI
 	local CrosshairPercent = PlayerGui:WaitForChild("MouseUI"):WaitForChild("Crosshair")
-	local GunFrame = PlayerGui:WaitForChild("HUD"):WaitForChild("RightFrame"):WaitForChild("ListFrame"):WaitForChild("GunFrame") 
+	local GunFrame = PlayerGui:WaitForChild("HUD"):WaitForChild("RightFrame"):WaitForChild("ListFrame"):WaitForChild("GunFrame")
 	local CanvasGroup = GunFrame:WaitForChild("CanvasGroup")
 	local InnerFrame = CanvasGroup:WaitForChild("InnerFrame")
 	local InnerScaleLayout = InnerFrame:WaitForChild("InnerScale")
@@ -67,7 +67,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 	local NameText = InfoFrame:WaitForChild("Name")
 	local ModeText = InfoFrame:WaitForChild("Mode")
 	local PrimeMagBullet = GunFrame:WaitForChild("MagBullet")
-	
+
 	--//Tool Objects
 	local Sounds = ToolObjects:WaitForChild("Sounds")
 	local Handle = MotorModel:WaitForChild("Handle")
@@ -78,7 +78,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 	local boltBool = Holder:WaitForChild("Bolted")
 	local magBool = Holder:WaitForChild("Mag")
 	local ammoBool = AmmoList:WaitForChild(Settings.AmmoType)
-	
+
 	--//Bools
 	local Hammer = nil
 	local Cylinder = nil
@@ -87,16 +87,16 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 	local HoldFire = false
 	local FireCooldown = false
 	local Aiming = false
-	local Bolted = false	
+	local Bolted = false
 	local Bursting = false
 	local Reloading = false
 	local CancelReload = false
 	local spreadReduction = false
-	
+
 	--//Sets
 	local BulletSpread = math.round(Settings.MinSpread)
 	local BoltPosition = Settings.BoltPosition or {"LookVector",0.2}
-	
+
 	--//Beginning Priming
 	CrosshairPercent.Value = BulletSpread
 	if Settings.Casing and Casings:FindFirstChild(Settings.Casing) then
@@ -108,18 +108,18 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 	if Handle:FindFirstChild("Cylinder") then
 		Cylinder = Handle.Cylinder
 	end
-	
+
 	if MotorModel:FindFirstChild("ScopeObject") then
 		ScopeModule.SetEnabled(true,MotorModel["ScopeObject"])
 	end
-	
+
 	--//Animation Priming
 	local animationEventsList = {}
 	local Animator = Humanoid:WaitForChild("Animator")
 	local VMAnimator = Viewmodel.Humanoid.Animator
 	local CharacterAnimations = ToolObjects:WaitForChild("CharacterAnimations")
 	local VMAnimations = ToolObjects:WaitForChild("VMAnimations")
-	
+
 	local VMReload1 = VMAnimator:LoadAnimation(VMAnimations.Reload1)
 	local CharReload1 = Animator:LoadAnimation(CharacterAnimations.Reload1)
 	local VMReload2 = nil
@@ -134,7 +134,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 	local CharRecoil = nil
 	local VMRun = nil
 	local CharRun = nil
-	
+
 	if VMAnimations:FindFirstChild("Bolt") then
 		VMBolt = VMAnimator:LoadAnimation(VMAnimations.Bolt)
 		CharBolt = Animator:LoadAnimation(CharacterAnimations.Bolt)
@@ -158,7 +158,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 	if VMAnimations:FindFirstChild("Run") then
 		VMRun = VMAnimator:LoadAnimation(VMAnimations.Run)
 		CharRun = Animator:LoadAnimation(CharacterAnimations.Run)
-	end	
+	end
 	local animationEvents = {
 		["Reload1"] = CTF.getAllAnimationEventNames(VMReload1),
 		["Reload2"] = CTF.getAllAnimationEventNames(VMReload2),
@@ -194,7 +194,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		end
 	end
 	--\\
-	
+
 	--//Functions
 	local function disconnectFunctions (FunctionList)
 		for _,Function in pairs(FunctionList) do
@@ -203,7 +203,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 			end
 		end
 	end
-	
+
 	local function humAtt (name,val,rep)
 		if rep then
 			HumanoidAttributeEvent:FireServer(Humanoid,name,val)
@@ -211,7 +211,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 			Humanoid:SetAttribute(name,val)
 		end
 	end
-	
+
 	local editMagTable = {
 		["Empty"] = function(tweenTime)
 			if not tweenTime then tweenTime = 0.1 end
@@ -222,7 +222,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		["Cycle"] = function(tweenTime)
 			if not tweenTime then tweenTime = 0.1 end
 			if magBool.Value+1 <= Settings.MagSize and magBool.Value > 0 and (not Settings.Bolted or Bolted) and MagFrame:FindFirstChild((magBool.Value+1)) then
-				local bullet = MagFrame[tostring(magBool.Value+1)] 
+				local bullet = MagFrame[tostring(magBool.Value+1)]
 				local round = bullet.Round
 				TweenService:Create(round,TweenInfo.new(tweenTime,Enum.EasingStyle.Linear),{Size = UDim2.fromScale(1,0)}):Play()
 				local firstBullet = MagFrame["1"]
@@ -232,10 +232,10 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		end,
 		["Load"] = function(tweenTime)
 			if not tweenTime then tweenTime = 0.1 end
-			local bullet = MagFrame[tostring(magBool.Value)] 
+			local bullet = MagFrame[tostring(magBool.Value)]
 			local round = bullet.Round
 			if MagFrame["1"].Round.Size.Y.Scale < 1 then
-				bullet = MagFrame["1"] 
+				bullet = MagFrame["1"]
 				round = bullet.Round
 			end
 			TweenService:Create(round,TweenInfo.new(tweenTime,Enum.EasingStyle.Linear),{Size = UDim2.fromScale(1,1)}):Play()
@@ -243,13 +243,13 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		["Mag"] = function(tweenTime)
 			if not tweenTime then tweenTime = 0.1 end
 			for i=1,magBool.Value,1 do
-				local bullet = MagFrame[tostring(i)] 
+				local bullet = MagFrame[tostring(i)]
 				local round = bullet.Round
 				TweenService:Create(round,TweenInfo.new(tweenTime,Enum.EasingStyle.Linear),{Size = UDim2.fromScale(1,1)}):Play()
 			end
 		end,
 	}
-	
+
 	local function editBulletFrame (action,tweenTime)
 		ReserveText.Text = ammoBool.Value
 		NameText.Text = Tool.Name
@@ -260,7 +260,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		end
 		editMagTable[action](tweenTime)
 	end
-	
+
 	local function AimGun (State)
 		if State and not Humanoid:GetAttribute("Running") then
 			Aim:Fire(true,Settings.AimInSpeed)
@@ -278,7 +278,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 			end
 		end
 	end
-	
+
 	local function dispenseCasing ()
 		local Casing = PrimeCasing:Clone()
 		Casing.Parent = TemporaryParts
@@ -286,7 +286,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		Casing.CFrame = Eject.WorldCFrame
 		Debris:AddItem(Casing,10)
 	end
-	
+
 	local function regenWait ()
 		local beginningSpread = BulletSpread
 		local startTime = tick()
@@ -302,7 +302,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 			regenWait()
 		end
 	end
-	
+
 	local function beginSpreadReduction ()
 		spreadReduction = true
 		regenWait()
@@ -316,7 +316,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 			beginSpreadReduction()
 		end
 	end
-	
+
 	local function gunSpread ()
 		task.defer(function()
 			BulletSpread = math.clamp(BulletSpread+Settings.SpreadCost,Settings.MinSpread,Settings.MaxSpread)
@@ -326,11 +326,11 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 			end
 		end)
 	end
-	
+
 	local function ProjectBullet (randomValue)
 		local Origin = Flash.WorldCFrame
-		if Viewmodel:GetAttribute("CloseToWall") then 
-			Origin = Viewmodel.CameraPart.CFrame 
+		if Viewmodel:GetAttribute("CloseToWall") then
+			Origin = Viewmodel.CameraPart.CFrame
 		end
 		local MouseFilterList = {}
 		for _,thing in pairs(Viewmodel:GetDescendants()) do
@@ -347,12 +347,12 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 			(0.5 - math.random()) * 2 * Spread) * Direction
 		CTF.castBullet(Tool, Origin.Position, -Direction, Settings.TravelSpeed or nil, Settings.MaxDistance or nil, Settings.Acceleration or nil, Settings.BulletTemplate or nil, Character,  Settings.BulletsPerShot, randomValue, true)
 	end
-	
+
 	local function boltGun ()
 		HoldFire = true
 		if Settings.PlayHammerClick then
 			CTF.playSound(Sounds,"BoltBack",Handle,true,true)
-		end		
+		end
 
 		if Settings.HammerAngle then
 			Hammer.C0 = CFrame.new(Hammer.C0.Position)*CFrame.Angles(math.rad(Settings.HammerAngle.X),math.rad(Settings.HammerAngle.Y),math.rad(Settings.HammerAngle.Z))
@@ -376,7 +376,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		Bolted = true
 		HoldFire = false
 	end
-	
+
 	local function fireGun ()
 		if magBool.Value <= 0 then return end
 		magBool.Value -= 1
@@ -391,14 +391,14 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		Bolted = false
 		SetItemHolder:FireServer(Tool,"Bolted",false)
 		HoldFire = true
-		if Settings.FireDelay then 
+		if Settings.FireDelay then
 			if Settings.HammerAngle then
 				Hammer.C0 = CFrame.new(Hammer.C0.Position)*CFrame.Angles(math.rad(Settings.HammerAngle.X),math.rad(Settings.HammerAngle.Y),math.rad(Settings.HammerAngle.Z))
 			end
 			if Settings.CylinderAngle then
 				Cylinder.C0 = CFrame.new(Cylinder.C0.Position)*CFrame.Angles(math.rad(Settings.CylinderAngle.X),math.rad(Settings.CylinderAngle.Y),math.rad(Settings.CylinderAngle.Z))
 			end
-			task.wait(Settings.FireDelay) 
+			task.wait(Settings.FireDelay)
 		end
 		if Settings.HammerAngle then
 			Hammer.C0 = CFrame.new(Hammer.C0.Position)*CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))
@@ -440,7 +440,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		end
 		HoldFire = false
 	end
-	
+
 	local function attemptToFire ()
 		if Settings.Bolted then
 			if Bolted then
@@ -462,7 +462,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 			end
 		end
 	end
-	
+
 	local function gunPrime ()
 		if not HoldFire and not FireCooldown then
 			FireCooldown = true
@@ -493,7 +493,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 					if Settings.HammerAngle then
 						Hammer.C0 = CFrame.new(Hammer.C0.Position)*CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))
 					end
-					
+
 					if Settings.CylinderAngle then
 						Cylinder.C0 = CFrame.new(Cylinder.C0.Position)*CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))
 					end
@@ -512,13 +512,13 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 			task.wait()
 		end
 	end
-	
+
 	local function Reload ()
 		if magBool.Value < Settings.MagSize and ammoBool.Value > 0 and not Reloading and (not Humanoid:GetAttribute("Running") or Settings.RunAndReload) then
 			CancelReload = false
 			Reloading = true
 			--ChangeGrip:Fire(Viewmodel.UpperTorso)
-			
+
 			if not Bolted then
 				if Settings.AutomaticBolt then
 					Bolted = true
@@ -527,7 +527,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 				end
 				editBulletFrame("Cycle")
 			end
-			
+
 			if Settings.ReloadStyle == 1 then
 				if magBool.Value <= 0 and Settings.EmptyReload then
 					animationHandle("EmptyReload","Play")
@@ -540,7 +540,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 						animationHandle("Reload1","Speed",VMReload1.Length/Settings.Reload1Speed,CharReload1.Length/Settings.Reload1Speed)
 					end
 				end
-				
+
 			else
 				if magBool.Value <= 0 and Settings.EmptyReload then
 					animationHandle("EmptyReload","Play")
@@ -584,7 +584,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 			task.wait()
 		end
 	end
-	
+
 	local function mouseButtonFire ()
 		if not Bursting and (not Humanoid:GetAttribute("Running") or Settings.RunAndGun) then
 			if Reloading and not CancelReload and Settings.ReloadStyle == 0 and magBool.Value > 0 then
@@ -620,7 +620,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 			mouseButtonFire()
 		end
 	end
-	
+
 	local function scrollAim (Forward)
 		if Settings.ScrollAffectsAim and Aiming and Handle:FindFirstChild("AimNear") then
 			local Aim = Handle.Aim
@@ -639,7 +639,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 			end
 		end
 	end
-	
+
 	local function checkRunning ()
 		if Humanoid:GetAttribute("Running") then
 			if Aiming then
@@ -668,7 +668,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		end
 	end
 	--\\
-	
+
 	--//Animation Handling
 	local eventBehavior = {
 		["LoadGate"] = function()
@@ -719,7 +719,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		end,
 		["BoltForward"] = function()
 			CTF.playSound(Sounds,"BoltForward",Handle,true,true)
-			
+
 			if magBool.Value == 0 and Settings.BoltBackWhenEmpty and Handle:FindFirstChild("Bolt") then
 				local Bolt = Handle.Bolt
 				TweenService:Create(Bolt,TweenInfo.new(0.05,Enum.EasingStyle.Linear),{C1 = DefaultBoltC1}):Play()
@@ -727,7 +727,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 			end
 		end,
 	}
-	
+
 	for animName,animation in pairs(animationTable) do
 		local VManimation = animation[1]
 		local animationEvents = animationEvents[animName]
@@ -743,16 +743,16 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		end
 	end
 	--\\
-	
+
 	--//Actions
 	if Humanoid:GetAttribute("Running") then
 		checkRunning()
 	end
-	
+
 	if UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
 		AimGun(true)
 	end
-	
+
 	if boltBool.Value then
 		if Settings.HammerAngle then
 			Hammer.C0 = CFrame.new(Hammer.C0.Position)*CFrame.Angles(math.rad(Settings.HammerAngle.X),math.rad(Settings.HammerAngle.Y),math.rad(Settings.HammerAngle.Z))
@@ -787,7 +787,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 				oldBullet:Destroy()
 			end
 		end
-		
+
 			MagFrame.UIGridLayout.CellSize = UDim2.new(1/Settings.MagSize,-1,1,0)
 			if Settings.MagSize > 50 then
 				MagFrame.UIGridLayout.CellSize = UDim2.new((1/Settings.MagSize)*2,-1,1,0)
@@ -813,9 +813,9 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 			local otherRound = MagFrame[tostring(magBool.Value+1)].Round
 				otherRound.Size = UDim2.fromScale(1,1)
 			end
-		CanvasGroup.GroupTransparency = 1	
+		CanvasGroup.GroupTransparency = 1
 	TweenService:Create(CanvasGroup,TweenInfo.new(0.3),{GroupTransparency = 0}):Play()
-		
+
 		CanvasGroup.Visible = true
 		--\\
 	if Handle:FindFirstChild("Bolt") then
@@ -823,13 +823,13 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		BackBoltC1 = Handle.Bolt.C1+Handle.Bolt.C1[BoltPosition[1]]*BoltPosition[2]
 	end
 	--\\
-	
-	--//Events	
+
+	--//Events
 	local renderStep = RunService.RenderStepped:Connect(function(dt)
 		local updatedRecoilSpring = recoilSpring:update(dt)
 		CameraModule.AddModifier(CFrame.Angles(math.rad(updatedRecoilSpring.x),updatedRecoilSpring.y,updatedRecoilSpring.z), true)
 	end)
-	
+
 	local inputBegan = UIS.InputBegan:Connect(function(Input,gpe)
 		if Tool:GetAttribute("Unequipping") or gpe or Humanoid:GetAttribute("InventoryOpen") then return end
 		if Input.KeyCode == KeybindHandler.Keybind("Drop",Player) then
@@ -838,16 +838,16 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		if Input.UserInputType == Enum.UserInputType.MouseButton1 then
 			starterFireFunction()
 		end
-		
+
 		if Input.UserInputType == Enum.UserInputType.MouseButton2 then
 			AimGun(true)
 		end
-		
+
 		if Input.KeyCode == KeybindHandler.Keybind("Reload",Player) then
 			Reload()
 		end
 	end)
-	
+
 	local unequippedTool = Tool:GetAttributeChangedSignal("Unequipping"):Connect(function()
 		if Tool:GetAttribute("Unequipping") then
 			TweenService:Create(CanvasGroup,TweenInfo.new(Settings.UnequipSpeed or 0.1),{GroupTransparency = 1}):Play()
@@ -857,36 +857,36 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 			end
 		end
 	end)
-	
+
 	local inputEnded = UIS.InputEnded:Connect(function(Input)
 		if Input.UserInputType == Enum.UserInputType.MouseButton2 then
 			AimGun(false)
 		end
 	end)
-	
+
 	local wheelForward = Mouse.WheelForward:Connect(function()
 		scrollAim(true)
 	end)
 	local wheelBackward = Mouse.WheelBackward:Connect(function()
 		scrollAim(false)
 	end)
-	
+
 	local runChange = Humanoid:GetAttributeChangedSignal("Running"):Connect(function()
 		checkRunning()
 	end)
-	
+
 	local backpackChildRemoved = Player.Backpack.ChildRemoved:Connect(function()
 		task.delay(0.001,function()
 			ReserveText.Text = ammoBool.Value
 		end)
 	end)
-	
+
 	local backpackChildAdded = Player.Backpack.ChildAdded:Connect(function()
 		task.delay(0.001,function()
 			ReserveText.Text = ammoBool.Value
 		end)
 	end)
-	
+
 	Tool.AncestryChanged:Once(function()
 		SetItemHolder:FireServer(Tool,"Mag",magBool.Value)
 		SetItemHolder:FireServer(Tool,"Bolted",Bolted)
@@ -896,11 +896,11 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		for _,animationEvent in pairs(animationEventsList) do
 			animationEvent:Disconnect()
 		end
-		
+
 		if MotorModel:FindFirstChild("ScopeObject") then
 			ScopeModule.SetEnabled(false)
 		end
-		
+
 		CanvasGroup.Visible = false
 		HoldFire = false
 		Bolted = false

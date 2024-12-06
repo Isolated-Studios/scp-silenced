@@ -96,7 +96,7 @@ function module.LoadChar(Character)
 	local VMlook = 0
 	local VMsway = 1
 	local VMaimsway = 0.1
-	local SwaySpring = springModule.new()
+	local SwaySpring = springModule.new(nil, nil, nil, 15, 4)
 	local HandleSpring = springModule.new(nil,nil,90,4,3)
 	local AimSpring = spring2Module.new(0)
 	AimSpring.Damper = 1
@@ -450,6 +450,8 @@ function module.LoadChar(Character)
 		end
 		CameraModule.AddModifier(ViewModel.CameraPart.HumanoidRootPart.Transform) -- apply camera animations
 		local MouseDelta = UserInputService:GetMouseDelta()
+		-- SwaySpring.Damping = SwaySpring.Position.Magnitude/0.15 * 30 + 25
+		-- SwaySpring.Damping = SwaySpring.Position.Magnitude/0.15 * 6 + 6
 		local updatedSwaySpring = SwaySpring:update(dt)
 		local updatedHandleSpring = HandleSpring:update(dt)
 		ViewModel:PivotTo(Camera.CFrame:ToWorldSpace(Offset))
@@ -480,8 +482,8 @@ function module.LoadChar(Character)
 			LocalTransparency = math.min(1, LocalTransparency + dt / LocalTransparencyTransitionTime)
 		end
 
+		local WalkSpeed = MovementModule:GetWalkSpeed()
 		if Humanoid and Running and Humanoid:GetState() ~= Enum.HumanoidStateType.Freefall and Humanoid:GetState() ~= Enum.HumanoidStateType.Landed then
-			local WalkSpeed = MovementModule:GetWalkSpeed()
 			walksway = walksway:Lerp(
 				CFrame.new((0.07*SwaySize) * math.sin(tick() * (2 * math.floor(WalkSpeed/4))),(0.07*SwaySize) * math.cos(tick() * (4 * math.floor(WalkSpeed/4))),0)*
 					CFrame.Angles(0,0,(-.06*SwaySize) * math.cos(tick() * (2 * WalkSpeed/4))),3*Sensitivity*dt)
@@ -505,7 +507,7 @@ function module.LoadChar(Character)
 			end
 			local walkingLeanForward = 0
 			local walkingLeanSide = 0
-			local walkingLeanRot = -RootPart.CFrame.RightVector:Dot(Humanoid.MoveDirection)/(SwayDividend/SwaySize)
+			local walkingLeanRot = -RootPart.CFrame.RightVector:Dot(Humanoid.MoveDirection)*(WalkSpeed/16)/(SwayDividend/SwaySize)
 			local divisorForward = 0.8
 			local divisorSide = 1
 			if (-RootPart.CFrame.LookVector:Dot(Humanoid.MoveDirection)) > 0 then
@@ -520,9 +522,13 @@ function module.LoadChar(Character)
 				SwaySize = VMsway
 				SwaySpring:shove(Vector3.new(-MouseDelta.X/200,MouseDelta.Y/200,0))
 			end
-			walkingLeanForward = -RootPart.CFrame.LookVector:Dot(Humanoid.MoveDirection)/(SwayDividend/SwaySize/divisorForward)
-			walkingLeanSide = RootPart.CFrame.RightVector:Dot(Humanoid.MoveDirection)/(SwayDividend/(SwaySize*divisorSide))
-			strafesway = strafesway:Lerp(CFrame.Angles(walkingLeanForward,walkingLeanSide,walkingLeanRot), 3*Sensitivity*dt)
+			walkingLeanForward = -RootPart.CFrame.LookVector:Dot(Humanoid.MoveDirection)/(SwayDividend/SwaySize/divisorForward)*(WalkSpeed/16)
+			walkingLeanSide = RootPart.CFrame.RightVector:Dot(Humanoid.MoveDirection)/(SwayDividend/(SwaySize*divisorSide))*(WalkSpeed/16)
+			if Humanoid and Running then
+				strafesway = strafesway:Lerp(CFrame.Angles(walkingLeanForward,walkingLeanSide,walkingLeanRot), 3*Sensitivity*dt)
+			else
+				strafesway = strafesway:Lerp(CFrame.new(), 3*Sensitivity*dt)
+			end
 		end
 		jumpsway = jumpswaygoal.Value
 
@@ -533,13 +539,13 @@ function module.LoadChar(Character)
 		end
 
 		local finalcf =
-			(Camera.CFrame:ToWorldSpace(Offset)--*walksway*jumpsway*strafesway *
-				-- CFrame.Angles(math.rad(sway.Y*SwaySize),math.rad(sway.X*SwaySize)/10,math.rad(sway.Z*SwaySize)/2))
+			(Camera.CFrame:ToWorldSpace(Offset)*walksway*jumpsway*strafesway *
+				CFrame.Angles(math.rad(sway.Y*SwaySize),math.rad(sway.X*SwaySize)/10,math.rad(sway.Z*SwaySize)/2))
 			+ (ViewModel.PrimaryPart.CFrame.UpVector*VMup)
 			+ (ViewModel.PrimaryPart.CFrame.RightVector*VMright)
-			+ (ViewModel.PrimaryPart.CFrame.LookVector*VMlook))
-		-- finalcf *= CFrame.new(updatedSwaySpring.X,updatedSwaySpring.Y,updatedSwaySpring.Z)
-		-- finalcf *= CFrame.new(updatedHandleSpring.Z/4,updatedHandleSpring.Y/4,updatedHandleSpring.X/4)
+			+ (ViewModel.PrimaryPart.CFrame.LookVector*VMlook)
+		finalcf *= CFrame.new(updatedSwaySpring.X,updatedSwaySpring.Y,updatedSwaySpring.Z)
+		finalcf *= CFrame.new(updatedHandleSpring.Z/4,updatedHandleSpring.Y/4,updatedHandleSpring.X/4)
 		ViewModel:PivotTo(finalcf)
 
 		if ViewModel:FindFirstChild("MotorModel") and ViewModel["MotorModel"]:FindFirstChild("Handle") then

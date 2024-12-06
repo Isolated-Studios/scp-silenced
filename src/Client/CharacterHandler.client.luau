@@ -1,4 +1,3 @@
---disable
 --[[
     This is an alternative to LocalReplicationScript.
     Any logic that should happen when the character loads should be ran
