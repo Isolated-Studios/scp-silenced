@@ -33,6 +33,7 @@ local Settings = {
 	ScrollAffectsAim = true;
 	
 	EquipSpeed = 0.5; -- Speed of equipping in seconds
+	EquipTime = 0.5;
 	UnequipSpeed = 0.5;
 	AimInSpeed = 0.5; -- Speed of aiming-in in seconds
 	AimOutSpeed = 0.3; -- Speed of aiming-out in seconds
