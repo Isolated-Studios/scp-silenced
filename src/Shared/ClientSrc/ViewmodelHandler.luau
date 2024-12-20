@@ -175,7 +175,7 @@ function module.LoadChar(Character)
 			Running = true
 		end
 	end)
-	local stateChange = Humanoid.StateChanged:connect(function(oldstate, newstate)
+	local stateChange = Humanoid.StateChanged:Connect(function(oldstate, newstate)
 		if newstate == Enum.HumanoidStateType.Landed then
 			local camedit = Instance.new("CFrameValue")
 			camedit.Value = CFrame.new(0,0,0)*CFrame.Angles(math.rad(-0.75)*SwaySize,0,0)

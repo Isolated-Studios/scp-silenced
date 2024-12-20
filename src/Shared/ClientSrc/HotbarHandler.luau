@@ -1,6 +1,6 @@
 local module = {}
 
-local UIS = game:GetService("UserInputService")
+local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -8,6 +8,7 @@ local Modules = ReplicatedStorage.Modules
 local Tools = ReplicatedStorage.Tooling.Tools
 local Events = ReplicatedStorage.Events
 
+local Trove = require(ReplicatedStorage.Packages.Trove)
 local KeybindHandler = require(Modules.UI.KeybindHandler)
 
 local ViewmodelEvents = Events.Viewmodel
@@ -17,6 +18,7 @@ local UnequipTool = ViewmodelEvents.UnequipTool
 local Player = game.Players.LocalPlayer
 local initialized = false
 local charAddLoaded = false
+local characterTrove = Trove.new()
 
 local Mouse = Player:GetMouse()
 local Humanoid = nil
@@ -87,7 +89,7 @@ function module.LoadChar(Character)
 				cell.UIStroke.Thickness = 1.5
 				cell.UIStroke.Color = Color3.fromRGB(150,150,150)
 			end
-		elseif Tool:GetAttribute("ToolType") <= 3 then	
+		elseif Tool:GetAttribute("ToolType") <= 3 then
 			local cell = Hotbar[tostring(Tool:GetAttribute("ToolType"))]
 			if resetImage and  Inventory[Tool:GetAttribute("ToolType")][scrollSave[Tool:GetAttribute("ToolType")]] then
 				local nextTool = Inventory[Tool:GetAttribute("ToolType")][scrollSave[Tool:GetAttribute("ToolType")]]
@@ -114,7 +116,7 @@ function module.LoadChar(Character)
 				end
 			end
 			scrollFrame[tostring(scrollSave[toolType])].BackgroundColor3 = Color3.fromRGB(255,255,255)
-		end 
+		end
 	end
 	local function resetScrollCell (Tool)
 		local index = Tool:GetAttribute("ToolType")
@@ -193,7 +195,7 @@ function module.LoadChar(Character)
 	end
 
 	local function setCell (Tool)
-		if Tool:GetAttribute("ToolType") == 4 or Tool:GetAttribute("ToolType") == 6 then 
+		if Tool:GetAttribute("ToolType") == 4 or Tool:GetAttribute("ToolType") == 6 then
 			local cell = ConsumablesFrame[tostring(Tool:GetAttribute("ToolType"))]
 			local tweenTime = require(Tools[Tool:GetAttribute("ToolName")].Settings).EquipSpeed
 			TweenService:Create(cell:WaitForChild("UIStroke"),TweenInfo.new(tweenTime,Enum.EasingStyle.Linear),{Thickness = 2,Color = Color3.fromRGB(255,255,255)}):Play()
@@ -247,7 +249,7 @@ function module.LoadChar(Character)
 			end
 		end
 
-		if activatedTool or Unequipping or Tool:GetAttribute("Removing") or UIS:IsKeyDown(KeybindHandler.Keybind("Drop",Player)) or Humanoid:GetAttribute("DisableEquip") or Humanoid:GetAttribute("Downed") or Acting then return end
+		if activatedTool or Unequipping or Tool:GetAttribute("Removing") or UserInputService:IsKeyDown(KeybindHandler.Keybind("Drop",Player)) or Humanoid:GetAttribute("DisableEquip") or Humanoid:GetAttribute("Downed") or Acting then return end
 		task.defer(function()
 			if Character:FindFirstChildOfClass("Tool") and Tool:GetAttribute("ToolType") == Character:FindFirstChildOfClass("Tool"):GetAttribute("ToolType") and not scroll then
 				unequipTool(Tool)
@@ -289,7 +291,7 @@ function module.LoadChar(Character)
 	for _,Tool in pairs(Backpack:GetChildren()) do
 		addTool(Tool)
 	end
-	local BackpackAdded = Backpack.ChildAdded:Connect(function(Tool)
+	characterTrove:Connect(Backpack.ChildAdded, function(Tool)
 		if Tool:GetAttribute("NewTool") then
 			Tool:SetAttribute("NewTool",nil)
 			addTool(Tool)
@@ -298,22 +300,23 @@ function module.LoadChar(Character)
 			checkScrollCells(Tool:GetAttribute("ToolType"))
 		end
 	end)
-	local BackpackRemoved = Backpack.ChildRemoved:Connect(function(Tool)
+	characterTrove:Connect(Backpack.ChildRemoved, function(Tool)
 		if Tool:IsA("Tool") and Tool:GetAttribute("Removing") then
 			removeTool(Tool)
 			resetScrollCell(Tool)
 		end
 	end)
-	local CharacterRemoved = Character.ChildRemoved:Connect(function(Tool)
+	characterTrove:Connect(Character.ChildRemoved, function(Tool)
 		if Tool:IsA("Tool") then
-			resetCell(Tool,nil,0)
+			resetCell(Tool, nil, 0)
 		end
 	end)
 	resetHotbar()
 	resetScrollCells()
 	Humanoid = Character:WaitForChild("Humanoid")
 	RootPart = Character.PrimaryPart
-	local inputBegan = UIS.InputBegan:Connect(function(Input,gpe)
+
+	characterTrove:Connect(UserInputService.InputBegan, function(Input, gpe)
 		if gpe then return end
 		if AcceptedKeys[Input.KeyCode.Name] and Inventory[AcceptedKeys[Input.KeyCode.Name]] and Inventory[AcceptedKeys[Input.KeyCode.Name]][1] then
 			local pickedTool = Inventory[AcceptedKeys[Input.KeyCode.Name]][1]
@@ -323,21 +326,20 @@ function module.LoadChar(Character)
 			actOnTool(pickedTool)
 		end
 	end)
-	local wheelForward = Mouse.WheelForward:Connect(function()
+
+	characterTrove:Connect(Mouse.WheelForward, function()
 		scrollTool(1)
 	end)
-	local wheelBackward = Mouse.WheelBackward:Connect(function()
+
+	characterTrove:Connect(Mouse.WheelBackward, function()
 		scrollTool(-1)
 	end)
+
 	Humanoid.Died:Once(function()
 		Humanoid:UnequipTools()
 		Inventory = {}
 		resetHotbar()
-		inputBegan:Disconnect()
-		BackpackAdded:Disconnect()
-		BackpackRemoved:Disconnect()
-		wheelForward:Disconnect()
-		wheelBackward:Disconnect()
+		characterTrove:Clean()
 	end)
 end
 

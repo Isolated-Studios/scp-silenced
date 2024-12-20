@@ -7,3 +7,4 @@ private = true
 
 [dependencies]
 cmdr = "evaera/cmdr@1.12.0"
+Trove = "sleitnick/trove@1.5.0"
