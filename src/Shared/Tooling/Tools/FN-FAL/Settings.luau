@@ -58,7 +58,7 @@ local Settings = {
 	
 	CameraShove = Vector3.new(4,0.01,0.2); -- Shove applied to camera when recoiled
 	LinearShove = Vector3.new(-0.1,0.1,.1); -- Linear shove applied to viewmodel when recoiled
-	AngularShove = Vector3.new(5,0,0); -- Angular shove applied to viewmodel when recoiled
+	AngularShove = Vector3.new(.1,0,0.1); -- Angular shove applied to viewmodel when recoiled
 	
 	HighlightColor = Color3.fromRGB(100, 210, 210);
 	Size = Vector2.new(1,1); -- Does nothing right now

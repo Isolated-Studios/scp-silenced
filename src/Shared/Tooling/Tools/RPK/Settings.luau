@@ -29,11 +29,12 @@ local Settings = {
 	RunAndGun = false; -- Running does not interrupt firing and bolting
 	RunAndReload = true; -- Running does not interrupt reloading
 	EmptyReload = true; -- Will use the ReloadEmpty animation when reloading if the mag is at zero
-	BoltBackWhenEmpty = true;
+	BoltBackWhenEmpty = false;
 	ScrollAffectsAim = true;
 	
-	EquipSpeed = 0.3; -- Speed of equipping in seconds
-	--UnequipSpeed = 1;
+	EquipSpeed = 1.23;-- Speed of equipping in seconds
+	EquipTime = 0.8;
+	UnequipSpeed = 0.75;
 	AimInSpeed = 0.5; -- Speed of aiming-in in seconds
 	AimOutSpeed = 0.3; -- Speed of aiming-out in seconds
 	--SqueezeTrigger = 0.2; -- How long it takes to squeeze the trigger to fire/bolt gun in seconds (AFFECTS FIRE SPEED)
