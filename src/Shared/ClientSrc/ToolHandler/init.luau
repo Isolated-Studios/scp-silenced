@@ -1,3 +1,4 @@
+local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
@@ -12,114 +13,140 @@ local AUTOMATIC_ANIMTAIONS = {"FirstEquip", "Equip", "Hold", "Unequip"} -- anima
 local Tools = ReplicatedStorage.Tooling.Tools
 
 local Character: Model? = nil
+local Backpack: Backpack? = nil
 local Humanoid: Humanoid? = nil
 local Animator: Animator? = nil
 
---[[
-NOTE TO SELF !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	instead of relying on Character.ChildAdded to detect newly added tools, use a new function called EquipTool()
-	paired with UnequipTool() and call them from HotbarHandler so we don't have to rely on events like UnequipTool event
-	lololoolololollol pls dont forget future me plsssssssss
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-]]
+local CurrentEquipID = ""
+local UnequipFunctions = {}
 
 function module.LoadChar(char)
 	Character = char
+	Backpack = Players.LocalPlayer:WaitForChild("Backpack")
 	Humanoid = char:WaitForChild("Humanoid")
 	Animator = Humanoid:WaitForChild("Animator")
+end
 
-	-- this var keeps track of the count of equipped tools, this is to make sure that at any point if
-	-- code below is still running, that the tool it is running on is the currently equipped one.
-	local lastToolEquipId = 0
-	Character.ChildAdded:Connect(function(Tool: Tool)
-		if not Tool:IsA("Tool") then return end
-		local ViewModel = ViewModelHandler.getViewModel()
-		local ViewModelAnimator = ViewModelHandler.getViewModelAnimator()
-		local ToolObjects = Tools:FindFirstChild(Tool:GetAttribute("ToolName"))
-		if ViewModel == nil or ToolObjects == nil then
-			Humanoid:UnequipTools()
-			warn(ViewModelAnimator == nil and "ViewModel not loaded" or `Invalid ToolName: {Tool:GetAttribute("ToolName")}`)
-			return
+function module.UnloadChar(char)
+	Character = nil
+end
+
+function module.EquipTool(Tool: Tool)
+	if typeof(Tool) ~= "Instance" or not Tool:IsA("Tool") then return end
+	Tool:SetAttribute("Unequipping", false)
+	Humanoid:EquipTool(Tool)
+	local ViewModel = ViewModelHandler.getViewModel()
+	local ViewModelAnimator = ViewModelHandler.getViewModelAnimator()
+	local ToolObjects = Tools:FindFirstChild(Tool:GetAttribute("ToolName"))
+	if ViewModel == nil or ToolObjects == nil then
+		Humanoid:UnequipTools()
+		warn(ViewModelAnimator == nil and "ViewModel not loaded" or `Invalid ToolName: {Tool:GetAttribute("ToolName")}`)
+		return
+	end
+
+	CurrentEquipID = HttpService:GenerateGUID()
+	local thisEquipID = CurrentEquipID
+
+	-- Load default animations (holding and (un)equipping)
+	local Settings = require(ToolObjects.Settings)
+	local CharacterAnimations: {AnimationTrack} = {}
+	local ViewModelAnimations: {AnimationTrack} = {}
+	for _, name in AUTOMATIC_ANIMTAIONS do
+		local CharAnim = ToolObjects.CharacterAnimations:FindFirstChild(name)
+		local VMAnim = ToolObjects.VMAnimations:FindFirstChild(name)
+		if CharAnim then
+			CharacterAnimations[name] = Animator:LoadAnimation(CharAnim)
 		end
-
-		lastToolEquipId += 1
-		local thisToolEquipId = lastToolEquipId
-
-		-- Load default animations (holding and (un)equipping)
-		local Settings = require(ToolObjects.Settings)
-		local CharacterAnimations: {AnimationTrack} = {}
-		local ViewModelAnimations: {AnimationTrack} = {}
-		for _, name in AUTOMATIC_ANIMTAIONS do
-			local CharAnim = ToolObjects.CharacterAnimations:FindFirstChild(name)
-			local VMAnim = ToolObjects.VMAnimations:FindFirstChild(name)
-			if CharAnim then
-				CharacterAnimations[name] = Animator:LoadAnimation(CharAnim)
-			end
-			if VMAnim then
-				ViewModelAnimations[name] = ViewModelAnimator:LoadAnimation(VMAnim)
-			end
+		if VMAnim then
+			ViewModelAnimations[name] = ViewModelAnimator:LoadAnimation(VMAnim)
 		end
+	end
 
-		-- Play the (first)equip animations then the hold animation
-		if Settings.EquipTime then
-			Humanoid:SetAttribute("DisableEquip", true)
-			local VMEquip, CharEquip = ViewModelAnimations["Equip"], CharacterAnimations["Equip"]
+	-- Play the (first)equip animations then the hold animation
+	if Settings.EquipSpeed then
+		local VMEquip, CharEquip = ViewModelAnimations["Equip"], CharacterAnimations["Equip"]
 
-			local t = os.clock()
-			if ViewModelAnimations["FirstEquip"] and not Tool:GetAttribute("FirstEquipActivated") then
-				VMEquip, CharEquip = ViewModelAnimations["FirstEquip"], CharacterAnimations["FirstEquip"]
-				VMEquip:Play()
-				CharEquip:Play()
-			else
-				VMEquip:Play(nil, nil, VMEquip.Length / Settings.EquipSpeed)
-				CharEquip:Play(nil, nil, CharEquip.Length / Settings.EquipSpeed)
-				task.delay(Settings.EquipSpeed + 0.1, function() -- this is to guarantee that the animation doesn't play forever if it fails to load
-					VMEquip:Stop()
-					CharEquip:Stop()
-				end)
-			end
-
-			task.wait(Settings.EquipTime)
-			Humanoid:SetAttribute("DisableEquip", nil)
-
-			Tool:SetAttribute("FirstEquipActivated",true)
-			local inputsThatCancel = {
-				KeybindHandler.Keybind("Reload", Players.LocalPlayer).Name,
-				KeybindHandler.Keybind("Drop", Players.LocalPlayer).Name,
-				KeybindHandler.Keybind("Feint", Players.LocalPlayer).Name,
-				KeybindHandler.Keybind("Sprint", Players.LocalPlayer).Name,
-				Enum.UserInputType.MouseButton1.Name,
-				Enum.UserInputType.MouseButton2.Name,
-			}
-			local equipInputCancel = nil
-			equipInputCancel = UserInputService.InputBegan:Connect(function(Input, GameProcessedEvent)
-				if GameProcessedEvent then return end
-				if VMEquip.IsPlaying and (table.find(inputsThatCancel, Input.UserInputType.Name) or table.find(inputsThatCancel, Input.KeyCode.Name)) then
-					VMEquip:Stop(0)
-					CharEquip:Stop(0)
-					equipInputCancel:Disconnect()
-					equipInputCancel = nil
-				end
-			end)
-
-			VMEquip.Stopped:Once(function()
-				ViewModelAnimations["Hold"]:Play()
-				CharacterAnimations["Hold"]:Play()
-				if equipInputCancel then equipInputCancel:Disconnect() end
-			end)
+		local t = os.clock()
+		if ViewModelAnimations["FirstEquip"] and not Tool:GetAttribute("FirstEquipActivated") then
+			VMEquip, CharEquip = ViewModelAnimations["FirstEquip"], CharacterAnimations["FirstEquip"]
+			VMEquip:Play()
+			CharEquip:Play()
 		else
+			VMEquip:Play(nil, nil, VMEquip.Length / Settings.EquipSpeed)
+			CharEquip:Play(nil, nil, CharEquip.Length / Settings.EquipSpeed)
+			task.delay(Settings.EquipSpeed + 0.1, function() -- this is to guarantee that the animation doesn't play forever if it fails to load
+				VMEquip:Stop()
+				CharEquip:Stop()
+			end)
+		end
+
+		task.wait(Settings.EquipTime or 0)
+		if thisEquipID ~= CurrentEquipID then return end
+
+		Tool:SetAttribute("FirstEquipActivated",true)
+		local inputsThatCancel = {
+			KeybindHandler.Keybind("Reload", Players.LocalPlayer).Name,
+			KeybindHandler.Keybind("Drop", Players.LocalPlayer).Name,
+			KeybindHandler.Keybind("Feint", Players.LocalPlayer).Name,
+			KeybindHandler.Keybind("Sprint", Players.LocalPlayer).Name,
+			Enum.UserInputType.MouseButton1.Name,
+			Enum.UserInputType.MouseButton2.Name,
+		}
+		local equipInputCancel = nil
+		equipInputCancel = UserInputService.InputBegan:Connect(function(Input, GameProcessedEvent)
+			if GameProcessedEvent then return end
+			if VMEquip.IsPlaying and (table.find(inputsThatCancel, Input.UserInputType.Name) or table.find(inputsThatCancel, Input.KeyCode.Name)) then
+				VMEquip:Stop(0)
+				CharEquip:Stop(0)
+				equipInputCancel:Disconnect()
+				equipInputCancel = nil
+			end
+		end)
+
+		VMEquip.Stopped:Once(function()
 			ViewModelAnimations["Hold"]:Play()
 			CharacterAnimations["Hold"]:Play()
+			if equipInputCancel then equipInputCancel:Disconnect() end
+		end)
+	else
+		ViewModelAnimations["Hold"]:Play()
+		CharacterAnimations["Hold"]:Play()
+	end
+
+	if thisEquipID ~= CurrentEquipID then return end
+
+	Tool.Unequipped:Once(function()
+		ViewModelAnimations["Hold"]:Stop()
+		CharacterAnimations["Hold"]:Stop()
+
+		task.wait(0.1)
+		for _, animation in pairs(ViewModelAnimations) do
+			animation:Destroy()
+		end
+		for _, animation in pairs(CharacterAnimations) do
+			animation:Destroy()
+		end
+	end)
+
+	UnequipFunctions[Tool] = function(playAnimations)
+		Tool:SetAttribute("Unequipping", true)
+		ViewModelAnimations["Hold"]:Stop()
+		CharacterAnimations["Hold"]:Stop()
+
+		-- play unequip animation at speed { UnequipAnimation.Length / Settings.UnequipSpeed }
+		if playAnimations and Settings.UnequipSpeed then
+			CharacterAnimations["Unequip"]:Play(nil, nil, CharacterAnimations["Unequip"].Length / Settings.UnequipSpeed)
+			ViewModelAnimations["Unequip"]:Play(nil, nil, ViewModelAnimations["Unequip"].Length / Settings.UnequipSpeed)
+
+			-- this is to guarantee that the animation doesn't play forever if it fails to load
+			task.wait(Settings.UnequipSpeed)
+			ViewModelAnimations["Unequip"]:Stop()
+			CharacterAnimations["Unequip"]:Stop()
 		end
 
-		if thisToolEquipId ~= lastToolEquipId then return end
-
-
-		Tool.Unequipped:Once(function()
-			ViewModelAnimations["Hold"]:Stop()
-			CharacterAnimations["Hold"]:Stop()
-
-			task.wait(0.1)
+		Tool.Parent = Backpack
+		Tool:SetAttribute("Unequipping", false)
+		task.delay(0.1, function()
 			for _, animation in pairs(ViewModelAnimations) do
 				animation:Destroy()
 			end
@@ -127,32 +154,34 @@ function module.LoadChar(char)
 				animation:Destroy()
 			end
 		end)
+	end
 
-		ReplicatedStorage.Events.Viewmodel.UnequipTool.Event:Once(function(t)
-			if t ~= Tool then return end
-			ViewModelAnimations["Hold"]:Stop()
-			CharacterAnimations["Hold"]:Stop()
-			-- play unequip animation at speed { UnequipAnimation.Length / Settings.UnequipSpeed }
-			if Settings.UnequipSpeed then
-				CharacterAnimations["Unequip"]:Play(nil, nil, CharacterAnimations["Unequip"].Length / Settings.UnequipSpeed)
-				ViewModelAnimations["Unequip"]:Play(nil, nil, ViewModelAnimations["Unequip"].Length / Settings.UnequipSpeed)
-				task.delay(Settings.EquipSpeed + 0.1, function() -- this is to guarantee that the animation doesn't play forever if it fails to load
-					ViewModelAnimations["Unequip"]:Stop()
-					CharacterAnimations["Unequip"]:Stop()
-				end)
-			end
-		end)
-
-		-- Load tool script
-		if Tool:GetAttribute("ToolSource") and script:FindFirstChild(Tool:GetAttribute("ToolSource")) then
-			local Source = require(script[Tool:GetAttribute("ToolSource")])
-			Source.Init(Tool, ToolObjects, Character, ViewModel)
-		end
-	end)
+	-- Load tool script
+	if Tool:GetAttribute("ToolSource") and script:FindFirstChild(Tool:GetAttribute("ToolSource")) then
+		local Source = require(script[Tool:GetAttribute("ToolSource")])
+		Source.Init(Tool, ToolObjects, Character, ViewModel)
+	end
 end
 
-function module.UnloadChar(char)
-	Character = nil
+function module.UnequipTool(Tool: Tool)
+	if UnequipFunctions[Tool] then
+		UnequipFunctions[Tool](true)
+		UnequipFunctions[Tool] = nil
+	end
+end
+
+function module.UnequipTools()
+	for Tool, unequipFunction in pairs(UnequipFunctions) do
+		unequipFunction(true)
+	end
+	UnequipFunctions = {}
+end
+
+function module.Clean()
+	for Tool, unequipFunction in pairs(UnequipFunctions) do
+		unequipFunction()
+	end
+	UnequipFunctions = {}
 end
 
 return module

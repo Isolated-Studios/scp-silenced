@@ -10,10 +10,10 @@ local Events = ReplicatedStorage.Events
 
 local Trove = require(ReplicatedStorage.Packages.Trove)
 local KeybindHandler = require(Modules.UI.KeybindHandler)
+local ToolHandler = require(script.Parent.ToolHandler)
 
 local ViewmodelEvents = Events.Viewmodel
 local ResetIcons = ViewmodelEvents.ResetIcons
-local UnequipTool = ViewmodelEvents.UnequipTool
 
 local Player = game.Players.LocalPlayer
 local initialized = false
@@ -212,16 +212,7 @@ function module.LoadChar(Character)
 			Unequipping = true
 			local unequipSpeed = require(Tools[Tool:GetAttribute("ToolName")].Settings).UnequipSpeed
 			resetCell(Character:FindFirstChildOfClass("Tool"),nil,unequipSpeed)
-			if unequipSpeed then
-				Tool:SetAttribute("Unequipping",true)
-				UnequipTool:Fire(Tool)
-				Unequipping = true
-				task.wait(unequipSpeed)
-				Humanoid:UnequipTools()
-				Unequipping = false
-			else
-				Humanoid:UnequipTools()
-			end
+			ToolHandler.UnequipTool(Tool)
 			Unequipping = false
 		end
 	end
@@ -240,7 +231,7 @@ function module.LoadChar(Character)
 			resetScrollCell(Tool)
 		end
 	end
-	local function actOnTool (Tool,scroll)
+	local function actOnTool (Tool, scroll)
 		local activatedTool = false
 		for _,tool in pairs(Player.Backpack:GetChildren()) do
 			if tool:GetAttribute("Activated") then
@@ -250,29 +241,25 @@ function module.LoadChar(Character)
 		end
 
 		if activatedTool or Unequipping or Tool:GetAttribute("Removing") or UserInputService:IsKeyDown(KeybindHandler.Keybind("Drop",Player)) or Humanoid:GetAttribute("DisableEquip") or Humanoid:GetAttribute("Downed") or Acting then return end
-		task.defer(function()
-			if Character:FindFirstChildOfClass("Tool") and Tool:GetAttribute("ToolType") == Character:FindFirstChildOfClass("Tool"):GetAttribute("ToolType") and not scroll then
-				unequipTool(Tool)
+		if Character:FindFirstChildOfClass("Tool") and Tool:GetAttribute("ToolType") == Character:FindFirstChildOfClass("Tool"):GetAttribute("ToolType") and not scroll then
+			unequipTool(Tool)
+		else
+			Acting = true
+			if scroll then
+				ToolHandler:UnequipTools()
 			else
-
-				unequipTool(Tool)
-				--Humanoid:UnequipTools()
-				Acting = true
-				scrollSave[Tool:GetAttribute("ToolType")] = table.find(Inventory[Tool:GetAttribute("ToolType")],Tool)
-				resetHotbar()
-				setCell(Tool)
-				Humanoid:EquipTool(Tool)
-				checkScrollCells(Tool:GetAttribute("ToolType"))
-				local Settings = require(Tools[Tool:GetAttribute("ToolName")].Settings)
-				if Settings.EquipSpeed then
-					task.wait(Settings.EquipSpeed)
-				end
-				Acting = false
+				ToolHandler:Clean()
 			end
-		end)
+			scrollSave[Tool:GetAttribute("ToolType")] = table.find(Inventory[Tool:GetAttribute("ToolType")],Tool)
+			resetHotbar()
+			setCell(Tool)
+			pcall(ToolHandler.EquipTool, Tool)
+			checkScrollCells(Tool:GetAttribute("ToolType"))
+			Acting = false
+		end
 	end
 	local function scrollTool (direction)
-		if not Unequipping and Character:FindFirstChildOfClass("Tool") and Character:FindFirstChildOfClass("Tool"):GetAttribute("ToolType") and Inventory[Character:FindFirstChildOfClass("Tool"):GetAttribute("ToolType")] and table.find(Inventory[Character:FindFirstChildOfClass("Tool"):GetAttribute("ToolType")],Character:FindFirstChildOfClass("Tool")) and #Inventory[Character:FindFirstChildOfClass("Tool"):GetAttribute("ToolType")] > 1 and not Humanoid:GetAttribute("Aiming") then
+		if not Unequipping and not Acting and Character:FindFirstChildOfClass("Tool") and Character:FindFirstChildOfClass("Tool"):GetAttribute("ToolType") and Inventory[Character:FindFirstChildOfClass("Tool"):GetAttribute("ToolType")] and table.find(Inventory[Character:FindFirstChildOfClass("Tool"):GetAttribute("ToolType")],Character:FindFirstChildOfClass("Tool")) and #Inventory[Character:FindFirstChildOfClass("Tool"):GetAttribute("ToolType")] > 1 and not Humanoid:GetAttribute("Aiming") then
 			local Tool = Character:FindFirstChildOfClass("Tool")
 			local ToolTable = Inventory[Character:FindFirstChildOfClass("Tool"):GetAttribute("ToolType")]
 			local index = table.find(ToolTable,Tool)
@@ -283,7 +270,7 @@ function module.LoadChar(Character)
 				targetIndex = #ToolTable
 			end
 			if ToolTable[targetIndex] then
-				actOnTool(ToolTable[targetIndex],true)
+				actOnTool(ToolTable[targetIndex], true)
 			end
 		end
 	end
@@ -316,8 +303,8 @@ function module.LoadChar(Character)
 	Humanoid = Character:WaitForChild("Humanoid")
 	RootPart = Character.PrimaryPart
 
-	characterTrove:Connect(UserInputService.InputBegan, function(Input, gpe)
-		if gpe then return end
+	characterTrove:Connect(UserInputService.InputBegan, function(Input, gameProcessedEvent)
+		if gameProcessedEvent then return end
 		if AcceptedKeys[Input.KeyCode.Name] and Inventory[AcceptedKeys[Input.KeyCode.Name]] and Inventory[AcceptedKeys[Input.KeyCode.Name]][1] then
 			local pickedTool = Inventory[AcceptedKeys[Input.KeyCode.Name]][1]
 			if scrollSave[AcceptedKeys[Input.KeyCode.Name]] then
@@ -336,7 +323,7 @@ function module.LoadChar(Character)
 	end)
 
 	Humanoid.Died:Once(function()
-		Humanoid:UnequipTools()
+		ToolHandler.UnequipTools()
 		Inventory = {}
 		resetHotbar()
 		characterTrove:Clean()
