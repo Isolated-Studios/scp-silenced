@@ -14,7 +14,6 @@ local ViewmodelEvents = Events.Viewmodel
 local Shove = ViewmodelEvents.Shove
 local Aim = ViewmodelEvents.Aim
 local ChangeGrip = ViewmodelEvents.ChangeGrip
-local UnequipTool = ViewmodelEvents.UnequipTool
 
 local Modules = ReplicatedStorage.Modules
 local FolderViewmodels = PlayerAssets.Viewmodels
@@ -29,6 +28,8 @@ local springModule = require(ToolModules.spring)
 local spring2Module = require(ToolModules.spring2)
 local CommonToolFunctions = require(ToolModules.CommonToolFunctions)
 local KeybindHandler = require(UIModules.KeybindHandler)
+local ToolHandler = require(script.Parent.ToolHandler)
+ToolHandler.injectViewModelHandler(module)
 
 local Humanoid = nil
 local RootPart = nil
@@ -242,8 +243,8 @@ function module.LoadChar(Character)
 	local charChildAdd = Character.ChildAdded:Connect(function(Tool: Tool)
 		if Tool:IsA("Tool") and not Tool:GetAttribute("Removing") and not ViewModel:FindFirstChild("MotorModel") then
 			if RightHand:FindFirstChild("RightGrip") then Character["RightHand"]["RightGrip"]:Destroy() end
-			if not Tool:FindFirstChild("Handle") and ViewModel:FindFirstChild("MotorModel") then Humanoid:UnequipTools() return end
-			if Tool.RequiresHandle or Tool.CanBeDropped then Humanoid:UnequipTools() error("Attempted to equip tool with RequiresHandle/CanBeDropped set to true") end
+			if not Tool:FindFirstChild("Handle") and ViewModel:FindFirstChild("MotorModel") then ToolHandler:UnequipTool(Tool) return end
+			if Tool.RequiresHandle or Tool.CanBeDropped then ToolHandler:UnequipTool(Tool) error("Attempted to equip tool with RequiresHandle/CanBeDropped set to true") end
 
 			local GripWeld = Instance.new("Motor6D")
 			GripWeld.Name = "GripWeld"
@@ -574,7 +575,6 @@ function module.LoadChar(Character)
 	end)
 
 	Humanoid.Died:Once(function()
-		Humanoid:UnequipTools()
 		task.wait()
 		--shirtChange:Disconnect()
 		bodyColorChange:Disconnect()
