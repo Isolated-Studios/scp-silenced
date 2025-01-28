@@ -3,7 +3,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 
-local ViewModelHandler = require(script.Parent.ViewmodelHandler)
+local ViewModelHandler = nil -- has to be injected to avoid circular dependencies
 local KeybindHandler = require(ReplicatedStorage.Modules.UI.KeybindHandler)
 
 local module = {}
@@ -20,6 +20,10 @@ local Animator: Animator? = nil
 local CurrentEquipID = ""
 local UnequipFunctions = {}
 
+function module.injectViewModelHandler(h)
+	ViewModelHandler = h
+end
+
 function module.LoadChar(char)
 	Character = char
 	Backpack = Players.LocalPlayer:WaitForChild("Backpack")
@@ -32,6 +36,7 @@ function module.UnloadChar(char)
 end
 
 function module.EquipTool(Tool: Tool)
+	if ViewModelHandler == nil then return end
 	if typeof(Tool) ~= "Instance" or not Tool:IsA("Tool") then return end
 	Tool:SetAttribute("Unequipping", false)
 	Humanoid:EquipTool(Tool)
@@ -164,6 +169,7 @@ function module.EquipTool(Tool: Tool)
 end
 
 function module.UnequipTool(Tool: Tool)
+	CurrentEquipID = ""
 	if UnequipFunctions[Tool] then
 		UnequipFunctions[Tool](true)
 		UnequipFunctions[Tool] = nil
@@ -171,6 +177,7 @@ function module.UnequipTool(Tool: Tool)
 end
 
 function module.UnequipTools()
+	CurrentEquipID = ""
 	for Tool, unequipFunction in pairs(UnequipFunctions) do
 		unequipFunction(true)
 	end
@@ -178,6 +185,7 @@ function module.UnequipTools()
 end
 
 function module.Clean()
+	CurrentEquipID = ""
 	for Tool, unequipFunction in pairs(UnequipFunctions) do
 		unequipFunction()
 	end
