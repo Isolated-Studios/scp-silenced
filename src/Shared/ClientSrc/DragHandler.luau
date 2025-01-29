@@ -4,19 +4,19 @@ local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 
 local module = {}
-module.RANGE = 50
+module.RANGE = 16
+module.SCROLL_SENSITIVITY = 0.75
 module.MAX_FORCE = 2000
 module.HIGHLIGHT_SPEED = 8
 module.TARGET_VELOCITY = 20
 module.RESPONSIVENESS = 50
 
 function module.Init()
-	local Modules = ReplicatedStorage:WaitForChild("Modules")
-	local Events = ReplicatedStorage:WaitForChild("Events")
-	local DragEvent = Events:WaitForChild("Interaction"):WaitForChild("Drag")
-	local UIModules = Modules:WaitForChild("UI")
-	local CommonFunctions = require(Modules:WaitForChild("Tool"):WaitForChild("CommonToolFunctions"))
-	local KeybindHandler = require(UIModules:WaitForChild("KeybindHandler"))
+	local Modules = ReplicatedStorage.Modules
+	local Events = ReplicatedStorage.Events
+	local DragEvent = Events.Interaction.Drag
+	local CommonFunctions = require(Modules.Tool.CommonToolFunctions)
+	local KeybindHandler = require(Modules.UI.KeybindHandler)
 
 	local Highlight = Instance.new("Highlight")
 	Highlight.FillColor = Color3.fromRGB(255, 255, 255)
@@ -56,7 +56,7 @@ function module.Init()
 		if Character and Humanoid and Humanoid.Health > 0 and not Humanoid:GetAttribute("Downed") then
 			if not Holding then
 				local RayHit = workspace:Raycast(Camera.CFrame.Position, Camera.CFrame.LookVector * module.RANGE, rayParams)
-				if RayHit and RayHit.Instance:HasTag("Draggable") and not RayHit.Instance:HasTag("Dragging") then
+				if RayHit and RayHit.Instance:HasTag("Draggable") and (RayHit.Instance:GetAttribute("DraggerID") or LocalPlayer.UserId) == LocalPlayer.UserId then
 					Distance = RayHit.Distance
 					Current = RayHit.Instance
 					Aligner.Parent = Current
@@ -97,11 +97,9 @@ function module.Init()
 			if h == nil then break end
 
 
-			if h.Adornee == Current then	
-				h.OutlineTransparency = math.max(0, h.OutlineTransparency - module.HIGHLIGHT_SPEED * dt) -- /4 Since FillTransparency is 0.8 and OutlineTransparency is 0.2
-				h.FillTransparency = math.max(0.7, h.FillTransparency - module.HIGHLIGHT_SPEED / 3 * dt)
+			if h.Adornee == Current then
+				h.FillTransparency = math.max(Holding and 0.7 or 0.85, h.FillTransparency - module.HIGHLIGHT_SPEED / 3 * dt)
 			else
-				h.OutlineTransparency = math.min(1, h.OutlineTransparency + module.HIGHLIGHT_SPEED * dt)
 				h.FillTransparency = math.min(1, h.FillTransparency + module.HIGHLIGHT_SPEED / 3 * dt)
 				if h.OutlineTransparency == 1 then
 					h:Destroy()
@@ -111,7 +109,7 @@ function module.Init()
 			end
 		end
 	end)
-	
+
 	RunService.Heartbeat:Connect(function(dt)
 		if Holding == true then
 			Aligner.Parent = Current
@@ -147,6 +145,12 @@ function module.Init()
 			end
 		end
 	end)
+	UserInputService.InputChanged:Connect(function(Input, gameProcessed)
+		if gameProcessed then return end
+		if Input.UserInputType == Enum.UserInputType.MouseWheel then
+			Distance = math.clamp(Distance + Input.Position.Z * module.SCROLL_SENSITIVITY, 2, module.RANGE)
+		end
+	end)
 	UserInputService.InputEnded:Connect(function(Input, gameProcessed)
 		if gameProcessed then return end
 		if Holding and Input == beginningInput then
@@ -155,7 +159,6 @@ function module.Init()
 				Current.Anchored = true
 			end
 			DragEvent:FireServer(false, Current)
-			Current = nil
 		end
 	end)
 end

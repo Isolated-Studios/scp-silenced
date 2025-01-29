@@ -14,8 +14,8 @@ end
 local playerLeaveConnections = {}
 local unoptimizedParts = {}
 
-local function stopDragging(inst)
-	inst:RemoveTag("Dragging")
+local function stopDragging(inst: BasePart)
+	inst:SetAttribute("DraggerID", nil)
 	if inst:HasTag("Lever") then
 		inst.Anchored = true
 	else
@@ -24,27 +24,27 @@ local function stopDragging(inst)
 	playerLeaveConnections[inst] = nil
 end
 
-function onDrag(player: Player, state, inst)
-	if inst and typeof(inst) == "Instance" and inst:IsA("BasePart") then
-		if not inst:HasTag("Draggable") then return end
-		if player.Character and player.Character.PrimaryPart and getDistance(player.Character.PrimaryPart.Position, inst.Position) <= DRAG_RANGE then
+function onDrag(Player: Player, state, Object)
+	if Object and typeof(Object) == "Instance" and Object:IsA("BasePart") then
+		if not Object:HasTag("Draggable") then return end
+		if Player.Character and Player.Character.PrimaryPart and getDistance(Player.Character.PrimaryPart.Position, Object.Position) <= DRAG_RANGE then
 			if state then
-				if inst:HasTag("Dragging") then return end
+				if (Object:GetAttribute("DraggerID") or Player.UserId) ~= Player.UserId then return end
 				for i, v in unoptimizedParts do
-					if v[2] == inst then
+					if v[2] == Object then
 						table.remove(unoptimizedParts, i)
 						break
 					end
 				end
-				inst:AddTag("Dragging")
-				inst.Anchored = false
-				inst:SetNetworkOwner(player)
-				playerLeaveConnections[inst] = {player, player.Destroying:Connect(function() stopDragging(inst) end)}
+				Object:SetAttribute("DraggerID", Player.UserId)
+				Object.Anchored = false
+				Object:SetNetworkOwner(Player)
+				playerLeaveConnections[Object] = {Player, Player.Destroying:Connect(function() stopDragging(Object) end)}
 			else
-				local conn = playerLeaveConnections[inst]
-				if conn and conn[1] == player then stopDragging(inst) end
+				local conn = playerLeaveConnections[Object]
+				if conn and conn[1] == Player then stopDragging(Object) end
 			end
-		end       
+		end
 	end
 end
 
