@@ -61,7 +61,7 @@ loadModule(ClientSrc.Blood)
 -- Load and initialize your UI from the "Init()" function.
 for _, mod in modules do
 	-- Safely run the function and print any errors in output without interrupting the current thread.
-	if mod.Init == nil then continue end
+	if mod == false or mod.Init == nil then continue end
 	CommonFunctions.SafeCall(task.spawn, mod.Init)
 end
 
@@ -71,21 +71,21 @@ Cmdr:SetActivationKeys({ Enum.KeyCode.F2 })
 -- Any module that needs to deal with characters should have a LoadChar function (UnloadChar is optional).
 LocalPlayer.CharacterAdded:Connect(function(character)
 	for _, mod in modules do
-		if mod.LoadChar == nil then continue end
+		if mod == false or mod.LoadChar == nil then continue end
 		task.spawn(mod.LoadChar, character)
 	end
 end)
 
 if LocalPlayer.Character then
 	for _, mod in modules do
-		if mod.LoadChar == nil then continue end
+		if mod == false or mod.LoadChar == nil then continue end
 		task.spawn(mod.LoadChar, LocalPlayer.Character)
 	end
 end
 
 LocalPlayer.CharacterRemoving:Connect(function(character)
 	for _, mod in modules do
-		if mod.UnloadChar == nil then continue end
+		if mod == false or  mod.UnloadChar == nil then continue end
 		task.spawn(mod.UnloadChar, character)
 	end
 end)
