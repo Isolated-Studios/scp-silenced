@@ -2,8 +2,7 @@ local module = {}
 
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Player = game:GetService("Players").LocalPlayer
-local UIS = game:GetService("UserInputService")
+local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local Modules = ReplicatedStorage:WaitForChild("Modules")
 local CircleFrames = require(Modules:WaitForChild("UI"):WaitForChild("CircleFrames"))
@@ -11,11 +10,11 @@ local CircleFrames = require(Modules:WaitForChild("UI"):WaitForChild("CircleFram
 local Player = game:GetService("Players").LocalPlayer
 local Dot = nil
 
-local function loadCharacter(Character)
+function module.LoadChar(Character)
 	local Humanoid = Character:WaitForChild("Humanoid")
-	local Mouse = game:GetService("Players").LocalPlayer:GetMouse()
+	local Mouse = Player:GetMouse()
 	local renderStep = RunService.RenderStepped:Connect(function()
-		UIS.MouseIconEnabled = false
+		UserInputService.MouseIconEnabled = false
 		Dot.Position = UDim2.new(0,Mouse.X,0,Mouse.Y)
 	end)
 	Humanoid.Died:Once(function()
@@ -32,7 +31,7 @@ function module.Init()
 	local ArrowPower = MouseUI:WaitForChild("Arrow")
 	local MainCrosshairFrame = Dot:WaitForChild("Crosshair")
 	local CrosshairFrame = MainCrosshairFrame:WaitForChild("Frame")
-	local CircleFrame = Dot:WaitForChild("Progress")
+	-- local CircleFrame = Dot:WaitForChild("Progress")
 	local ArrowFrame = Dot:WaitForChild("ArrowFrame")
 	local ArrowFolder = ArrowFrame:WaitForChild("Arrows")
 	local ArrowShadowFolder = ArrowFrame:WaitForChild("ArrowShadows")
@@ -52,7 +51,7 @@ function module.Init()
 			end
 		end
 	end
-	
+
 	local function enableArrows ()
 		if ArrowPower:GetAttribute("Enabled") then
 			changeArrowState()
@@ -68,10 +67,10 @@ function module.Init()
 			end
 		end
 	end
-	
-	Percentage.Changed:Connect(function(val)
-		CircleFrames.Progress(CircleFrame,Percentage,Percentage.Value)
-	end)
+
+	-- Percentage.Changed:Connect(function(val)
+	-- 	CircleFrames.Progress(CircleFrame,Percentage,Percentage.Value)
+	-- end)
 	ChargePercentage.Changed:Connect(function(val)
 		if val == 0 then
 			ChargeFrame.Visible = false
@@ -91,15 +90,11 @@ function module.Init()
 		TweenService:Create(CrosshairFrame.U,TweenInfo.new(0.1,Enum.EasingStyle.Linear),{Position = UDim2.new(0.5,0,0.47,-val)}):Play()
 		TweenService:Create(CrosshairFrame.B,TweenInfo.new(0.1,Enum.EasingStyle.Linear),{Position = UDim2.new(0.5,0,0.53,val)}):Play()
 	end)
-	CircleFrames.Progress(CircleFrame,Percentage,0)
+	-- CircleFrames.Progress(CircleFrame,Percentage,0)
 	enableArrows()
 	changeArrowState()
 	ArrowPower:GetAttributeChangedSignal("Enabled"):Connect(enableArrows)
 	ArrowPower.Changed:Connect(changeArrowState)
-	Player.CharacterAdded:Connect(loadCharacter)
-	if Player.Character then
-		loadCharacter(Player.Character)
-	end
 end
 
 return module
