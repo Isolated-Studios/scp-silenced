@@ -122,8 +122,8 @@ function module.Init()
 		if Current then
 			Highlight.FillTransparency = math.clamp(Highlight.FillTransparency - dt * 2, 0.85, 1)
 
-			if Interacting and Current:GetAttribute("interactTime") then
-				ProgressBar.Fill.Size = UDim2.new((tick() - lastInteractionStart) / Current:GetAttribute("interactTime"), 0, 1, 0)
+			if Interacting and Current:GetAttribute("InteractTime") then
+				ProgressBar.Fill.Size = UDim2.new((tick() - lastInteractionStart) / Current:GetAttribute("InteractTime"), 0, 1, 0)
 				ProgressBar.GroupTransparency = math.clamp(ProgressBar.GroupTransparency - dt * 8, 0, 1)
 
 				GuideLabel.TextTransparency = math.clamp(GuideLabel.TextTransparency + dt * 8, 0, 1)
