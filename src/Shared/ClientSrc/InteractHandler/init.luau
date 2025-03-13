@@ -181,19 +181,14 @@ function module.Init()
 		end
 	end)
 
-	UserInputService.InputBegan:Connect(function(Input)
-		if Debounce then return end
-		if Interacting then return end
+	UserInputService.InputBegan:Connect(function(Input, gameProcessed)
+		if Debounce or Interacting or gameProcessed then return end
 		if PlayerGui.Inventory.Main.GroupTransparency == 0 then return end
 		if Input.KeyCode == KeybindHandler.Keybind("Interact", LocalPlayer) or (Input.UserInputType == Enum.UserInputType.MouseButton1 and (not Character:FindFirstChildOfClass("Tool") or (Character:FindFirstChildOfClass("Tool") and Character:FindFirstChildOfClass("Tool"):GetAttribute("CanInteractWithTool")))) then
 			if Current then
 				Debounce = true
 				BeginningInput = Input
-				local textColor = Color3.fromRGB(20, 140, 200)
-				if Current:FindFirstChild("Hitbox") then
-					textColor = Current.Hitbox:GetAttribute("HighlightColor")
-				end
-				startInteraction(Current:GetAttribute("InteractTime"), textColor)
+				startInteraction(Current:GetAttribute("InteractTime"))
 
 				task.wait()
 				Debounce = false
@@ -201,10 +196,8 @@ function module.Init()
 		end
 	end)
 
-	UserInputService.InputEnded:Connect(function(Input, gameProcessed)
-		if gameProcessed and Humanoid and not Humanoid:GetAttribute("Dragging") then return end
+	UserInputService.InputEnded:Connect(function(Input)
 		if Input == BeginningInput and Interacting then
-			Interacting = false
 			cancelInteraction()
 		end
 	end)
