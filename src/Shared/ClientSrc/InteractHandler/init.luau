@@ -57,7 +57,7 @@ local function completeInteraction()
 	ReplicatedStorage.Events.Interaction.FinishInteraction:FireServer(Current, Current:GetAttribute("interactFinishEventId"))
 end
 
-local function startInteraction(InteractTime, textColor)
+local function startInteraction(InteractTime)
 	Interacting = true
 	local localInteractionStart = tick()
 	lastInteractionStart = localInteractionStart
