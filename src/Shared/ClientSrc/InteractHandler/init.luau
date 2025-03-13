@@ -57,7 +57,7 @@ local function completeInteraction()
 	ReplicatedStorage.Events.Interaction.FinishInteraction:FireServer(Current, Current:GetAttribute("interactFinishEventId"))
 end
 
-local function startInteraction(InteractTime)
+local function startInteraction(InteractTime, textColor)
 	Interacting = true
 	local localInteractionStart = tick()
 	lastInteractionStart = localInteractionStart
@@ -165,7 +165,7 @@ function module.Init()
 		if Current and not Current:GetAttribute("interactable") then Current = Current:FindFirstAncestorOfClass("Model") end
 		if Current and not Current:GetAttribute("interactable") then Current = nil end
 		if Current and not Current.PrimaryPart then Current = nil end
-		if Current and Current.PrimaryPart and CommonToolFunctions:getDistance(Current.PrimaryPart.Position, Character.PrimaryPart.Position) > Current:GetAttribute("maxRange") then Current = nil end
+		if Current and Current.PrimaryPart and CommonToolFunctions.getDistance(Current.PrimaryPart.Position, Character.PrimaryPart.Position) > Current:GetAttribute("maxRange") then Current = nil end
 		if Highlight.Adornee ~= Current  and Highlight.FillTransparency ~= 1 then
 			local c = Highlight:Clone()
 			c.Parent = script

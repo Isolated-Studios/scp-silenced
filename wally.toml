@@ -8,3 +8,6 @@ private = true
 [dependencies]
 cmdr = "evaera/cmdr@1.12.0"
 Trove = "sleitnick/trove@1.5.0"
+TypedRemote = "sleitnick/typed-remote@0.2.0"
+TaskQueue = "sleitnick/task-queue@1.0.0"
+Net = "sleitnick/net@0.2.0"

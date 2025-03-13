@@ -1,4 +1,3 @@
-local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
@@ -24,10 +23,10 @@ function module.injectViewModelHandler(h)
 	ViewModelHandler = h
 end
 
-function module.LoadChar(char)
-	Character = char
+function module.LoadChar(Char)
+	Character = Char
 	Backpack = Players.LocalPlayer:WaitForChild("Backpack")
-	Humanoid = char:WaitForChild("Humanoid")
+	Humanoid = Char:WaitForChild("Humanoid")
 	Animator = Humanoid:WaitForChild("Animator")
 end
 
@@ -49,7 +48,7 @@ function module.EquipTool(Tool: Tool)
 		return
 	end
 
-	CurrentEquipID = HttpService:GenerateGUID()
+	CurrentEquipID = tick()
 	local thisEquipID = CurrentEquipID
 
 	-- Load default animations (holding and (un)equipping)

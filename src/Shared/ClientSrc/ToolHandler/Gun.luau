@@ -124,6 +124,8 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 	local CharReload1 = Animator:LoadAnimation(CharacterAnimations.Reload1)
 	local VMReload2 = nil
 	local CharReload2 = nil
+	local VMReload2Last = nil
+	local CharReload2Last = nil
 	local VMReload3 = nil
 	local CharReload3 = nil
 	local VMEmptyReload = nil
@@ -142,6 +144,10 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 	if VMAnimations:FindFirstChild("Reload2") then
 		VMReload2 = VMAnimator:LoadAnimation(VMAnimations.Reload2)
 		CharReload2 = Animator:LoadAnimation(CharacterAnimations.Reload2)
+	end
+	if VMAnimations:FindFirstChild("Reload2Last") then
+		VMReload2Last = VMAnimator:LoadAnimation(VMAnimations.Reload2Last)
+		CharReload2Last = Animator:LoadAnimation(CharacterAnimations.Reload2Last)
 	end
 	if VMAnimations:FindFirstChild("Reload3") then
 		VMReload3 = VMAnimator:LoadAnimation(VMAnimations.Reload3)
@@ -162,6 +168,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 	local animationEvents = {
 		["Reload1"] = CTF.getAllAnimationEventNames(VMReload1),
 		["Reload2"] = CTF.getAllAnimationEventNames(VMReload2),
+		["Reload2Last"] = CTF.getAllAnimationEventNames(VMEmptyReload),
 		["Reload3"] = CTF.getAllAnimationEventNames(VMReload3),
 		["EmptyReload"] = CTF.getAllAnimationEventNames(VMEmptyReload),
 	}
@@ -171,6 +178,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		["Bolt"] = {VMBolt,CharBolt},
 		["Reload1"] = {VMReload1,CharReload1},
 		["Reload2"] = {VMReload2,CharReload2},
+		["Reload2Last"] = {VMReload2Last,CharReload2Last},
 		["Reload3"] = {VMReload3,CharReload3},
 		["EmptyReload"] = {VMEmptyReload,CharEmptyReload},
 	}
@@ -377,21 +385,27 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		HoldFire = false
 	end
 
-	local function fireGun ()
-		if magBool.Value <= 0 then return end
-		magBool.Value -= 1
-		SetItemHolder:FireServer(Tool,"Mag",magBool.Value)
+	local function fireGun () --/ Big evil function that fires the gun
+		if magBool.Value <= 0 then return end --/ the mag is empty
+
+		magBool.Value -= 1 --/ subtract a round from the mag
+
+		SetItemHolder:FireServer(Tool,"Mag",magBool.Value) -- UI shenanigans
 		editBulletFrame("Empty",0.02)
-		if Settings.BurstAmount > 1 then
+
+		if Settings.BurstAmount > 1 then -- If the gun is a burst gun, will delay the cycle for the UI
 			local burstdelay = Settings.BurstDelay or 0.01
 			task.delay(burstdelay,function()
 				editBulletFrame("Cycle",0.2)
 			end)
 		end
-		Bolted = false
+
+		Bolted = false --/Gun is no longer bolted
 		SetItemHolder:FireServer(Tool,"Bolted",false)
+
 		HoldFire = true
-		if Settings.FireDelay then
+
+		if Settings.FireDelay then -- Used for when you want a delay for the round to be fired, typically when the hammer is coming down.
 			if Settings.HammerAngle then
 				Hammer.C0 = CFrame.new(Hammer.C0.Position)*CFrame.Angles(math.rad(Settings.HammerAngle.X),math.rad(Settings.HammerAngle.Y),math.rad(Settings.HammerAngle.Z))
 			end
@@ -400,34 +414,46 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 			end
 			task.wait(Settings.FireDelay)
 		end
-		if Settings.HammerAngle then
+
+		if Settings.HammerAngle then -- If hammer exists, will reset position
 			Hammer.C0 = CFrame.new(Hammer.C0.Position)*CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))
 		end
-		if Settings.CylinderAngle then
+		if Settings.CylinderAngle then -- If hammer exists, will reset position
 			Cylinder.C0 = CFrame.new(Cylinder.C0.Position)*CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))
 		end
+
 		if Settings.PitchLastBullets and Settings.PitchLastBullets > 0 and magBool.Value+1<= Settings.PitchLastBullets then
+			--/ The last 3 or so bullets are pitched up incrementally
 			local value = Settings.PitchLastBullets-(magBool.Value)
 			local pitch = Sounds["Fire"].PlaybackSpeed+((Sounds["Fire"].PlaybackSpeed*value)/Settings.PitchLastBullets)
 			CTF.playSound(Sounds,"Fire",Handle,true,true,pitch)
 		else
+			--/ bullets aren't pitched up
 			CTF.playSound(Sounds,"Fire",Handle,true,true)
 		end
-		Shove:Fire(Settings.LinearShove,Settings.AngularShove)
-		gunSpread()
-		CTF.flashGun(Flash,Flash.FlashLight,true)
-		local aimDivisor = 1
+
+		Shove:Fire(Settings.LinearShove,Settings.AngularShove) --/ shove event
+
+		gunSpread() --/ apply gun spread
+
+		CTF.flashGun(Flash,Flash.FlashLight,true) -- uses CTF to flash the gun for light and particles
+
+		local aimDivisor = 1 --/ This section reduces the shove of the gun if you're aiming
 		local possibleNegative = math.floor(math.random(-2, 1))
 		if possibleNegative == 0 then possibleNegative = 1 elseif possibleNegative == -2 then possibleNegative = -1 end
 		if Aiming then
 			aimDivisor = 2
 		end
-		animationHandle("Recoil","Play")
+
+		animationHandle("Recoil","Play") --/ play the recoil animation
+
 		if magBool.Value == 0 and Settings.BoltBackWhenEmpty and Handle:FindFirstChild("Bolt") then
+			--/ pushes the bolt back if BoltBackWhenEmpty is true and mag is empty
 			local Bolt = Handle.Bolt
 			TweenService:Create(Bolt,TweenInfo.new(0.1,Enum.EasingStyle.Linear),{C1 = BackBoltC1}):Play()
 			Tool:SetAttribute("BoltSet",true)
 		end
+
 		local ShoveAmount = Vector3.new(Settings.CameraShove.X/aimDivisor,Settings.CameraShove.Y/aimDivisor*possibleNegative,Settings.CameraShove.Z/aimDivisor*possibleNegative)
 		recoilSpring:shove(ShoveAmount)
 		local randomValue = math.random(1,999999999)
@@ -442,19 +468,19 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 	end
 
 	local function attemptToFire ()
-		if Settings.Bolted then
-			if Bolted then
-				for i=1,Settings.BurstAmount,1 do
+		if Settings.Bolted then --/ If the gun can be bolted
+			if Bolted then --/ Gun is bolted so it will fire the gun
+				for i=1,Settings.BurstAmount,1 do --/ Burst loop pow pow pow
 					fireGun()
 					if Settings.BurstDelay then
 						task.wait(Settings.BurstDelay)
 					end
 				end
-			else
+			else --/ Gun isn't bolted so it must bolt
 				boltGun()
 			end
-		else
-			for i=1,Settings.BurstAmount,1 do
+		else --/ No bolting required, will fire gun
+			for i=1,Settings.BurstAmount,1 do --/ Burst loop pow pow pow
 				fireGun()
 				if Settings.BurstDelay then
 					task.wait(Settings.BurstDelay)
@@ -466,35 +492,36 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 	local function gunPrime ()
 		if not HoldFire and not FireCooldown then
 			FireCooldown = true
-			if Settings.SqueezeTrigger and not Bolted then
+			if Settings.SqueezeTrigger and not Bolted then -- Holding trigger to squeeze
 				local initialTime = tick()
 				local currentTime = tick() - initialTime
-				if Settings.HammerAngle then
+				if Settings.HammerAngle then --/ If a hammer exists will reset
 					Hammer.C0 = CFrame.new(Hammer.C0.Position)*CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))
 				end
-				if Settings.CylinderAngle then
+				if Settings.CylinderAngle then --/ If a cylinder exists will reset
 					Cylinder.C0 = CFrame.new(Cylinder.C0.Position)*CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))
 				end
 				while task.wait() and currentTime < Settings.SqueezeTrigger and Tool.Parent == Character do
+					--/ The squeezing of the trigger that sets the positions of the hammer and/or cylinder
 					if Settings.HeldWhenSqueezed and not UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
 						break
 					end
 					currentTime = tick() - initialTime
-					if Settings.HammerAngle then
+					if Settings.HammerAngle then --/ If a hammer exists will pull back
 						Hammer.C0 = CFrame.new(Hammer.C0.Position)*CFrame.Angles(math.rad((currentTime/Settings.SqueezeTrigger)*Settings.HammerAngle.X),math.rad((currentTime/Settings.SqueezeTrigger)*Settings.HammerAngle.Y),math.rad((currentTime/Settings.SqueezeTrigger)*Settings.HammerAngle.Z))
 					end
-					if Settings.CylinderAngle then
+					if Settings.CylinderAngle then --/ If a cylinder exists will cycle
 						Cylinder.C0 = CFrame.new(Cylinder.C0.Position)*CFrame.Angles(math.rad((currentTime/Settings.SqueezeTrigger)*Settings.CylinderAngle.X),math.rad((currentTime/Settings.SqueezeTrigger)*Settings.CylinderAngle.Y),math.rad((currentTime/Settings.SqueezeTrigger)*Settings.CylinderAngle.Z))
 					end
 				end
-				if currentTime >= Settings.SqueezeTrigger then
+				if currentTime >= Settings.SqueezeTrigger then -- the squeezing has ended and will attempt to fire gun
 					attemptToFire()
 				else
-					if Settings.HammerAngle then
+					if Settings.HammerAngle then -- reset hammer position
 						Hammer.C0 = CFrame.new(Hammer.C0.Position)*CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))
 					end
 
-					if Settings.CylinderAngle then
+					if Settings.CylinderAngle then -- reset cylinder position
 						Cylinder.C0 = CFrame.new(Cylinder.C0.Position)*CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))
 					end
 				end
@@ -528,7 +555,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 				editBulletFrame("Cycle")
 			end
 
-			if Settings.ReloadStyle == 1 then
+			if Settings.ReloadStyle == 1 then --/ Mag reload
 				if magBool.Value <= 0 and Settings.EmptyReload then
 					animationHandle("EmptyReload","Play")
 					if Settings.EmptyReloadSpeed then
@@ -541,35 +568,45 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 					end
 				end
 
-			else
-				if magBool.Value <= 0 and Settings.EmptyReload then
+			else --/ Shell reload
+				if magBool.Value <= 0 and Settings.EmptyReload then --/ Will play the EmptyReload as a transition instead of Reload1 if mag is empty
 					animationHandle("EmptyReload","Play")
 					if Settings.EmptyReloadSpeed then
 						animationHandle("EmptyReload","Speed",VMEmptyReload.Length/Settings.EmptyReloadSpeed,CharEmptyReload.Length/Settings.EmptyReloadSpeed)
 					end
-				else
+					VMEmptyReload.Stopped:Wait() --/ Wait for the reload to stop
+				else --/ Otherwise, just play Reload1 as a transition
 					animationHandle("Reload1","Play")
 					if Settings.Reload1Speed then
 						animationHandle("Reload1","Speed",VMReload1.Length/Settings.Reload1Speed,CharReload1.Length/Settings.Reload1Speed)
 					end
+					VMReload1.Stopped:Wait() --/ Wait for the reload to stop
 				end
-				VMReload1.Stopped:Wait()
-				if Tool.Parent ~= Character then return end
-				if magBool.Value <= 0 and Settings.EmptyReload then
+				if Tool.Parent ~= Character then return end --/ stupid dumb idiot check i hate you gun script
+				if magBool.Value <= 0 and Settings.EmptyReload then --/ STOPPPP the empty reload if it exists
 					animationHandle("EmptyReload","Stop")
 				else
-					animationHandle("Reload1","Stop")
+					animationHandle("Reload1","Stop") --/ STOPPPP the reload1 instead
 				end
 				while Tool.Parent == Character and magBool.Value < Settings.MagSize and not CancelReload and ammoBool.Value > 0 do
-					animationHandle("Reload2","Play")
-					if Settings.Reload2Speed then
-						animationHandle("Reload2","Speed",VMReload2.Length/Settings.Reload2Speed,CharReload2.Length/Settings.Reload2Speed)
+					--/Reload2 is our animation being looped to simulate the shells going in.
+					if magBool.Value == Settings.MagSize-1 and VMReload2Last then -- if Reload2Last animation exists, play that if last shell is inserted
+						animationHandle("Reload2Last","Play")
+						if Settings.Reload2LastSpeed then
+							animationHandle("Reload2Last","Speed",VMReload2Last.Length/Settings.Reload2LastSpeed,CharReload2Last.Length/Settings.Reload2LastSpeed)
+						end
+						VMReload2Last.Stopped:Wait()
+					else -- Otherwise, play the regular Reload2 animation
+						animationHandle("Reload2","Play")
+						if Settings.Reload2Speed then
+							animationHandle("Reload2","Speed",VMReload2.Length/Settings.Reload2Speed,CharReload2.Length/Settings.Reload2Speed)
+						end
+						VMReload2.Stopped:Wait()
 					end
-					VMReload2.Stopped:Wait()
 				end
 				CancelReload = false
 				if Tool.Parent ~= Character then return end
-				animationHandle("Reload2","Stop")
+				--animationHandle("Reload2","Stop")
 				animationHandle("Reload3","Play")
 				if Settings.Reload3Speed then
 					animationHandle("Reload3","Speed",VMReload3.Length/Settings.Reload3Speed,CharReload3.Length/Settings.Reload3Speed)
@@ -585,20 +622,28 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		end
 	end
 
-	local function mouseButtonFire ()
+	local function mouseButtonFire () --/ Checks if gun is full
 		if not Bursting and (not Humanoid:GetAttribute("Running") or Settings.RunAndGun) then
 			if Reloading and not CancelReload and Settings.ReloadStyle == 0 and magBool.Value > 0 then
 				CancelReload = true
 			elseif not Reloading then
+
+				animationHandle("Reload1","Stop") --/ Still stop the reload animations just in case
+				if VMEmptyReload then
+					animationHandle("EmptyReload","Stop")
+				end
+
 				if magBool.Value > 0 then
-					gunPrime()
+					gunPrime() --/ If gun is full, go to next step
 				else
-					Reload()
+					CTF.playSound(Sounds,"Empty",Handle,true,true) --/ if gun is empty, make clicking noise
 				end
 			elseif Reloading and Settings.ReloadStyle == 1 and magBool.Value > 0 then
 				Reloading = false
-				animationHandle("Reload1","Stop",0.1)
-				animationHandle("Reload2","Stop",0.1)
+				animationHandle("Reload1","Stop")
+				if VMEmptyReload then
+					animationHandle("EmptyReload","Stop")
+				end
 				if magBool.Value > 0 then
 					gunPrime()
 				else
