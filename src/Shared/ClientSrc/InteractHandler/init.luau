@@ -69,7 +69,7 @@ local function startInteraction(InteractTime)
 	if Current:GetAttribute("freezePlayer") == true then
 		Character:SetAttribute("Interacting", true)
 	end
-	if InteractTime > 0 then
+	if InteractTime and InteractTime > 0 then
 		task.delay(InteractTime, function()
 			if localInteractionStart == lastInteractionStart then
 				completeInteraction()
