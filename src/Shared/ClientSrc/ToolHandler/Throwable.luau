@@ -16,23 +16,23 @@ local CTF = require(ToolModules:WaitForChild("CommonToolFunctions"))
 local KeybindHandler = require(UIModules:WaitForChild("KeybindHandler"))
 local CustomMouse = require(UIModules:WaitForChild("CustomMouse"))
 
-function module.Init(Tool,ToolObjects,Character,Viewmodel)
+function module.Init(Tool, ToolObjects, Character, Viewmodel)
 	if Tool.Parent ~= Character then return end
-	Tool:SetAttribute("Activated",true)
-	local Settings = require(ToolObjects:WaitForChild("Settings"))
+	Tool:SetAttribute("Activated", true)
+	local Settings = require(ToolObjects.Settings)
 	--//Player
 	local Player = game.Players.LocalPlayer
 	local Humanoid = Character:WaitForChild("Humanoid")
 	local HRP = Character:WaitForChild("HumanoidRootPart")
 	local MotorModel = Viewmodel:WaitForChild("MotorModel")
-	
+
 	--//UI
 	local PlayerGui = Player.PlayerGui
 	local MouseUI = Player.PlayerGui:WaitForChild("MouseUI")
 	local DotFrame = MouseUI:WaitForChild("Dot")
 	local ArrowPower = MouseUI:WaitForChild("Arrow")
-	
-	local GunFrame = PlayerGui:WaitForChild("HUD"):WaitForChild("RightFrame"):WaitForChild("ListFrame"):WaitForChild("GunFrame") 
+
+	local GunFrame = PlayerGui:WaitForChild("HUD"):WaitForChild("RightFrame"):WaitForChild("ListFrame"):WaitForChild("GunFrame")
 	local CanvasGroup = GunFrame:WaitForChild("CanvasGroup")
 	local InnerFrame = CanvasGroup:WaitForChild("InnerFrame")
 	local ReserveFrame = CanvasGroup:WaitForChild("ReserveFrame")
@@ -41,30 +41,30 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 	local ModeText = InfoFrame:WaitForChild("Mode")
 	local PrimeMagBullet = GunFrame:WaitForChild("MagBullet")
 	local MagFrame = InnerFrame:WaitForChild("MagFrame")
-	
+
 	--//Bools
 	local Throwing = false
 	local Charging = false
-	
+
 	--//Tool Objects
 	local Sounds = ToolObjects:WaitForChild("Sounds")
 	local Handle = MotorModel:WaitForChild("Handle")
-	
+
 	--//Beginning Priming
 	ArrowPower:SetAttribute("Enabled",true)
-	
+
 	--//Animation Priming
 	local animationEventsList = {}
 	local Animator = Humanoid:WaitForChild("Animator")
 	local VMAnimator = Viewmodel.Humanoid.Animator
 	local CharacterAnimations = ToolObjects:WaitForChild("CharacterAnimations")
 	local VMAnimations = ToolObjects:WaitForChild("VMAnimations")
-	
+
 	local VMThrow = VMAnimator:LoadAnimation(VMAnimations.Throw)
-	local CharThrow = Animator:LoadAnimation(CharacterAnimations.Throw) 
+	local CharThrow = Animator:LoadAnimation(CharacterAnimations.Throw)
 	local VMRoll = VMAnimator:LoadAnimation(VMAnimations.Roll)
-	local CharRoll = Animator:LoadAnimation(CharacterAnimations.Roll) 
-	
+	local CharRoll = Animator:LoadAnimation(CharacterAnimations.Roll)
+
 	local animationEvents = {
 		--["AnimationName"] = CTF.getAllAnimationEventNames(VMAnimation),
 		["Throw"] = CTF.getAllAnimationEventNames(VMThrow),
@@ -96,7 +96,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		end
 	end
 	--\\
-	
+
 	--//Functions
 	local function disconnectFunctions (FunctionList)
 		for _,Function in pairs(FunctionList) do
@@ -105,21 +105,21 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 			end
 		end
 	end
-	
+
 	local function startToss ()
 		if Throwing then return end
-		if ArrowPower.Value == 1 then 
+		if ArrowPower.Value == 1 then
 			animationHandle("Roll","Play")
-		else 
+		else
 			animationHandle("Throw","Play")
 		end
 		Throwing = true
 	end
-	
+
 	local function castThrowable ()
 		local Origin = Handle.CFrame
-		if Viewmodel:GetAttribute("CloseToWall") then 
-			Origin = Viewmodel.CameraPart.CFrame 
+		if Viewmodel:GetAttribute("CloseToWall") then
+			Origin = Viewmodel.CameraPart.CFrame
 		end
 		local MouseFilterList = {}
 		for _,thing in pairs(Viewmodel:GetDescendants()) do
@@ -133,7 +133,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		CTF.castBullet(Tool, Origin.Position, -Direction, Settings.ThrowPower[ArrowPower.Value], Settings.MaxDistance or nil, Settings.Acceleration or nil, Settings.BulletTemplate or nil, Character,  nil, randomValue, true)
 	end
 	--\\
-	
+
 	--//Animation Handling
 	local eventBehavior = {
 		["Pin"] = function()
@@ -154,7 +154,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 			--VMRollAnimation:AdjustSpeed(2)
 			Charging = false
 			local Origin = Character.PrimaryPart.Position
-			if Viewmodel:GetAttribute("CloseToWall") then 
+			if Viewmodel:GetAttribute("CloseToWall") then
 				Origin = Character.PrimaryPart.Position
 			end
 			Tool:SetAttribute("Removing",true)
@@ -179,7 +179,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		end
 	end
 	--\\
-	
+
 	--//Actions
 	--\\
 
@@ -187,18 +187,18 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 	ReserveFrame.Visible = false
 	NameText.Text = Tool.Name
 	ModeText.Text = ""
-	CanvasGroup.GroupTransparency = 1	
+	CanvasGroup.GroupTransparency = 1
 	TweenService:Create(CanvasGroup,TweenInfo.new(0.3),{GroupTransparency = 0}):Play()
-	
+
 	local MagBullet = PrimeMagBullet:Clone()
 	MagBullet.Parent = MagFrame
 	MagFrame.UIGridLayout.CellSize = UDim2.new(1,-1,1,0)
 
 	CanvasGroup.Visible = true
 	--\\
-	
+
 	--//Events
-	
+
 	local inputBegan = UIS.InputBegan:Connect(function(Input,gpe)
 		if Tool:GetAttribute("Unequipping") or gpe or Humanoid:GetAttribute("InventoryOpen") then return end
 		if Input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -233,9 +233,9 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.KeyCode == KeybindHandler.Keybind("Grenade",Player) then
 			if Throwing and Charging and (VMThrow and VMThrow.IsPlaying or VMRoll and VMRoll.IsPlaying) then
 				Charging = false
-				if ArrowPower.Value == 1 then 
+				if ArrowPower.Value == 1 then
 					animationHandle("Roll","Speed",1)
-				else 
+				else
 					animationHandle("Throw","Speed",1)
 				end
 			end
@@ -258,4 +258,5 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 	end)
 	--\\
 end
+
 return module

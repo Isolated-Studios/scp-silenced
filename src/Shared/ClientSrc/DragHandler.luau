@@ -7,7 +7,6 @@ local module = {}
 module.RANGE = 16
 module.SCROLL_SENSITIVITY = 0.75
 module.MAX_FORCE = 2000
-module.HIGHLIGHT_SPEED = 8
 module.TARGET_VELOCITY = 20
 module.RESPONSIVENESS = 50
 
@@ -98,9 +97,9 @@ function module.Init()
 
 
 			if h.Adornee == Current then
-				h.FillTransparency = math.max(Holding and 0.7 or 0.85, h.FillTransparency - module.HIGHLIGHT_SPEED / 3 * dt)
+				h.FillTransparency = math.max(Holding and 0.7 or 0.85, h.FillTransparency - 2 * dt)
 			else
-				h.FillTransparency = math.min(1, h.FillTransparency + module.HIGHLIGHT_SPEED / 3 * dt)
+				h.FillTransparency = math.min(1, h.FillTransparency + 2 * dt)
 				if h.OutlineTransparency == 1 then
 					h:Destroy()
 					table.remove(Highlights, i)
