@@ -759,6 +759,9 @@ function Item:_updateItemToItemManagerDimentions(applyPosition: boolean?, applyS
 		local itemManagerOffset = selectedItemManager:GetOffset(self.Rotation)
 		local sizeScale = selectedItemManager:GetSizeScale()
 		local elementPosition = UDim2.fromOffset((self.Position.X + rotationOffset.X) * sizeScale.X + itemManagerOffset.X - self.ItemManager.GuiElement.Parent.AbsolutePosition.X, (self.Position.Y + rotationOffset.Y) * sizeScale.Y + itemManagerOffset.Y - self.ItemManager.GuiElement.Parent.AbsolutePosition.Y)
+		if self.ItemManager.GuiElement.Parent:IsA("ScrollingFrame") then
+			elementPosition += UDim2.fromOffset(self.ItemManager.GuiElement.Parent.CanvasPosition.X, self.ItemManager.GuiElement.Parent.CanvasPosition.Y)
+		end
 		if usePositionTween then
 			TweenService:Create(self.ItemElement, TweenInfo.new(0.25, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Position = elementPosition, Rotation = self.Rotation * 90}):Play()
 		else
