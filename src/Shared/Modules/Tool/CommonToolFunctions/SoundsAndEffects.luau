@@ -25,10 +25,10 @@ local TransparencyIgnoreIndex = {
 
 
 
-function module.playSound (Sounds: Sound | Instance, SoundName: string?, parent: Instance, replicate: boolean, ApplyRandomPitch: boolean, pitch: number?)
+function module.playSound (Sounds: Sound | Instance, SoundName: string?, parent: Instance, replicate: boolean, ApplyRandomPitch: boolean | table, Properties: table?)
 	assert(Sounds ~= nil, "Sound is nil.")
 	local Sound = Sounds
-	if SoundName then
+	if SoundName then --/ If SoundName is not nil, it'll treat Sounds as a folder, and look for SoundName in the folder.
 		Sound = Sounds[SoundName]
 	end
 	assert(Sound:IsA("Sound") == true, `{Sound:GetFullName()} is not a Sound.`)
@@ -37,12 +37,20 @@ function module.playSound (Sounds: Sound | Instance, SoundName: string?, parent:
 	NewSound.Parent = parent
 	NewSound:Play()
 
-	if pitch and replicate then
-		NewSound.PlaybackSpeed = pitch
+	if Properties then
+		for Property, Value in pairs(Properties) do
+			if NewSound[Property] then
+				NewSound[Property] = Value
+			end
+		end
 	end
 
 	if ApplyRandomPitch then
-		NewSound.PlaybackSpeed = Random.new():NextNumber(NewSound.PlaybackSpeed - 0.1, NewSound.PlaybackSpeed + 0.1)
+		if typeof(ApplyRandomPitch) == "table" then
+			NewSound.PlaybackSpeed = Random.new():NextNumber(ApplyRandomPitch[1],ApplyRandomPitch[2])
+		else
+			NewSound.PlaybackSpeed = Random.new():NextNumber(NewSound.PlaybackSpeed - 0.1, NewSound.PlaybackSpeed + 0.1)
+		end
 	end
 	Debris:AddItem(NewSound,NewSound.TimeLength)
 

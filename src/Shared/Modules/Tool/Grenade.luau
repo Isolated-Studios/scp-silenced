@@ -12,6 +12,8 @@ local Modules = ReplicatedStorage:WaitForChild("Modules")
 local GrenadeObjects = Objects:WaitForChild("GrenadeObjects")
 local ExplosionEffects = GrenadeObjects:WaitForChild("ExplosionEffects")
 local SpreadTemples = GrenadeObjects:WaitForChild("SpreadTemplates")
+
+local ToolModules = Modules:WaitForChild("Tool")
 local CharacterModules = Modules:WaitForChild("Character")
 local InteractionModules = Modules:WaitForChild("Interaction")
 
@@ -26,6 +28,7 @@ local FlashedEffectFunction = CharacterEvents:WaitForChild("FlashedEffectFunctio
 local Configs = ReplicatedStorage:WaitForChild("Configs")
 local GrenadeConfigs = Configs:WaitForChild("Grenade")
 
+local CTF = require(ToolModules:WaitForChild("CommonToolFunctions"))
 local StatusEffects = require(CharacterModules:WaitForChild("StatusEffects"))
 local DamageHandler = require(CharacterModules:WaitForChild("DamageHandler"))
 local ZoneModule = require(InteractionModules:WaitForChild("Zone"))
@@ -76,8 +79,10 @@ local function getCharactersFromRadius (radius,rootPosition)
 			local distance =  math.round((rootPart.Position-rootPosition).Magnitude)
 			local direction = (rootPart.Position-rootPosition).Unit
 			local raycastResult = workspace:Raycast(rootPosition,direction*(distance+10),grenadeParams)
-			if raycastResult and raycastResult.Instance and raycastResult.Instance.Parent and (raycastResult.Instance.Parent == rootPart.Parent or raycastResult.Instance.Parent.Parent and raycastResult.Instance.Parent.Parent == rootPart.Parent) then
-				table.insert(characterTable,{rootPart.Parent, distance})
+			if raycastResult and raycastResult.Instance and raycastResult.Instance.Parent and 
+				(raycastResult.Instance.Parent == rootPart.Parent or 
+					raycastResult.Instance.Parent.Parent and raycastResult.Instance.Parent.Parent == rootPart.Parent) then
+				table.insert(characterTable,{rootPart.Parent, distance,raycastResult.Position})
 			end
 		end
 	end
@@ -115,6 +120,7 @@ local function playExplosionEffect (Settings,model)
 end
 
 local function instantBlast (Settings,model)
+	local GibChance = 0.5 or Settings.GibChance
 	local PlayerId = model:GetAttribute("PlayerId")
 	local Player = Players:GetPlayerByUserId(PlayerId)
 	playExplosionEffect(Settings,model)
@@ -129,7 +135,7 @@ local function instantBlast (Settings,model)
 		local canDown = 60
 		local Character = charInfo[1]
 		local Distance = charInfo[2]
-		
+		local raycastPosition = charInfo[3]
 		if Players:GetPlayerFromCharacter(Character) and Player ~= Players:GetPlayerFromCharacter(Character) and TeamHandler.Check(Player,Players:GetPlayerFromCharacter(Character)) == 0 then
 			return
 		end
@@ -151,8 +157,23 @@ local function instantBlast (Settings,model)
 		end
 		if Damage > 100 then
 			canDown = nil
+			GibChance = 2
 		end
-		DamageHandler.Damage(Damage,Character:FindFirstChildOfClass("Humanoid"),Character:FindFirstChild("UpperTorso"),Player,canDown,true)
+		
+		local Humanoid = Character:FindFirstChildOfClass("Humanoid")
+		local HitPart = Character:FindFirstChild("UpperTorso")
+		local Twitch = true
+		local Blood = true
+		local Direction = CFrame.new(grenadePosition, raycastPosition).LookVector
+		local Sever = false
+		local AnnihilationRange = {1,5} or Settings.AnnihilationRange
+		
+		DamageHandler.Damage(Damage,Humanoid,HitPart,Player,false,Twitch,nil,nil,Blood,Direction,GibChance,Sever,nil,nil,AnnihilationRange)
+		
+		if Humanoid.Health <= 0 then --/ Flings the player if they die to the blast
+			CTF.applyForce(HitPart,Direction*Damage*8,0.15)
+		end
+		
 		if beginningEffectFunctions[Settings.GrenadeType] and Players:GetPlayerFromCharacter(Character) then
 			beginningEffectFunctions[Settings.GrenadeType](Settings,model,Players:GetPlayerFromCharacter(Character))
 		end

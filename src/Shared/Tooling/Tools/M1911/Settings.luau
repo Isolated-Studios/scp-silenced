@@ -62,8 +62,8 @@ local Settings = {
 	AngularShove = Vector3.new(1,0.1,0.1); -- Angular shove applied to viewmodel when recoiled
 	
 	HighlightColor = Color3.fromRGB(100, 210, 210);
-	Size = Vector2.new(1,1); -- Does nothing right now
-	Image = "rbxassetid://0"; -- Does nothing right now
+	Size = Vector2.new(3,2); -- Does nothing right now
+	Image = "rbxassetid://15509673870"; -- Does nothing right now
 	Description = "" -- Does nothing right now
 }
 return Settings

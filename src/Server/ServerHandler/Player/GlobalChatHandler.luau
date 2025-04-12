@@ -1,7 +1,10 @@
 local module = {}
 function module.Init()
 	local TextChatService = game:GetService("TextChatService")
+	local ReplicatedStorage = game:GetService("ReplicatedStorage")
 	local Players = game:GetService("Players")
+	local TextService = game:GetService("TextService")
+	local ChatEvent = ReplicatedStorage.Events.Character.ChatEvent
 	local generalChannel: TextChannel = TextChatService:WaitForChild("TextChannels").RBXGeneral
 
 	--//proximity chat
@@ -22,5 +25,15 @@ function module.Init()
 		return (targetPos - sourcePos).Magnitude < 50
 	end
 	--\\
+	
+	ChatEvent.OnServerEvent:Connect(function(sendingPlayer, Character, Message)
+		if sendingPlayer.Character == Character then
+			for _,otherPlayer in pairs(Players:GetPlayers()) do
+				if sendingPlayer ~= otherPlayer then 
+					ChatEvent:FireClient(otherPlayer,Character,Message)
+				end
+			end
+		end
+	end)
 end
 return module

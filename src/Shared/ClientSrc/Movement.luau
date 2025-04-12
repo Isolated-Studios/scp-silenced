@@ -26,6 +26,7 @@ local MoveDirection = Vector3.zero
 local TargetDirection = Vector3.zero
 local Acceleration = 125
 local WalkSpeed = 20
+local currentSpeed = 0
 local CameraLean = CFrame.new()
 
 function module.GetWalkSpeed()
@@ -41,7 +42,7 @@ function module.LoadChar(Character)
 	local CrouchWalking = false
 	local DownedWalking = false
 	local Humanoid: Humanoid = Character:WaitForChild('Humanoid')
-	local Animator = Humanoid.Animator
+	local Animator = Humanoid:WaitForChild("Animator")
 	local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
 	local LeftShoulder = Character:WaitForChild("LeftUpperArm"):WaitForChild("LeftShoulder")
 	local RightShoulder = Character:WaitForChild("RightUpperArm"):WaitForChild("RightShoulder")
@@ -166,12 +167,44 @@ function module.LoadChar(Character)
 			stopRunning()
 		end
 	end
+	
+	local attributeFunctions = {
+		["Stamina"] = function()
+			if not staminaGrowthStarted then
+				beginStaminaGrowth()
+			end
+		end,
+		
+		["Running"] = function()
+			if Humanoid:GetAttribute("Running") then
+				beginStaminaDrain()
+			end
+		end,
+		
+		["Crouching"] = function()
+			if Humanoid:GetAttribute("Crouching") and CharCrouchIdle then
+				CharCrouchIdle:Play()
+				if currentSpeed > 0 and CharCrouchWalk and not CrouchWalking then
+					CrouchWalking = true
+					CharCrouchWalk:Play(.3)
+				end
+			elseif Humanoid:GetAttribute("Crouching") == false and CharCrouchIdle then	
+				CrouchWalking = false
+				CharCrouchIdle:Stop(.2)
+				CharCrouchWalk:Stop(.2)
+			end
+		end,
+	}
+	
+	
+	
 	local inputBegan = UIS.InputBegan:Connect(function(Input,gpe)
 		if gpe then return end
 		if Input.KeyCode == KeybindHandler.Keybind("Crouch",Player) then
 			startCrouching()
 		end
 	end)
+	
 	local inputEnded = UIS.InputEnded:Connect(function(Input)
 		if Input.KeyCode == KeybindHandler.Keybind("Sprint",Player) then
 			stopRunning()
@@ -180,38 +213,19 @@ function module.LoadChar(Character)
 			stopRunning()
 		end
 	end)
-	Humanoid.AttributeChanged:Connect(function(atr)
-		if atr == "Stamina" then
-			if not staminaGrowthStarted then
-				beginStaminaGrowth()
-			end
-		end
-
-		if atr == "Running" then
-			if Humanoid:GetAttribute("Running") then
-				beginStaminaDrain()
-			end
-		end
-
-		if atr == "Downed" and not Humanoid:GetAttribute("Downed") then
-			--Humanoid.CameraOffset = noneCrouchOffset
-		end
-
-		if Humanoid:GetAttribute("Crouching") and CharCrouchIdle then
-			CharCrouchIdle:Play()
-			if Humanoid.MoveDirection.Magnitude > 0 and CharCrouchWalk and not CrouchWalking then
-				CrouchWalking = true
-				CharCrouchWalk:Play(.3)
-			end
-		elseif CharCrouchIdle then
-			CrouchWalking = false
-			CharCrouchIdle:Stop(.2)
-			CharCrouchWalk:Stop(.2)
+	
+	local humanoidRunning = Humanoid.Running:Connect(function(cS) --/ Get currentSpeed to tell if player is moving or not.
+		currentSpeed = cS
+	end)
+	
+	local attributeChanged = Humanoid.AttributeChanged:Connect(function(atr)
+		if attributeFunctions[atr] then --/ play attribute function from attribute if it exists
+			attributeFunctions[atr]()
 		end
 
 		if Humanoid:GetAttribute("Downed") and CharDownedIdle then
 			CharDownedIdle:Play()
-			if Humanoid.MoveDirection.Magnitude > 0 and CharDownedWalk and not DownedWalking then
+			if currentSpeed > 0 and CharDownedWalk and not DownedWalking then
 				DownedWalking = true
 				CharDownedWalk:Play(.3)
 			end
@@ -255,9 +269,6 @@ function module.LoadChar(Character)
 		if (TargetDirection - MoveDirection).Magnitude < 0.1 then
 			MoveDirection = TargetDirection
 		end
-		--if MoveDirection.Magnitude > WalkSpeed then
-		--	MoveDirection = MoveDirection.Unit * WalkSpeed
-		--end
 
 		if MoveDirection.Magnitude > 0 then
 			Humanoid.WalkSpeed = MoveDirection.Magnitude
@@ -270,7 +281,7 @@ function module.LoadChar(Character)
 			stopRunning()
 		end
 
-		if Humanoid.MoveDirection.Magnitude == 0 then
+		if currentSpeed == 0 then
 			standingStill = true
 			if Humanoid:GetAttribute("Crouching") and Humanoid.CameraOffset == movingCrouchOffset then
 				changeCrouchOffset()
@@ -281,12 +292,6 @@ function module.LoadChar(Character)
 			if Humanoid:GetAttribute("Crouching") and Humanoid.CameraOffset == stillCrouchOffset then
 				changeCrouchOffset()
 			end
-		end
-
-		if Humanoid:GetAttribute("Downed") and Humanoid.CameraOffset ~= downedOffset then
-			--Humanoid.CameraOffset = downedOffset
-		--elseif not Humanoid:GetAttribute("Crouching") and not Humanoid:GetAttribute("Downed") then
-		--	Humanoid.CameraOffset = noneCrouchOffset
 		end
 
 		startRunning()
@@ -358,6 +363,8 @@ function module.LoadChar(Character)
 		inputEnded:Disconnect()
 		heartBeat:Disconnect()
 		runChange:Disconnect()
+		attributeChanged:Disconnect()
+		humanoidRunning:Disconnect()
 	end)
 end
 return module

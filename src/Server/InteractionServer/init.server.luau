@@ -38,7 +38,7 @@ local InteractFunctions = {
 	end,
 	
 	[2] = function(interactObject, player) -- basic button door
-		
+		if not interactObject:GetAttribute("interactable") then return end -- Might fix door spam bug?
 		local function changeLightParts (LightModel,colorPicked)
 			for _,light in pairs(LightModel:GetDescendants()) do
 				if light:IsA("BasePart") or light:IsA("SurfaceLight") or light:IsA("PointLight") or light:IsA("SpotLight") then

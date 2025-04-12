@@ -10,6 +10,8 @@ return {
 	MidZone = 40; -- Middle zone of grenade
 	FarZone = 150; -- Outer zone of grenade
 	
+	GibChance = 0.01; -- Chance of gibbing when in damage zone for instant blast grenades (0 is 0%, 1 is 100%)
+	
 	LowZoneEffects = { -- What effects are played in the low zone
 		["Burning"] = {
 			Power = 2,

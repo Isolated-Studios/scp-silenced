@@ -13,6 +13,7 @@ end
 local ignoreCharPart = {"HumanoidRootPart","UpperTorso","Head","CollisionBox"}
 
 function module.Init(Character)
+	local Died = false
 	for _,charPart in pairs(Character:GetDescendants()) do
 		if charPart:IsA("BasePart") then
 			charPart.CollisionGroup = "Character"
@@ -21,8 +22,9 @@ function module.Init(Character)
 	local Humanoid = Character:WaitForChild("Humanoid")	
 	Humanoid.BreakJointsOnDeath = false
 	
-	local healthChanged = Humanoid.HealthChanged:Connect(function(health)
-		if roundNumber(health,3) == 0.001 then
+	local healthChanged = nil
+	healthChanged = Humanoid.HealthChanged:Connect(function(health)
+		if roundNumber(health,3) == 0.001 then --/ Player gets downed
 			task.defer(function()
 				if Humanoid:GetAttribute("Downed") or Humanoid:GetAttribute("DownedOnceAlready") then Humanoid.Health = 0 return end
 				Humanoid:UnequipTools()
@@ -71,36 +73,37 @@ function module.Init(Character)
 				
 				DownedEvent:FireClient(Players:GetPlayerFromCharacter(Character))
 			end)
-		end
-	end)
-	
-	Humanoid.Died:Once(function()
-		healthChanged:Disconnect()
-		local ragdoll = Instance.new("Model")
-		ragdoll:SetAttribute("Ragdoll",true)
-		ragdoll.Name = Character.Name.."'s Ragdoll"
-		ragdoll.Parent = workspace.Corpses
-		local objVal = Instance.new("ObjectValue")
-		objVal.Name = "Ragdoll"
-		objVal.Value = ragdoll
-		objVal.Parent = Character
-		local ragdollHumanoid = Character:FindFirstChildOfClass("Humanoid"):Clone()
-		local ragdollHRP = Character:FindFirstChild("HumanoidRootPart"):Clone()
-		ragdollHumanoid.Parent = ragdoll
-		ragdollHRP.Parent = ragdoll
-		ragdollHRP.CanCollide = false
-		ragdollHRP.CanQuery = false
-		ragdollHRP.CanTouch = false
-		ragdoll.PrimaryPart = ragdollHRP
-		for _,part in pairs(Character:GetChildren()) do
-			if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" and part.Name ~= "CollisionBox" or part:IsA("Model") or part:IsA("Clothing") or part:IsA("Accessory") then
-				part.Parent = ragdoll
-			elseif part.Name == "CollisionBox" then
-				part.CanCollide = false
+		elseif health <= 0 and not Died then --/ Player died (I can't use Humanoid.Died for some reason it does not work)
+			Died = true
+			healthChanged:Disconnect()
+			local ragdoll = Instance.new("Model")
+			ragdoll:SetAttribute("Ragdoll",true)
+			ragdoll.Name = Character.Name.."'s Ragdoll"
+			ragdoll.Parent = workspace.Corpses
+			local objVal = Instance.new("ObjectValue")
+			objVal.Name = "Ragdoll"
+			objVal.Value = ragdoll
+			objVal.Parent = Character
+			local ragdollHumanoid = Character:FindFirstChildOfClass("Humanoid"):Clone()
+			local ragdollHRP = Character:FindFirstChild("HumanoidRootPart"):Clone()
+			ragdollHumanoid.Parent = ragdoll
+			ragdollHRP.Parent = ragdoll
+			ragdollHRP.CanCollide = false
+			ragdollHRP.CanQuery = false
+			ragdollHRP.CanTouch = false
+			ragdoll.PrimaryPart = ragdollHRP
+			for _,part in pairs(Character:GetChildren()) do
+				if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" and part.Name ~= "CollisionBox" or part:IsA("Model") or part:IsA("Clothing") or part:IsA("Accessory") then
+					part.Parent = ragdoll
+				elseif part.Name == "CollisionBox" then
+					part.CanCollide = false
+				elseif part.Name == "Profile" then
+					part:Clone().Parent = ragdoll
+				end
 			end
+			RagdollHandler.Joints(ragdoll)
+			RagdollHandler.Bot(ragdoll)
 		end
-		RagdollHandler.Joints(ragdoll)
-		RagdollHandler.Bot(ragdoll)
 	end)
 end
 return module

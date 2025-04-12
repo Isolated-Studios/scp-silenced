@@ -1,10 +1,10 @@
 local Settings = {
 	Damage = 22; -- Base damage against target
-	RPM = 200; -- The amount of rounds that can theoretically be fired in a minute
+	RPM = 140; -- The amount of rounds that can theoretically be fired in a minute
 	AP = 0; -- Value between 0 and 1 (0 being no armor penetration, 1 being complete armor penetration)
 	MagSize = 8; -- The maximum ammount of ammo held in a gun
 	ReloadStyle = 0; -- 0 = single cartridge insert | 1 = mag reload
-	BulletsPerShot = 1; -- The amount of projectiles fired from one shot (Shotgun)
+	BulletsPerShot = 10; -- The amount of projectiles fired from one shot (Shotgun)
 	BurstAmount = 1; -- The amount of times fired per shot
 	--BurstDelay = 0.05; -- The amount of time it takes to recover from each burst shot in seconds (AFFECTS FIRE SPEED)
 	HeadshotFactor = 0.4; -- Damage + Damage * HeadshotFactor if head is shot
@@ -29,10 +29,12 @@ local Settings = {
 	RunAndGun = false; -- Running does not interrupt firing and bolting
 	RunAndReload = false; -- Running does not interrupt reloading
 	EmptyReload = true; -- Will use the ReloadEmpty animation when reloading if the mag is at zero
-	BoltBackWhenEmpty = true;
+	BoltBackWhenEmpty = false;
 	ScrollAffectsAim = true;
+	BoltRoundEvent = true; -- If true, will bolt the next round when animation event "BoltRound" is called instead of when VMBolt has stopped playing.
 	
-	EquipSpeed = 0.8; -- Speed of equipping in seconds
+	EquipSpeed = 0.91; -- Speed of equipping in seconds
+	EquipTime = 0.5;
 	UnequipSpeed = 0.8;
 	AimInSpeed = 0.5; -- Speed of aiming-in in seconds
 	AimOutSpeed = 0.3; -- Speed of aiming-out in seconds
@@ -40,6 +42,7 @@ local Settings = {
 	--FireDelay = 0.1; -- Delay after mouse button is clicked to fire gun (AFFECTS FIRE SPEED)
 	--Reload1Speed = 0.6; -- Speed of Reload1's animation in seconds
 	--Reload2Speed = 0.5; -- Speed of Reload2's animation in seconds
+	--Reload2LastSpeed = 0.5; 
 	--Reload3Speed = 0.6; -- Speed of Reload3's animation in seconds
 	--ReloadEmptySpeed = 0.5; -- Speed of ReloadEmpty's animation in seconds. Only works if EmptyReload is true
 	
@@ -58,11 +61,11 @@ local Settings = {
 	
 	CameraShove = Vector3.new(4,0.01,0.2); -- Shove applied to camera when recoiled
 	LinearShove = Vector3.new(0,0,0); -- Linear shove applied to viewmodel when recoiled
-	AngularShove = Vector3.new(5,0,0); -- Angular shove applied to viewmodel when recoiled
+	AngularShove = Vector3.new(0,0,0); -- Angular shove applied to viewmodel when recoiled
 	
 	HighlightColor = Color3.fromRGB(100, 210, 210);
-	Size = Vector2.new(1,1); -- Does nothing right now
-	Image = "rbxassetid://0"; -- Does nothing right now
+	Size = Vector2.new(6,2); -- Does nothing right now
+	Image = "rbxassetid://15509673517"; -- Does nothing right now
 	Description = "" -- Does nothing right now
 }
 return Settings

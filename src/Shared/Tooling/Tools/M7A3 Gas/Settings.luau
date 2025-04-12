@@ -15,5 +15,10 @@ local Settings = {
 	EquipSpeed = 0.1; -- Speed of equipping in seconds
 	
 	BindToHand = true; 
+	
+	HighlightColor = Color3.fromRGB(100, 210, 210);
+	Size = Vector2.new(1,1); -- Size in inventory
+	Image = "rbxassetid://77752292559585"; -- Icon in inventory
+	Description = "" -- Description of the item
 }
 return Settings

@@ -43,4 +43,22 @@ function CommonFuncs.SafeCallOrNil(f: (...any) -> (...any), ...): ...any?
     return success and result
 end
 
+--[=[
+	returns ancestor of object by checking if the ancestor has the attribute from the attributeTable.
+	attributeTable is formatted as {AttributeName,AttributeValue}
+]=]
+function CommonFuncs.GetAncestorFromAttribute(object: instance, attributeTable: table)
+	local parent = object.Parent
+	while true do
+		if parent and (attributeTable[2] and parent:GetAttribute(attributeTable[1],attributeTable[2]) or 
+				not attributeTable[2] and parent:GetAttribute(attributeTable[1])) then
+			return parent
+		elseif parent then
+			parent = parent.Parent
+		else
+			return nil
+		end
+	end
+end
+
 return CommonFuncs

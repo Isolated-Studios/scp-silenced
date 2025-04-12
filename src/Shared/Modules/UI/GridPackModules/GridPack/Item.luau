@@ -109,7 +109,7 @@ end
 
 local function hideListing (listingUI)
 	for _,button in pairs(listingUI:GetChildren()) do
-		if button:IsA("TextButton") or button:IsA("TextLabel") then
+		if button:IsA("ImageButton") or button:IsA("ImageLabel") then
 			button.Visible = false
 		end
 	end
@@ -306,7 +306,7 @@ function Item.new(properties: Types.ItemProperties): Types.ItemObject
 				local listingUI = game.Players.LocalPlayer.PlayerGui.Inventory.Main.ListingUI
 				hideListing(listingUI)
 				listingUI.Position = UDim2.new(0, game.Players.LocalPlayer:GetMouse().X, 0, game.Players.LocalPlayer:GetMouse().Y)
-				listingUI.Title.Text = self.Metadata.Tool.Name
+				listingUI.Title.TextLabel.Text = self.Metadata.Tool.Name
 				listingUI.Item.Value = self.Metadata.Tool
 				listingUI.Title.Visible = true
 				local whatToShow = self.Metadata.Listing
@@ -318,7 +318,7 @@ function Item.new(properties: Types.ItemProperties): Types.ItemObject
 	end))
 
 	for _,button in pairs(game.Players.LocalPlayer.PlayerGui.Inventory.Main.ListingUI:GetChildren()) do
-		if button:IsA("TextButton") then
+		if button:IsA("ImageButton") then
 			self._trove:Add(button.MouseButton1Down:Connect(function()
 				if self.Metadata.Tool and game.Players.LocalPlayer.PlayerGui.Inventory.Main.ListingUI.Item.Value == self.Metadata.Tool then
 					local Settings = require(ToolingTools[self.Metadata.Tool:GetAttribute("ToolName")].Settings)

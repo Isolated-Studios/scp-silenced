@@ -4,10 +4,11 @@ local UserInputService = game:GetService("UserInputService")
 
 local ViewModelHandler = nil -- has to be injected to avoid circular dependencies
 local KeybindHandler = require(ReplicatedStorage.Modules.UI.KeybindHandler)
+local CTF = require(ReplicatedStorage.Modules.Tool.CommonToolFunctions)
 
 local module = {}
 
-local AUTOMATIC_ANIMTAIONS = {"FirstEquip", "Equip", "Hold", "Unequip"} -- animations that auto-load independantly of the tool script source.
+local AUTOMATIC_ANIMATIONS = {"FirstEquip", "Equip", "Hold", "Unequip"} -- animations that auto-load independantly of the tool script source.
 
 local Tools = ReplicatedStorage.Tooling.Tools
 
@@ -39,6 +40,7 @@ function module.EquipTool(Tool: Tool)
 	if typeof(Tool) ~= "Instance" or not Tool:IsA("Tool") then return end
 	Tool:SetAttribute("Unequipping", false)
 	Humanoid:EquipTool(Tool)
+	Humanoid:SetAttribute("Equipping",true) --/ Used for HotbarHandler so you can't equip other tools while equipping
 	local ViewModel = ViewModelHandler.getViewModel()
 	local ViewModelAnimator = ViewModelHandler.getViewModelAnimator()
 	local ToolObjects = Tools:FindFirstChild(Tool:GetAttribute("ToolName"))
@@ -55,7 +57,7 @@ function module.EquipTool(Tool: Tool)
 	local Settings = require(ToolObjects.Settings)
 	local CharacterAnimations: {AnimationTrack} = {}
 	local ViewModelAnimations: {AnimationTrack} = {}
-	for _, name in AUTOMATIC_ANIMTAIONS do
+	for _, name in AUTOMATIC_ANIMATIONS do
 		local CharAnim = ToolObjects.CharacterAnimations:FindFirstChild(name)
 		local VMAnim = ToolObjects.VMAnimations:FindFirstChild(name)
 		if CharAnim then
@@ -84,8 +86,27 @@ function module.EquipTool(Tool: Tool)
 			end)
 		end
 
+		local animationEventsList = {}
+		local animationEvents = CTF.getAllAnimationEventNames(VMEquip) --/ get event marker names of VMEquip
+		if animationEvents then
+			for _,event in pairs(animationEvents) do
+				local eventFunction = VMEquip:GetMarkerReachedSignal(event):Connect(function(parameter) --/ Marker of any kind was reached
+					if ToolObjects.Sounds:FindFirstChild(event) then --/ Play sound for marker with corresponding sound name
+						CTF.playSound(ToolObjects.Sounds,"MagOut",ViewModel.MotorModel.Handle,true,true)
+					end
+				end)
+				table.insert(animationEventsList,eventFunction) --/ add to a table to later be disconnected
+			end
+		end
+
 		task.wait(Settings.EquipTime or 0)
+
+		for _,animationEvent in pairs(animationEventsList) do --/ Disconnect all animation events
+			animationEvent:Disconnect()
+		end
+
 		if thisEquipID ~= CurrentEquipID then return end
+		if Tool.Parent ~= Character then return end
 
 		Tool:SetAttribute("FirstEquipActivated",true)
 		local inputsThatCancel = {
@@ -108,10 +129,13 @@ function module.EquipTool(Tool: Tool)
 		end)
 
 		VMEquip.Stopped:Once(function()
-			ViewModelAnimations["Hold"]:Play()
-			CharacterAnimations["Hold"]:Play()
+			if Tool.Parent == Character and ViewModelAnimations["Unequip"].TimePosition == 0 then -- Unequip is guaranteed to be played out and Hold can play
+				ViewModelAnimations["Hold"]:Play()
+				CharacterAnimations["Hold"]:Play()
+			end
 			if equipInputCancel then equipInputCancel:Disconnect() end
 		end)
+
 	else
 		ViewModelAnimations["Hold"]:Play()
 		CharacterAnimations["Hold"]:Play()
@@ -131,11 +155,21 @@ function module.EquipTool(Tool: Tool)
 			animation:Destroy()
 		end
 	end)
-
+	
+	Tool:GetAttributeChangedSignal("Dropping"):Once(function() --/ Temporary thing until CTF.dropItem() is ported over to this script
+		module.DropTool(Tool)
+	end)
+	
 	UnequipFunctions[Tool] = function(playAnimations)
 		Tool:SetAttribute("Unequipping", true)
 		ViewModelAnimations["Hold"]:Stop()
 		CharacterAnimations["Hold"]:Stop()
+
+		for _,PlayingAnimation in pairs(Animator:GetPlayingAnimationTracks()) do -- Because stopping Hold didnt WORK I HATE THIS GAMEEEEE
+			if table.find(AUTOMATIC_ANIMATIONS,PlayingAnimation.Name) then
+				PlayingAnimation:Stop(0)
+			end
+		end
 
 		-- play unequip animation at speed { UnequipAnimation.Length / Settings.UnequipSpeed }
 		if playAnimations and Settings.UnequipSpeed then
@@ -146,9 +180,20 @@ function module.EquipTool(Tool: Tool)
 			task.wait(Settings.UnequipSpeed)
 			ViewModelAnimations["Unequip"]:Stop()
 			CharacterAnimations["Unequip"]:Stop()
+		elseif Settings.UnequipSpeed then
+			CharacterAnimations["Unequip"]:Play(nil, nil, 0)
+			ViewModelAnimations["Unequip"]:Play(nil, nil, 0)
+			task.wait()
+			ViewModelAnimations["Unequip"]:Stop()
+			CharacterAnimations["Unequip"]:Stop()
 		end
 
-		Tool.Parent = Backpack
+		for _,PlayingAnimation in pairs(Animator:GetPlayingAnimationTracks()) do -- BECAUSE STOPPING STILL DIDN'T WORK I NEED TO TRY AGAIN
+			if table.find(AUTOMATIC_ANIMATIONS,PlayingAnimation.Name) then
+				PlayingAnimation:Stop(0)
+			end
+		end
+		Humanoid:UnequipTools()
 		Tool:SetAttribute("Unequipping", false)
 		task.delay(0.1, function()
 			for _, animation in pairs(ViewModelAnimations) do
@@ -160,10 +205,20 @@ function module.EquipTool(Tool: Tool)
 		end)
 	end
 
+	Humanoid:SetAttribute("Equipping",nil) --/ Used for HotbarHandler so you can't equip other tools while equipping
+
 	-- Load tool script
 	if Tool:GetAttribute("ToolSource") and script:FindFirstChild(Tool:GetAttribute("ToolSource")) then
 		local Source = require(script[Tool:GetAttribute("ToolSource")])
 		Source.Init(Tool, ToolObjects, Character, ViewModel)
+	end
+end
+
+function module.DropTool(Tool: Tool)
+	CurrentEquipID = ""
+	if UnequipFunctions[Tool] then
+		UnequipFunctions[Tool]()
+		UnequipFunctions[Tool] = nil
 	end
 end
 
@@ -179,14 +234,6 @@ function module.UnequipTools()
 	CurrentEquipID = ""
 	for Tool, unequipFunction in pairs(UnequipFunctions) do
 		unequipFunction(true)
-	end
-	UnequipFunctions = {}
-end
-
-function module.Clean()
-	CurrentEquipID = ""
-	for Tool, unequipFunction in pairs(UnequipFunctions) do
-		unequipFunction()
 	end
 	UnequipFunctions = {}
 end

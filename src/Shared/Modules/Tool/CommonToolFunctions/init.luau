@@ -24,10 +24,14 @@ function module.breakGlass (HitPosition,HitPart,CasterCFrame,noevent)
 	BulletHandler.breakGlass(HitPosition,HitPart,CasterCFrame,noevent)
 end
 
+function module.applyForce (HitPart, Force, Time)
+	BulletHandler.applyForce(HitPart,Force,Time)
+end
 
 
-function module.playSound (Sounds: Sound | Instance, SoundName: string?, parent: Instance, replicate: boolean, ApplyRandomPitch: boolean, pitch: number?)
-	SoundsAndEffects.playSound(Sounds,SoundName,parent,replicate,ApplyRandomPitch,pitch)
+
+function module.playSound (Sounds: Sound | Instance, SoundName: string?, parent: Instance, replicate: boolean, ApplyRandomPitch: boolean | table, Properties: table?)
+	SoundsAndEffects.playSound(Sounds,SoundName,parent,replicate,ApplyRandomPitch,Properties)
 end
 
 function module.flashGun (FlashPoint, flashLight, sendToServer)

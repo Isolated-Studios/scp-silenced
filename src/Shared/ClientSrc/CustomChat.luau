@@ -1,20 +1,17 @@
 local module = {}
 
-local whitelistedChars = {"#"}
-local function isStringWhitelisted(strings)
-	for char in strings:gmatch(".") do
-		if not table.find(whitelistedChars, char) then
-			return false
-		end
-	end
-	return true
-end
-
 function module.Init()
 	local Player = game.Players.LocalPlayer
+	
 	local TextChatService = game:GetService("TextChatService")
 	local UIS = game:GetService("UserInputService")
 	local RunService = game:GetService("RunService")
+	local ReplicatedStorage = game:GetService("ReplicatedStorage")
+	
+	local ChatFunctions = require(ReplicatedStorage.Modules.UI.ChatFunctions)
+	local ChatSounds = ReplicatedStorage.Sounds.Chat
+	local ChatEvent = ReplicatedStorage.Events.Character.ChatEvent
+	
 	local GeneralChannel: TextChannel = TextChatService:WaitForChild("TextChannels").RBXGeneral
 	local ChatInputBarConfiguration = TextChatService:WaitForChild("ChatInputBarConfiguration")
 
@@ -37,31 +34,18 @@ function module.Init()
 	--	end
 	--end)
 
-	TextChatService.OnIncomingMessage = function(Message: TextChatMessage, Character: Part | Model)
-		local TextTable = string.split(Message.Text," ")
-		local newText = ""
-		for _,Word in ipairs (TextTable) do
-			if isStringWhitelisted(Word) then
-				if #Word >= 13 then
-					Word = "[DATA EXPUNGED]"
-				elseif #Word >= 8 then
-					Word = "[REDACTED]"
-				else
-					Word = string.gsub(Word, ".", "█")
-				end
-			end
-			if newText == "" then
-				newText = Word
-			else
-				newText = newText.." "..Word
-			end
+	TextChatService.OnIncomingMessage = function(Message: TextChatMessage)
+		local newText = ChatFunctions.RedactMessage(Message.Text)
+		if Message.Status == Enum.TextChatMessageStatus.Success and Message.TextSource and Message.TextSource.UserId and Message.TextSource.UserId == Player.UserId then
+			ChatFunctions.VisualizeChat(Player.Character,newText,true)
 		end
 
 		Message.Text = newText
-		--if Message.Status == Enum.TextChatMessageStatus.Success then
-			--textstring = ""
-		--end
 	end
+	
+	ChatEvent.OnClientEvent:Connect(function(OtherCharacter,Message)
+		ChatFunctions.VisualizeChat(OtherCharacter,Message)
+	end)
 end
 
 return module

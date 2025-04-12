@@ -1,8 +1,8 @@
 local Settings = {
-	GrenadeType = "Incendiary"; -- What grenade config to grab from when exploding
-	BulletTemplate = "M14 Incendiary"; -- Tracer that is fired
+	GrenadeType = "HE"; -- What grenade config to grab from when exploding
+	BulletTemplate = "erbario"; -- Tracer that is fired
 	LandType = 1; -- 0 = Destroy when landed | 1 = Grenade-ify when landed | 2 = Turn into a tool when landed
-	MaxBounces = 0; -- Amount of times tracer will bounce before landing
+	MaxBounces = 3; -- Amount of times tracer will bounce before landing
 	ThrowPower = { -- Power of the toss respective to the Cursor arrows
 		[1] = 40,
 		[2] = 80,
@@ -17,8 +17,8 @@ local Settings = {
 	BindToHand = true; 
 	
 	HighlightColor = Color3.fromRGB(100, 210, 210);
-	Size = Vector2.new(1,1); -- Size in inventory
-	Image = "rbxassetid://77752292559585"; -- Icon in inventory
+	Size = Vector2.new(2,2); -- Size in inventory
+	Image = "rbxassetid://96265500390878"; -- Icon in inventory
 	Description = "" -- Description of the item
 }
 return Settings

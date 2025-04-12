@@ -37,6 +37,7 @@ local ShatterEvent = InteractionEvents.ShatterEvent
 --//Modules
 local PartFracture = require(ToolModules.GlassFractureModule)
 local FastCast = require(ToolModules.FastCastRedux)
+local CommonFuncs = require(Modules.CommonFuncs)
 
 local BulletDespawn = 20
 local lastRandomValue = nil
@@ -93,13 +94,19 @@ end)
 BulletCaster.RayHit:Connect(function(cast, raycastResult,segmentVelocity,cosmeticBulletObject) 
 
 	if cosmeticBulletObject:IsA("Model") then
-		for _,part in pairs(cosmeticBulletObject:GetChildren()) do
-			if part:IsA("BasePart") then part.Transparency = 1 end
-		end
+		task.defer(function()
+			if cast.Bounces and cast.Bounces > cast.MaxBounces or cast.MaxBounces == 0 then
+				task.wait(0.1) --/ This is a really dumb fix (for tracers to not blink out when moving from a tracer to a grenade model)
+			end
+			
+			for _,part in pairs(cosmeticBulletObject:GetChildren()) do --/ hide models so they arent "left behind" when despawning
+				if part:IsA("BasePart") then part.Transparency = 1 end
+			end
+		end)
 	end
 
 	if cast.Throwable then
-		if cast.Bounces and cast.Bounces > cast.MaxBounces or cast.MaxBounces == 0 then
+		if cast.Bounces and cast.Bounces > cast.MaxBounces or cast.MaxBounces == 0 then --/ the grenade is done bouncing
 			if not cast.Fake then
 				local passableCFrame = cosmeticBulletObject.PrimaryPart:GetPivot() or nil
 				LandThrow:FireServer(cast.Tool,raycastResult.Position,cast.Origin,cast.Character,raycastResult.Normal,passableCFrame)
@@ -136,11 +143,8 @@ BulletCaster.RayHit:Connect(function(cast, raycastResult,segmentVelocity,cosmeti
 	
 	local hitPerson = nil
 	local HitPart = raycastResult.Instance
-	if HitPart then
-		local HitModel = HitPart.Parent
-		if not HitModel:GetAttribute("isCharacter") and not HitModel:GetAttribute("Ragdoll") then
-			HitModel = HitPart.Parent.Parent
-		end
+	local HitModel = CommonFuncs.GetAncestorFromAttribute(HitPart,{"isCharacter",true}) or CommonFuncs.GetAncestorFromAttribute(HitPart,{"Ragdoll",true})
+	if HitModel then
 		local HitHumanoid = HitModel:FindFirstChildOfClass("Humanoid")
 		if HitHumanoid then
 			if not cast.Fake then
@@ -302,6 +306,19 @@ function module.castBullet (Tool,Origin,Direction,TravelSpeed,MaxDistance,Accele
 	end
 	
 	return Cast
+end
+
+function module.applyForce (HitPart,Force,Time)
+	local force = Instance.new("VectorForce")
+	local atch0 = Instance.new("Attachment")
+	force.RelativeTo = Enum.ActuatorRelativeTo.World
+	force.ApplyAtCenterOfMass = true
+	force.Attachment0 = atch0
+	force.Parent = HitPart
+	atch0.Parent = HitPart
+	force.Force = Force
+	Debris:AddItem(force, Time or 0.15)
+	Debris:AddItem(atch0, Time or 0.15)
 end
 
 return module

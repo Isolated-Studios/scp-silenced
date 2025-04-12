@@ -1,5 +1,6 @@
 local module = {}
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CollectionService = game:GetService("CollectionService")
 local Debris = game:GetService("Debris")
 
 local Events = ReplicatedStorage.Events

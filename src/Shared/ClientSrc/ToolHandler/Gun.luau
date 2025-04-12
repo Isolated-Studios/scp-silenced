@@ -9,33 +9,33 @@ local Debris = game:GetService("Debris")
 
 --//Service Objects
 local TemporaryParts = workspace:WaitForChild("TemporaryParts")
-local Objects = ReplicatedStorage:WaitForChild("Objects")
-local Modules = ReplicatedStorage:WaitForChild("Modules")
-local Events = ReplicatedStorage:WaitForChild("Events")
+local Objects = ReplicatedStorage.Objects
+local Modules = ReplicatedStorage.Modules
+local Events = ReplicatedStorage.Events
 local ClientSrc = ReplicatedStorage.ClientSrc
 local CameraModule = require(ClientSrc.Camera)
 
-local Casings = Objects:WaitForChild("Casings")
-local ToolEvents = Events:WaitForChild("Tool")
-local ViewmodelEvents = Events:WaitForChild("Viewmodel")
-local CharacterEvents = Events:WaitForChild("Character")
+local Casings = Objects.Casings
+local ToolEvents = Events.Tool
+local ViewmodelEvents = Events.Viewmodel
+local CharacterEvents = Events.Character
 
-local ToolModules = Modules:WaitForChild("Tool")
-local UIModules = Modules:WaitForChild("UI")
+local ToolModules = Modules.Tool
+local UIModules = Modules.UI
 
 --//Modules
-local CTF = require(ToolModules:WaitForChild("CommonToolFunctions"))
-local CustomMouse = require(UIModules:WaitForChild("CustomMouse"))
-local KeybindHandler = require(UIModules:WaitForChild("KeybindHandler"))
-local RaycastHitbox = require(ToolModules:WaitForChild("RaycastHitboxV4"))
-local springModule = require(ToolModules:WaitForChild("spring"))
-local ScopeModule = require(ToolModules:WaitForChild("Scope"))
+local CTF = require(ToolModules.CommonToolFunctions)
+local CustomMouse = require(UIModules.CustomMouse)
+local KeybindHandler = require(UIModules.KeybindHandler)
+local RaycastHitbox = require(ToolModules.RaycastHitboxV4)
+local springModule = require(ToolModules.spring)
+local ScopeModule = require(ToolModules.Scope)
 
 --//Events
-local HumanoidAttributeEvent = CharacterEvents:WaitForChild("HumanoidAttribute")
-local Shove = ViewmodelEvents:WaitForChild("Shove")
-local Aim = ViewmodelEvents:WaitForChild("Aim")
-local SetItemHolder = ToolEvents:WaitForChild("SetItemHolder")
+local HumanoidAttributeEvent = CharacterEvents.HumanoidAttribute
+local Shove = ViewmodelEvents.Shove
+local Aim = ViewmodelEvents.Aim
+local SetItemHolder = ToolEvents.SetItemHolder
 
 ---//Module Setup
 local recoilSpring = springModule.new(nil,nil,nil,nil,6)
@@ -168,9 +168,10 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 	local animationEvents = {
 		["Reload1"] = CTF.getAllAnimationEventNames(VMReload1),
 		["Reload2"] = CTF.getAllAnimationEventNames(VMReload2),
-		["Reload2Last"] = CTF.getAllAnimationEventNames(VMEmptyReload),
+		["Reload2Last"] = CTF.getAllAnimationEventNames(VMReload2Last),
 		["Reload3"] = CTF.getAllAnimationEventNames(VMReload3),
 		["EmptyReload"] = CTF.getAllAnimationEventNames(VMEmptyReload),
+		["Bolt"] = CTF.getAllAnimationEventNames(VMBolt)
 	}
 	local animationTable = {
 		["Run"] = {VMRun,CharRun},
@@ -229,7 +230,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		end,
 		["Cycle"] = function(tweenTime)
 			if not tweenTime then tweenTime = 0.1 end
-			if magBool.Value+1 <= Settings.MagSize and magBool.Value > 0 and (not Settings.Bolted or Bolted) and MagFrame:FindFirstChild((magBool.Value+1)) then
+			if magBool.Value+1 <= Settings.MagSize and magBool.Value > 0 and MagFrame:FindFirstChild((magBool.Value+1)) then
 				local bullet = MagFrame[tostring(magBool.Value+1)]
 				local round = bullet.Round
 				TweenService:Create(round,TweenInfo.new(tweenTime,Enum.EasingStyle.Linear),{Size = UDim2.fromScale(1,0)}):Play()
@@ -372,17 +373,17 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 
 		if VMBolt then
 			animationHandle("Bolt","Play")
-			VMBolt.Stopped:Wait()
-			VMBolt:Stop(0)
-			if Settings.BurstAmount == 1 then
-				task.delay((60/Settings.RPM)-0.1,function()
-					editBulletFrame("Cycle")
-				end)
+			if not Settings.BoltRoundEvent then
+				VMBolt.Stopped:Wait()
+				animationHandle("Bolt","Stop")
+				editBulletFrame("Cycle")
 			end
 		end
-		SetItemHolder:FireServer(Tool,"Bolted",true)
-		Bolted = true
-		HoldFire = false
+		if not Settings.BoltRoundEvent then
+			SetItemHolder:FireServer(Tool,"Bolted",true)
+			Bolted = true
+			HoldFire = false
+		end
 	end
 
 	local function fireGun () --/ Big evil function that fires the gun
@@ -393,14 +394,18 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		SetItemHolder:FireServer(Tool,"Mag",magBool.Value) -- UI shenanigans
 		editBulletFrame("Empty",0.02)
 
-		if Settings.BurstAmount > 1 then -- If the gun is a burst gun, will delay the cycle for the UI
+		if Settings.BurstAmount > 1 then --/ If the gun is a burst gun, will delay the cycle for the UI
 			local burstdelay = Settings.BurstDelay or 0.01
 			task.delay(burstdelay,function()
 				editBulletFrame("Cycle",0.2)
 			end)
 		end
+		
+		if Settings.BoltRoundEvent then --/ Will stop the Bolt animation when fired (only for if BoltRoundEvent is true)
+			animationHandle("Bolt","Stop")
+		end
 
-		Bolted = false --/Gun is no longer bolted
+		Bolted = false --/ Gun is no longer bolted
 		SetItemHolder:FireServer(Tool,"Bolted",false)
 
 		HoldFire = true
@@ -426,7 +431,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 			--/ The last 3 or so bullets are pitched up incrementally
 			local value = Settings.PitchLastBullets-(magBool.Value)
 			local pitch = Sounds["Fire"].PlaybackSpeed+((Sounds["Fire"].PlaybackSpeed*value)/Settings.PitchLastBullets)
-			CTF.playSound(Sounds,"Fire",Handle,true,true,pitch)
+			CTF.playSound(Sounds,"Fire",Handle,true,true,{["PlaybackSpeed"] = pitch})
 		else
 			--/ bullets aren't pitched up
 			CTF.playSound(Sounds,"Fire",Handle,true,true)
@@ -588,20 +593,23 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 				else
 					animationHandle("Reload1","Stop") --/ STOPPPP the reload1 instead
 				end
-				while Tool.Parent == Character and magBool.Value < Settings.MagSize and not CancelReload and ammoBool.Value > 0 do
+				while Tool.Parent == Character and magBool.Value < Settings.MagSize and ammoBool.Value > 0 do
 					--/Reload2 is our animation being looped to simulate the shells going in.
-					if magBool.Value == Settings.MagSize-1 and VMReload2Last then -- if Reload2Last animation exists, play that if last shell is inserted
+					if (magBool.Value == Settings.MagSize-1 or CancelReload or ammoBool.Value == 1) and VMReload2Last then -- if Reload2Last animation exists, play that if last shell is inserted
+						-- This will also play if CancelReload is true and then stop the reload cycle after Reload2Last is finished.
 						animationHandle("Reload2Last","Play")
 						if Settings.Reload2LastSpeed then
 							animationHandle("Reload2Last","Speed",VMReload2Last.Length/Settings.Reload2LastSpeed,CharReload2Last.Length/Settings.Reload2LastSpeed)
 						end
 						VMReload2Last.Stopped:Wait()
+						if CancelReload then break end
 					else -- Otherwise, play the regular Reload2 animation
 						animationHandle("Reload2","Play")
 						if Settings.Reload2Speed then
 							animationHandle("Reload2","Speed",VMReload2.Length/Settings.Reload2Speed,CharReload2.Length/Settings.Reload2Speed)
 						end
 						VMReload2.Stopped:Wait()
+						if CancelReload and not VMReload2Last then break end -- Will only play if Reload2Last does not exist
 					end
 				end
 				CancelReload = false
@@ -611,9 +619,9 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 				if Settings.Reload3Speed then
 					animationHandle("Reload3","Speed",VMReload3.Length/Settings.Reload3Speed,CharReload3.Length/Settings.Reload3Speed)
 				end
-				VMReload3.Stopped:Wait()
+				
 				if Tool.Parent ~= Character then return end
-				animationHandle("Reload3","Stop")
+				--animationHandle("Reload3","Stop")
 				--ChangeGrip:Fire(Viewmodel.RightHand)
 				Reloading = false
 			end
@@ -623,7 +631,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 	end
 
 	local function mouseButtonFire () --/ Checks if gun is full
-		if not Bursting and (not Humanoid:GetAttribute("Running") or Settings.RunAndGun) then
+		if not Bursting and not FireCooldown and (not Humanoid:GetAttribute("Running") or Settings.RunAndGun) then
 			if Reloading and not CancelReload and Settings.ReloadStyle == 0 and magBool.Value > 0 then
 				CancelReload = true
 			elseif not Reloading then
@@ -632,11 +640,18 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 				if VMEmptyReload then
 					animationHandle("EmptyReload","Stop")
 				end
+				
+				if VMReload3 then
+					animationHandle("Reload3","Stop")
+				end
 
 				if magBool.Value > 0 then
 					gunPrime() --/ If gun is full, go to next step
 				else
+					FireCooldown = true
 					CTF.playSound(Sounds,"Empty",Handle,true,true) --/ if gun is empty, make clicking noise
+					task.wait(60/Settings.RPM)
+					FireCooldown = false
 				end
 			elseif Reloading and Settings.ReloadStyle == 1 and magBool.Value > 0 then
 				Reloading = false
@@ -771,6 +786,16 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 				Tool:SetAttribute("BoltSet",nil)
 			end
 		end,
+		
+		["BoltRound"] = function()
+			assert(Settings.BoltRoundEvent ~= nil,"BoltRound animation event called, but BoltRoundEvent in settings is nil.")
+			if Settings.BoltRoundEvent then
+				editBulletFrame("Cycle")
+				SetItemHolder:FireServer(Tool,"Bolted",true)
+				Bolted = true
+				HoldFire = false
+			end
+		end,
 	}
 
 	for animName,animation in pairs(animationTable) do
@@ -814,7 +839,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		if Settings.CylinderAngle then
 			Cylinder.C0 = CFrame.new(Cylinder.C0.Position)*CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))
 		end
-		if Settings.AutomaticBolt then
+		if Settings.AutomaticBolt and not Bolted then
 			gunPrime()
 		end
 	end
@@ -960,7 +985,9 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		Humanoid:SetAttribute("Aiming",nil)
 		AimGun(false)
 		Aim:Fire(false,Settings.AimOutSpeed)
-		Flash.FlashLight.Enabled = false
+		if Flash:FindFirstChild("FlashLight") then
+			Flash.FlashLight.Enabled = false
+		end
 		for _,bulletFrames in pairs(MagFrame:GetChildren()) do
 			if bulletFrames:IsA("Frame") then
 				bulletFrames:Destroy()

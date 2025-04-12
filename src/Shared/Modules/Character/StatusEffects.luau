@@ -165,21 +165,23 @@ module.Effects = {
 	
 }
 
-local numberToRN = {
-	[2] = "II",
-	[3] = "III",
-	[4] = "IV",
-	[5] = "V",
-	[6] = "VI",
-	[7] = "VII",
-	[8] = "VIII",
-	[9] = "VX",
-	[10] = "X",
+local numberToColor = {
+	[2] = Color3.fromRGB(255, 255, 0),
+	[3] = Color3.fromRGB(255, 136, 0),
+	[4] = Color3.fromRGB(255, 0, 0),
+	[5] = Color3.fromRGB(255, 0, 136),
+	[6] = Color3.fromRGB(183, 0, 255),
+	[7] = Color3.fromRGB(149, 0, 255),
+	[8] = Color3.fromRGB(93, 0, 255),
+	[9] = Color3.fromRGB(17, 0, 255),
+	[10] = Color3.fromRGB(0, 255, 225),
 }
 
 local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Debris = game:GetService("Debris")
 local Modules = ReplicatedStorage.Modules
+local EffectParticleEvent = ReplicatedStorage.Events.Character.EffectParticleEvent
 local CircleFrames = require(Modules.UI.CircleFrames)
 
 function module.AddEffect(StatusEffectName,Power,Duration,Character,Player)
@@ -229,12 +231,9 @@ function module.AddEffect(StatusEffectName,Power,Duration,Character,Player)
 		end
 		
 		if Power > 1 and Power < 11 then
-			StatusEffectFrame.Power.Text = numberToRN[Power]
-		elseif Power <= 1 then
-			StatusEffectFrame.Power.Text = ""
-		else
-			StatusEffectFrame.Power.Text = Power
+			ProgressPercentage.ImageColor.Value = numberToColor[Power]
 		end
+		
 		StatusEffectFrame.Parent = EffectFrame
 		local icon = StatusEffectFrame.Progress.Icon
 		icon.Image = module.Effects[StatusEffectName].Icon.Image
@@ -288,4 +287,70 @@ function module.RemoveEffect(StatusEffectName,Character,Player)
 		StatusEffects[StatusEffectName]:Destroy()
 	end
 end
+
+function module.AddEffectParticles (Character: object, StatusEffectFolder: object, Replicating: bool)
+	if not Character and not Character:FindFirstChild("UpperTorso") then return end
+	local UpperTorso = Character.UpperTorso
+	
+	for _,particle in pairs(UpperTorso:GetChildren()) do
+		if particle:IsA("ParticleEmitter") and particle.Name == StatusEffectFolder.Name then
+			particle.Enabled = false
+			Debris:AddItem(particle,particle.Lifetime.Max)
+		end
+	end
+	
+	if StatusEffectFolder:FindFirstChild("Particles") then
+		for _,particle in pairs(StatusEffectFolder.Particles:GetChildren()) do
+			if particle:IsA("ParticleEmitter") then
+				local cloneParticle = particle:Clone()
+				cloneParticle.Name = StatusEffectFolder.Name
+				cloneParticle.Enabled = true
+				cloneParticle.Parent = UpperTorso
+			end
+		end
+	end
+	
+	if Replicating then
+		EffectParticleEvent:FireServer(Character,StatusEffectFolder)
+	end
+end
+
+function module.RemoveEffectParticles(Character: object, StatusEffectName: string, Replicating: bool)
+	if not Character then return end
+	local UpperTorso = nil
+	local Dead = false
+	
+	local function removeParticles ()
+		for _,particle in pairs(UpperTorso:GetChildren()) do
+			if particle:IsA("ParticleEmitter") and particle.Name == StatusEffectName then
+				particle.Enabled = false
+				Debris:AddItem(particle,particle.Lifetime.Max)
+			end
+		end
+	end
+	
+	if Character:FindFirstChild("Ragdoll") then
+		UpperTorso = Character.Ragdoll.Value.UpperTorso
+		Dead = true
+		for _,charPart in pairs(Character.Ragdoll.Value:GetDescendants()) do
+			if charPart:IsA("BasePart") then
+				local H,S,V = charPart.Color:ToHSV()
+				TweenService:Create(charPart,TweenInfo.new(5,Enum.EasingStyle.Linear,Enum.EasingDirection.Out),{Color = Color3.fromHSV(H,S,V/5)}):Play()
+			end
+		end
+		task.delay(10, function()
+			removeParticles()
+		end)
+	else
+		UpperTorso = Character.UpperTorso
+		removeParticles()
+	end
+
+	
+	
+	if Replicating then
+		EffectParticleEvent:FireServer(Character,StatusEffectName)
+	end
+end
+
 return module

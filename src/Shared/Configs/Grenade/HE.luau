@@ -9,6 +9,9 @@ return {
 	MidZone = 40; -- Middle zone of grenade
 	FarZone = 75; -- Outer zone of grenade
 	
+	GibChance = 0.75; -- Chance of gibbing when in damage zone for instant blast grenades (0 is 0%, 1 is 100%).
+	AnnihilationRange = {5,10}; -- math.random([1],[2]), determines how many limbs explode in Annihilation mode.
+	
 	LowZoneEffects = { -- What effects are played in the low zone
 		["Disorientation"] = {
 			Power = 1,

@@ -182,8 +182,8 @@ function module.Init()
 	end)
 
 	UserInputService.InputBegan:Connect(function(Input, gameProcessed)
-		if Debounce or Interacting or gameProcessed then return end
-		if PlayerGui.Inventory.Main.GroupTransparency == 0 then return end
+		if Debounce or Interacting or gameProcessed or PlayerGui.Inventory.Main.GroupTransparency == 0 or not Character then return end
+		
 		if Input.KeyCode == KeybindHandler.Keybind("Interact", LocalPlayer) or (Input.UserInputType == Enum.UserInputType.MouseButton1 and (not Character:FindFirstChildOfClass("Tool") or (Character:FindFirstChildOfClass("Tool") and Character:FindFirstChildOfClass("Tool"):GetAttribute("CanInteractWithTool")))) then
 			if Current then
 				Debounce = true

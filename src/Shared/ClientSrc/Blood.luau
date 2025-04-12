@@ -1,17 +1,22 @@
 local module = {}
+
 local Debris = game:GetService("Debris")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
-local Events = ReplicatedStorage:WaitForChild("Events")
-local CharacterEvents = Events:WaitForChild("Character")
-local Objects = ReplicatedStorage:WaitForChild("Objects")
-local GoreFolder = Objects:WaitForChild("Gore")
-local Gibs = GoreFolder:WaitForChild("Gibs")
-local Modules = ReplicatedStorage:WaitForChild("Modules")
-local BloodObjects = GoreFolder:WaitForChild("BloodObjects")
-local GoreEvent = CharacterEvents:WaitForChild("GoreEvent")
-local BloodEvent = CharacterEvents:WaitForChild("BloodEvent")
-local BloodMod = require(Modules:WaitForChild("Character"):WaitForChild("BloodHandler"))
+
+local Events = ReplicatedStorage.Events
+local CharacterEvents = Events.Character
+local Objects = ReplicatedStorage.Objects
+local GoreFolder = Objects.Gore
+local Gibs = GoreFolder.Gibs
+local Modules = ReplicatedStorage.Modules
+local BloodObjects = GoreFolder.BloodObjects
+local GoreEvent = CharacterEvents.GoreEvent
+local BloodEvent = CharacterEvents.BloodEvent
+
+local BloodMod = require(Modules.Character.BloodHandler)
+local CommonFuncs = require(Modules.CommonFuncs)
+
 local BloodHandler = BloodMod.create(8,20,3,3)
 local function transparencyPartFunction (model)
 	for _,charparts in pairs(model:GetChildren()) do
@@ -112,37 +117,56 @@ end
 
 function module.Init()
 	local GoreEventFunction = GoreEvent.OnClientEvent:Connect(function(HitPart,HitCharacter,Sever,Direction)
-		if HitPart:GetAttribute("Gibbed") then return end
-		--Sever = true
+		
 		local Ragdoll = HitCharacter
 		if not HitCharacter:GetAttribute("Ragdoll") then
 			Ragdoll = getRagdoll(HitCharacter)
 		end
+		
+		if HitPart:GetAttribute("TargetPart") and Ragdoll:FindFirstChild(HitPart:GetAttribute("TargetPart")) or 
+			CommonFuncs.GetAncestorFromAttribute(HitPart,{"TargetPart"}) and Ragdoll:FindFirstChild(CommonFuncs.GetAncestorFromAttribute(HitPart,{"TargetPart"}):GetAttribute("TargetPart")) then
+			HitPart = Ragdoll[HitPart:GetAttribute("TargetPart") or CommonFuncs.GetAncestorFromAttribute(HitPart,{"TargetPart"}):GetAttribute("TargetPart")]
+		end
+		
+		if HitPart:GetAttribute("Gibbed") then return end
+		
 		if HitPart and Ragdoll and gibTable[HitPart.Name] then
 			HitPart:SetAttribute("Gibbed",true)
 			local PrimaryGibPoint = Ragdoll[partGibTable[HitPart.Name][1]][partGibTable[HitPart.Name][2]]
 			local primeGib = Gibs[partGibTable[HitPart.Name][3]]
-			if Sever and primeGib.Name == "GibEndNeck" then
+			
+			if HitPart.Name == "Head" then
+				PrimaryGibPoint = Ragdoll[partGibTable[HitPart.Name][4]][partGibTable[HitPart.Name][5]]
+			end
+			
+			if Sever and primeGib.Name == "GibEndNeck" then -- Severing gib part for the head
 				primeGib = Gibs["GibEndNeck2"]
 			end
+			
 			if Ragdoll[partGibTable[HitPart.Name][1]].Transparency ~= 1 then
 				local Gib = primeGib:Clone()
-				Gib.Name = HitPart.Name.."GibEnd"
+				
+				Gib.Name = partGibTable[HitPart.Name][4].."GibEnd"
 				Gib:PivotTo(PrimaryGibPoint.WorldCFrame)
 				Gib.Parent = Ragdoll
 				Gib.PrimaryPart:WaitForChild("PrimaryWeld").Part1 = Ragdoll[partGibTable[HitPart.Name][1]]
+				
 				if HitPart.Name == "Head" and not Sever then
 					Gib.PrimaryPart:WaitForChild("PrimaryWeld").Part1 = Ragdoll[partGibTable[HitPart.Name][4]]
 				end
+
 			end
-			if Sever then
+			
+			if Sever then -- This will sever the other part of the limb and make a gib part for it
 				local PrimaryGibPoint = Ragdoll[partGibTable[HitPart.Name][4]][partGibTable[HitPart.Name][5]]
 				local primeGib = Gibs[partGibTable[HitPart.Name][3]]
+				
 				if primeGib.Name == "GibEndNeck" then
 					primeGib = Gibs["GibEndNeck2"]
 				end
+				
 				local Gib = primeGib:Clone()
-				Gib.Name = HitPart.Name.."GibEnd"
+				Gib.Name = partGibTable[HitPart.Name][4].."GibEnd"
 				Gib:PivotTo(PrimaryGibPoint.WorldCFrame)
 				Gib.Parent = Ragdoll
 				Gib.PrimaryPart:WaitForChild("PrimaryWeld").Part1 = Ragdoll[partGibTable[HitPart.Name][4]]
@@ -159,9 +183,11 @@ function module.Init()
 				playBloodDestruction(PrimaryGibPoint)
 			end
 		end
-		if HitPart.Name == "UpperTorso" and not HitCharacter:GetAttribute("Ragdoll") and Ragdoll:FindFirstChild("Humanoid") then
-			coughBlood(Ragdoll.Humanoid,Ragdoll.Head.MouthGibPoint)
+		
+		if HitPart.Name == "UpperTorso" and not HitCharacter:GetAttribute("Ragdoll") and Ragdoll and Ragdoll:FindFirstChild("Humanoid") then
+			coughBlood(Ragdoll.Humanoid,Ragdoll.Head.MouthGibPoint) --/ Torso gib, causes person to cough blood
 		end
+		
 		if HitPart and Ragdoll and gibTable[HitPart.Name] and Ragdoll[HitPart.Name].Transparency == 0 then
 			local bloodattachmentparent = Ragdoll[gibTable[HitPart.Name][1]][gibTable[HitPart.Name][2]]
 			for _,obj in pairs(BloodObjects.BloodParticles:GetChildren()) do

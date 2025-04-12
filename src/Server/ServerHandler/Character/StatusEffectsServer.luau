@@ -1,15 +1,20 @@
 local module = {}
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Debris = game:GetService("Debris")
+local Players = game:GetService("Players")
+
 local Modules = ReplicatedStorage.Modules
 local Events = ReplicatedStorage.Events
 local Objects = ReplicatedStorage.Objects
 local StatusEffectFolder = Objects.StatusEffects
 local CharacterEvents = Events.Character
 local ToolEvents = Events.Tool
+
+local EffectParticleEvent = CharacterEvents.EffectParticleEvent
 local BloodEvent = CharacterEvents.BloodEvent
 local RemoveEffectEvent = CharacterEvents.RemoveEffectEvent
 local SoundEvent = ToolEvents.SoundEvent
+
 local CharacterModules = Modules.Character
 local StatusEffectsModule = require(CharacterModules.StatusEffects)
 local DamageHandler = require(CharacterModules.DamageHandler)
@@ -130,7 +135,19 @@ function module.Init(Character)
 		childRemoved:Disconnect()
 	end)
 end
+
 RemoveEffectEvent.OnServerEvent:Connect(function(Player,EffectName)
 	StatusEffectsModule.RemoveEffect(EffectName,nil,Player)
 end)
+
+EffectParticleEvent.OnServerEvent:Connect(function(Player,Character,Effect)
+	if Player.Character and Player.Character == Character then
+		for _,otherplayer in pairs(Players:GetPlayers()) do
+			if otherplayer ~= Player then
+				EffectParticleEvent:FireClient(otherplayer,Character,Effect)
+			end
+		end
+	end
+end)
+
 return module

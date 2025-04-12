@@ -1,6 +1,12 @@
 local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
+local Lighting = game:GetService("Lighting")
+local TweenService = game:GetService("TweenService")
 local UserSettings = UserSettings():GetService("UserGameSettings")
+
+local EvilDeathCC = Lighting.EvilDeathCC
+local respawnFadeTime = 1
 
 local module = {}
 
@@ -57,7 +63,7 @@ end
 
 local function updateCamera(dt)
 	if Humanoid.Health <= 0 or Humanoid:GetAttribute("DownedRagdolling") then
-		if Character:FindFirstChild("Ragdoll") then
+		if Character:FindFirstChild("Ragdoll") and Character.Ragdoll.Value:FindFirstChild("Head") then
 			Head = Character.Ragdoll.Value.Head
 		else
 			Head = Character.Head
@@ -79,7 +85,6 @@ local function updateCamera(dt)
 	t += dt * Vel * 0.05
 
 	CurrentVel = Vel
-
 	local base = module.BASE_VIEWBOB_ROTATION
 	local set = module.SET_VIEWBOB_ROTATION * 0.01
 	module.AddModifier(
@@ -93,6 +98,23 @@ local function updateCamera(dt)
 end
 
 function module.LoadChar(char)
+	
+	local HUD = Player.PlayerGui:WaitForChild("HUD")
+	
+	task.defer(function()
+		EvilDeathCC.Brightness = -1 -- Darkness
+		HUD.EffectFrame.GroupTransparency = 1
+		HUD.RightFrame.GroupTransparency = 1
+		HUD.Bars.GroupTransparency = 1
+		
+		task.wait(0.1)
+		
+		TweenService:Create(EvilDeathCC,TweenInfo.new(respawnFadeTime),{Brightness = 0}):Play() -- Fade in back to normal brightness
+		TweenService:Create(HUD.EffectFrame,TweenInfo.new(respawnFadeTime),{GroupTransparency = 0}):Play()
+		TweenService:Create(HUD.RightFrame,TweenInfo.new(respawnFadeTime),{GroupTransparency = 0}):Play()
+		TweenService:Create(HUD.Bars,TweenInfo.new(respawnFadeTime),{GroupTransparency = 0}):Play()
+	end)
+	
 	Character = char
 	local ViewbobConfig = Player.PlayerScripts:WaitForChild("ViewbobConfig")
 	Camera.CameraType = Enum.CameraType.Scriptable
@@ -102,10 +124,19 @@ function module.LoadChar(char)
 	Humanoid = Character:WaitForChild("Humanoid")
 	HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
 	Head = Character:WaitForChild("Head")
+	
+	local MouseUI = Player.PlayerGui.MouseUI
+	MouseUI.Enabled = true
+	
+	local DeathMessage = Player.PlayerGui.HUD.DeathMessage
+	DeathMessage.BeginningText.TextTransparency = 1
+	DeathMessage.NameText.TextTransparency = 1
+	DeathMessage.NameText.Text = "YOURSELF" -- Default death name text
 
 	local tempInverse = CFrame.new()
 	local cameraModifier = CFrame.new()
 	local tempCameraModifier = CFrame.new()
+	
 	-- // The temporary camera modifiers must be reversed before the camera
 	-- // update is done so that they do not interfere with mouse movement.
 	RunService:BindToRenderStep("ReverseTempCameraModifier", Enum.RenderPriority.Camera.Value - 2, function(dt)
@@ -180,6 +211,45 @@ function module.LoadChar(char)
 		if input.UserInputType == Enum.UserInputType.MouseMovement then
 			MouseDelta = Vector2.new(input.Delta.X, input.Delta.Y)
 		end
+	end)
+	
+	Humanoid.Died:Once(function() -- Play death screen
+		
+		local Ragdoll = Character
+		if Character:FindFirstChild("Ragdoll") then -- Check if player is already ragdolled
+			Ragdoll = Character.Ragdoll.Value
+		end
+		for _,part in pairs(Ragdoll:GetDescendants()) do -- This fixes the invisible head bug
+			if part:IsA("BasePart") then
+				part.LocalTransparencyModifier = 0
+			end
+		end
+		
+		task.defer(function()
+			-- turn main HUD and mouse ui invisible
+			MouseUI.Enabled = false
+			HUD.EffectFrame.GroupTransparency = 1
+			HUD.RightFrame.GroupTransparency = 1
+			HUD.Bars.GroupTransparency = 1
+			
+			if Humanoid:GetAttribute("Killer") and Humanoid:GetAttribute("Killer") ~= Player.Name then -- display Killer's name if Killer exist
+				DeathMessage.NameText.Text = string.upper(Humanoid:GetAttribute("Killer"))
+			end
+			
+			if HUD:FindFirstChild("BloodScreen") then
+				TweenService:Create(HUD.BloodScreen,TweenInfo.new(Players.RespawnTime/6),{ImageTransparency = 1}):Play()
+			end
+			
+			EvilDeathCC.Brightness = 1 -- Flash of white
+			task.wait(Players.RespawnTime/20)
+			TweenService:Create(EvilDeathCC,TweenInfo.new(Players.RespawnTime/20),{Brightness = 0}):Play() -- Back to normal brightness
+			task.wait(Players.RespawnTime/20)
+			TweenService:Create(EvilDeathCC,TweenInfo.new(Players.RespawnTime/2),{Brightness = -1}):Play() -- Fade to black
+			task.wait(Players.RespawnTime/3)
+			TweenService:Create(DeathMessage.BeginningText,TweenInfo.new(Players.RespawnTime/6),{TextTransparency = 0}):Play() -- Display beginning message
+			task.wait(Players.RespawnTime/6)
+			TweenService:Create(DeathMessage.NameText,TweenInfo.new(Players.RespawnTime/6),{TextTransparency = 0}):Play() -- Display killer name
+		end)
 	end)
 end
 

@@ -245,11 +245,10 @@ function module.LoadChar(Character)
 			unequipTool(Tool)
 		else
 			Acting = true
-			if scroll then
-				ToolHandler:UnequipTools()
-			else
-				ToolHandler:Clean()
-			end
+			ToolHandler.UnequipTools()
+			task.wait() --/ I put this here because the function Clean()
+			if not Inventory[Tool:GetAttribute("ToolType")] then Acting = false warn("could not table.find tooltype in inventory") return end
+			--/ this line above fixes a bug where equipping after dying breaks the script
 			scrollSave[Tool:GetAttribute("ToolType")] = table.find(Inventory[Tool:GetAttribute("ToolType")],Tool)
 			resetHotbar()
 			setCell(Tool)
@@ -305,7 +304,7 @@ function module.LoadChar(Character)
 
 	characterTrove:Connect(UserInputService.InputBegan, function(Input, gameProcessedEvent)
 		if gameProcessedEvent then return end
-		if AcceptedKeys[Input.KeyCode.Name] and Inventory[AcceptedKeys[Input.KeyCode.Name]] and Inventory[AcceptedKeys[Input.KeyCode.Name]][1] then
+		if AcceptedKeys[Input.KeyCode.Name] and Inventory[AcceptedKeys[Input.KeyCode.Name]] and Inventory[AcceptedKeys[Input.KeyCode.Name]][1] and not Humanoid:GetAttribute("Equipping") then
 			local pickedTool = Inventory[AcceptedKeys[Input.KeyCode.Name]][1]
 			if scrollSave[AcceptedKeys[Input.KeyCode.Name]] then
 				pickedTool = Inventory[AcceptedKeys[Input.KeyCode.Name]][scrollSave[AcceptedKeys[Input.KeyCode.Name]]]

@@ -32,8 +32,11 @@ local function FramePosChanger(ProgressFrame,Direction,StarterPoint)
 end
 
 function module.Progress(ProgressFrame,Percentage,Value)
-	local F1 = ProgressFrame:WaitForChild("Frame1")
-	local F2 = ProgressFrame:WaitForChild("Frame2")
+	local F1 = ProgressFrame:FindFirstChild("Frame1")
+	local F2 = ProgressFrame:FindFirstChild("Frame2")
+	
+	if not F1 and F2 then return end
+	
 	local PercentNumber = math.clamp(Value * 3.6,0,360)
 	local I1 = F1.ImageLabel
 	local I2 = F2.ImageLabel

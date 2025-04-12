@@ -13,7 +13,7 @@ local Objects = ReplicatedStorage:WaitForChild("Objects")
 local Events = ReplicatedStorage:WaitForChild("Events")
 local CharacterEvents = Events:WaitForChild("Character")
 local FlashedEffectFunction = CharacterEvents:WaitForChild("FlashedEffectFunction")
-local RemoveEffectEvent = CharacterEvents:WaitForChild("RemoveEffectEvent")
+local EffectParticleEvent = CharacterEvents:WaitForChild("EffectParticleEvent")
 local StatusEffectObjects = Objects:WaitForChild("StatusEffects")
 local StatusEffectsModule = require(Modules:WaitForChild("Character"):WaitForChild("StatusEffects"))
 
@@ -173,7 +173,7 @@ function module.LoadChar(Character)
 			tweenSound(effect)
 			addVignette(effect)
 			addLighting(StatusEffectObjects[effect.Name],effect)
-			
+			StatusEffectsModule.AddEffectParticles(Character,StatusEffectObjects[effect.Name],true)
 			if StatusEffectsModule.Effects[effect.Name] and not StatusEffectsModule.Effects[effect.Name].StaminaDamageWait and StatusEffectsModule.Effects[effect.Name].StaminaDamage then
 				Humanoid:SetAttribute("Stamina",math.clamp(Humanoid:GetAttribute("Stamina")-(StatusEffectsModule.Effects[effect.Name].StaminaDamage*effect.Value),0,Humanoid:GetAttribute("MaxStamina")))
 			end
@@ -183,6 +183,7 @@ function module.LoadChar(Character)
 				tweenSound(effect,true)
 				addVignette(effect,true)
 				addLighting(StatusEffectObjects[effect.Name],effect,true)
+				StatusEffectsModule.RemoveEffectParticles(Character,effect.Name,true)
 				if EffectFunctions[effect.Name] then
 					EffectFunctions[effect.Name](effect,Humanoid,true)
 				end
@@ -231,7 +232,7 @@ FlashedEffectFunction.OnClientInvoke = function(flashPos)
 	BlotchImage.Visible = true
 	task.defer(function()
 		task.wait(0.1)
-		local effect = StatusEffects:FindFirstChild("Flashed")
+		local effect = StatusEffects:WaitForChild("Flashed")
 		effect.Destroying:Once(function()
 			local duration = StatusEffectsModule.Effects[effect.Name].BlotchDuration or 30
 			TweenService:Create(BlotchAfter,TweenInfo.new(duration*effect.Value,Enum.EasingStyle.Linear),{ImageTransparency = 1}):Play()
@@ -243,5 +244,12 @@ FlashedEffectFunction.OnClientInvoke = function(flashPos)
 	return true
 end
 
+EffectParticleEvent.OnClientEvent:Connect(function(Character,Effect)
+	if typeof(Effect) == "string" then
+		StatusEffectsModule.RemoveEffectParticles(Character,Effect) -- Effect is a string meaning it is removing. This is not replicating
+	else
+		StatusEffectsModule.AddEffectParticles(Character,Effect) -- Effect is not a string meaning it is adding. This is not replicating
+	end
+end)
 
 return module
