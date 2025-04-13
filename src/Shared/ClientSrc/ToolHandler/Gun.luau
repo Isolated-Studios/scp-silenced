@@ -95,6 +95,8 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 
 	--//Sets
 	local BulletSpread = math.round(Settings.MinSpread)
+	local SubsequentShotsFired = 0
+	local LastShotTick = 0
 	local BoltPosition = Settings.BoltPosition or {"LookVector",0.2}
 
 	--//Beginning Priming
@@ -389,6 +391,11 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 	local function fireGun () --/ Big evil function that fires the gun
 		if magBool.Value <= 0 then return end --/ the mag is empty
 
+		local currentTick = tick()
+		if currentTick - LastShotTick >= 150/Settings.RPM then
+			SubsequentShotsFired = 0
+		end
+		LastShotTick = currentTick
 		magBool.Value -= 1 --/ subtract a round from the mag
 
 		SetItemHolder:FireServer(Tool,"Mag",magBool.Value) -- UI shenanigans
@@ -400,7 +407,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 				editBulletFrame("Cycle",0.2)
 			end)
 		end
-		
+
 		if Settings.BoltRoundEvent then --/ Will stop the Bolt animation when fired (only for if BoltRoundEvent is true)
 			animationHandle("Bolt","Stop")
 		end
@@ -443,11 +450,11 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 
 		CTF.flashGun(Flash,Flash.FlashLight,true) -- uses CTF to flash the gun for light and particles
 
-		local aimDivisor = 1 --/ This section reduces the shove of the gun if you're aiming
-		local possibleNegative = math.floor(math.random(-2, 1))
-		if possibleNegative == 0 then possibleNegative = 1 elseif possibleNegative == -2 then possibleNegative = -1 end
+		SubsequentShotsFired += 1
+		local recoil_modifier = 1/SubsequentShotsFired --/ This section reduces the shove of the gun if you're aiming
+		local possibleNegative = math.random(0, 1) * 2 - 1
 		if Aiming then
-			aimDivisor = 2
+			recoil_modifier /= 2
 		end
 
 		animationHandle("Recoil","Play") --/ play the recoil animation
@@ -459,7 +466,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 			Tool:SetAttribute("BoltSet",true)
 		end
 
-		local ShoveAmount = Vector3.new(Settings.CameraShove.X/aimDivisor,Settings.CameraShove.Y/aimDivisor*possibleNegative,Settings.CameraShove.Z/aimDivisor*possibleNegative)
+		local ShoveAmount = Vector3.new(Settings.CameraShove.X*recoil_modifier,Settings.CameraShove.Y*recoil_modifier*possibleNegative,Settings.CameraShove.Z*recoil_modifier*possibleNegative)
 		recoilSpring:shove(ShoveAmount)
 		local randomValue = math.random(1,999999999)
 		for i=1,Settings.BulletsPerShot,1 do
@@ -472,24 +479,14 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		HoldFire = false
 	end
 
-	local function attemptToFire ()
-		if Settings.Bolted then --/ If the gun can be bolted
-			if Bolted then --/ Gun is bolted so it will fire the gun
-				for i=1,Settings.BurstAmount,1 do --/ Burst loop pow pow pow
-					fireGun()
-					if Settings.BurstDelay then
-						task.wait(Settings.BurstDelay)
-					end
-				end
-			else --/ Gun isn't bolted so it must bolt
-				boltGun()
-			end
-		else --/ No bolting required, will fire gun
-			for i=1,Settings.BurstAmount,1 do --/ Burst loop pow pow pow
-				fireGun()
-				if Settings.BurstDelay then
-					task.wait(Settings.BurstDelay)
-				end
+	local function attemptToFire()
+		if Settings.Bolted and not Bolted then --/ If the gun can and must be bolted
+			boltGun()
+		end
+		for i=1,Settings.BurstAmount,1 do --/ Burst loop pow pow pow
+			fireGun()
+			if Settings.BurstDelay then
+				task.wait(Settings.BurstDelay)
 			end
 		end
 	end
@@ -619,7 +616,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 				if Settings.Reload3Speed then
 					animationHandle("Reload3","Speed",VMReload3.Length/Settings.Reload3Speed,CharReload3.Length/Settings.Reload3Speed)
 				end
-				
+
 				if Tool.Parent ~= Character then return end
 				--animationHandle("Reload3","Stop")
 				--ChangeGrip:Fire(Viewmodel.RightHand)
@@ -640,7 +637,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 				if VMEmptyReload then
 					animationHandle("EmptyReload","Stop")
 				end
-				
+
 				if VMReload3 then
 					animationHandle("Reload3","Stop")
 				end
@@ -786,7 +783,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 				Tool:SetAttribute("BoltSet",nil)
 			end
 		end,
-		
+
 		["BoltRound"] = function()
 			assert(Settings.BoltRoundEvent ~= nil,"BoltRound animation event called, but BoltRoundEvent in settings is nil.")
 			if Settings.BoltRoundEvent then
