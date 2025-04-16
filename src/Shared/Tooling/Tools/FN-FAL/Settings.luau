@@ -15,12 +15,12 @@ local Settings = {
 	GibChance = 0.2;
 	PitchLastBullets = 4; -- If greater than zero will gradually pitch up until fire sound is double in pitch. The number determines how many bullets you must have left before it starts pitching.
 	Weight = 0; -- Does nothing right now
-	
+
 	AimFOV = 55; -- Field of view when aiming
 	TravelSpeed = 3000; -- How fast the projectile is
 	Casing = ".45"; -- What casing is ejected from Casings folder
 	BulletTemplate = "OriginalTracer"; -- Tracer that is fired
-	
+
 	Automatic = false; -- Holding down the mouse button will cause the gun to continuously fire
 	Bolted = false; -- Must manually chamber a round
 	AutomaticBolt = false; -- Automatically bolt the gun if Bolted is true
@@ -31,7 +31,7 @@ local Settings = {
 	EmptyReload = true; -- Will use the ReloadEmpty animation when reloading if the mag is at zero
 	BoltBackWhenEmpty = false;
 	ScrollAffectsAim = true;
-	
+
 	EquipSpeed = 0.7; -- Speed of equipping in seconds
 	UnequipSpeed = 0.5;
 	AimInSpeed = 0.5; -- Speed of aiming-in in seconds
@@ -42,24 +42,24 @@ local Settings = {
 	--Reload2Speed = 0.5; -- Speed of Reload2's animation in seconds
 	--Reload3Speed = 0.6; -- Speed of Reload3's animation in seconds
 	--ReloadEmptySpeed = 0.5; -- Speed of ReloadEmpty's animation in seconds. Only works if EmptyReload is true
-	
+
 	MinSpread = 1; -- Minimum bullet spread of gun
 	MaxSpread = 20; -- Maximum bullet spread of gun
 	SpreadCost = 4; -- How much is added onto bullet spread
 	SpreadRegenWait = 1; -- How much time in seconds must pass before spread reduces
-	XRecoilDamp = 0; -- Does nothing right now
-	YRecoilDamp = 0; -- Does nothing right now
-	
+	XRecoilDampFactor = 1; -- The factor by which the x in (1/x) which is then multiplied by the recoil. x is the number of subsequent shots.
+	YRecoilDampFactor = 1; -- By increasing this factor, dampening becomes faster which means the gun will stabilize faster.
+
 	MaxDistance = 500; -- Maximum distance a bullet can travel.
 	MidFallOffDist = 100; -- Studs from Shooter to Target in which damage enters the Medium Fall Off Zone. (Base Damage will Decrease.)
 	LongFallOffDist = 150; -- Studs from Shooter to Target in which damage enters the Long Fall Off Zone. (Base Damage will Decrease.)
 	MidFallOffMult = 0.75; -- Damage Multiplier applied to when damage enters the Medium Fall Off Zone.
 	LongFallOffMult = 0.50; -- Damage Multiplier applied to when damage enters the Long Fall Off Zone.
-	
+
 	CameraShove = Vector3.new(4,0.01,0.2); -- Shove applied to camera when recoiled
 	LinearShove = Vector3.new(-0.1,0.1,.1); -- Linear shove applied to viewmodel when recoiled
 	AngularShove = Vector3.new(.1,0,0.1); -- Angular shove applied to viewmodel when recoiled
-	
+
 	HighlightColor = Color3.fromRGB(100, 210, 210);
 	Size = Vector2.new(1,1); -- Does nothing right now
 	Image = "rbxassetid://0"; -- Does nothing right now

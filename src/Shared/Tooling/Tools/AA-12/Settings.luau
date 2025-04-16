@@ -48,8 +48,8 @@ local Settings = {
 	MaxSpread = 16; -- Maximum bullet spread of gun
 	SpreadCost = 2; -- How much is added onto bullet spread
 	SpreadRegenWait = 0.5; -- How much time in seconds must pass before spread reduces
-	XRecoilDamp = 0; -- Does nothing right now
-	YRecoilDamp = 0; -- Does nothing right now
+	XRecoilDampFactor = 1; -- The factor by which the x in (1/x) which is then multiplied by the recoil. x is the number of subsequent shots.
+	YRecoilDampFactor = 1; -- By increasing this factor, dampening becomes faster which means the gun will stabilize faster.
 
 	MaxDistance = 500; -- Maximum distance a bullet can travel.
 	MidFallOffDist = 100; -- Studs from Shooter to Target in which damage enters the Medium Fall Off Zone. (Base Damage will Decrease.)

@@ -451,7 +451,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		CTF.flashGun(Flash,Flash.FlashLight,true) -- uses CTF to flash the gun for light and particles
 
 		SubsequentShotsFired += 1
-		local recoil_modifier = 1/SubsequentShotsFired --/ This section reduces the shove of the gun if you're aiming
+		local recoil_modifier = Vector2.new(1/(SubsequentShotsFired * Settings.XRecoilDampFactor), 1/(SubsequentShotsFired * Settings.YRecoilDampFactor)) --/ This section reduces the shove of the gun if you're aiming
 		local possibleNegative = math.random(0, 1) * 2 - 1
 		if Aiming then
 			recoil_modifier /= 2
@@ -466,7 +466,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 			Tool:SetAttribute("BoltSet",true)
 		end
 
-		local ShoveAmount = Vector3.new(Settings.CameraShove.X*recoil_modifier,Settings.CameraShove.Y*recoil_modifier*possibleNegative,Settings.CameraShove.Z*recoil_modifier*possibleNegative)
+		local ShoveAmount = Vector3.new(Settings.CameraShove.X*recoil_modifier.X,Settings.CameraShove.Y*recoil_modifier.Y*possibleNegative,Settings.CameraShove.Z*recoil_modifier*possibleNegative)
 		recoilSpring:shove(ShoveAmount)
 		local randomValue = math.random(1,999999999)
 		for i=1,Settings.BulletsPerShot,1 do
