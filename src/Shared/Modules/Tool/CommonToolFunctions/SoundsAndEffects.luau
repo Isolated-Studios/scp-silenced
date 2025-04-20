@@ -38,11 +38,16 @@ function module.playSound (Sounds: Sound | Instance, SoundName: string?, parent:
 	NewSound:Play()
 
 	if Properties then
-		for Property, Value in pairs(Properties) do
-			if NewSound[Property] then
-				NewSound[Property] = Value
+		if typeof(Properties) == "table" then
+			for Property, Value in pairs(Properties) do
+				if NewSound[Property] then
+					NewSound[Property] = Value
+				end
 			end
+		else
+			warn("Property parameter of sound '"..Sound.Name.."' is not a table")
 		end
+		
 	end
 
 	if ApplyRandomPitch then

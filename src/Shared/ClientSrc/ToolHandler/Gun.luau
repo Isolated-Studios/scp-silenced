@@ -360,6 +360,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 	end
 
 	local function boltGun ()
+		if Tool:GetAttribute("Unequipping") then return end -- Prevents bolting when unequipping
 		HoldFire = true
 		if Settings.PlayHammerClick then
 			CTF.playSound(Sounds,"BoltBack",Handle,true,true)
@@ -837,7 +838,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 			Cylinder.C0 = CFrame.new(Cylinder.C0.Position)*CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))
 		end
 		if Settings.AutomaticBolt and not Bolted then
-			gunPrime()
+			boltGun()
 		end
 	end
 		--//UI Priming

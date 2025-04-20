@@ -33,18 +33,28 @@ function module.Init()
 	--		print(textstring)
 	--	end
 	--end)
-
+	
+	TextChatService.ChatInputBarConfiguration:GetPropertyChangedSignal("IsFocused"):Connect(function()
+		local IsTyping = TextChatService.ChatInputBarConfiguration.IsFocused
+		ChatFunctions.VisualizeTyping(Player.Character,IsTyping,true)
+	end)
+	
+	
 	TextChatService.OnIncomingMessage = function(Message: TextChatMessage)
-		local newText = ChatFunctions.RedactMessage(Message.Text)
+		local newText,Redacted = ChatFunctions.RedactMessage(Message.Text)
 		if Message.Status == Enum.TextChatMessageStatus.Success and Message.TextSource and Message.TextSource.UserId and Message.TextSource.UserId == Player.UserId then
-			ChatFunctions.VisualizeChat(Player.Character,newText,true)
+			ChatFunctions.VisualizeChat(Player.Character,newText,Redacted,true)
 		end
 
 		Message.Text = newText
 	end
 	
-	ChatEvent.OnClientEvent:Connect(function(OtherCharacter,Message)
-		ChatFunctions.VisualizeChat(OtherCharacter,Message)
+	ChatEvent.OnClientEvent:Connect(function(OtherCharacter,Message,Redacted)
+		if typeof(Message) == "boolean" then
+			ChatFunctions.VisualizeTyping(OtherCharacter,Message)
+		else
+			ChatFunctions.VisualizeChat(OtherCharacter,Message,Redacted)
+		end
 	end)
 end
 

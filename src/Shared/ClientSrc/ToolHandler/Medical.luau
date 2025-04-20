@@ -64,6 +64,8 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 	local selectedCharacter = nil
 	
 	--//Tool Objects
+	local Sounds = ToolObjects:WaitForChild("Sounds")
+	local Handle = MotorModel:WaitForChild("Handle")
 	local Holder = Tool:WaitForChild("Holder")
 	local Durability = Holder:WaitForChild("Durability")
 	
@@ -134,7 +136,6 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 				Durability.Value = 0
 			end
 			TweenService:Create(MagFrame.UIGridLayout,TweenInfo.new(0.2,Enum.EasingStyle.Linear),{CellSize = UDim2.new(Durability.Value/Settings.MaxDurability,0,1,0)}):Play()
-			--MagFrame.UIGridLayout.CellSize = UDim2.new(Durability.Value/Settings.MaxDurability,0,1,0)
 			ReserveText.Text = Durability.Value
 
 			if Durability.Value == 0 then
@@ -183,7 +184,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 			else
 				picked:GetMarkerReachedSignal("End"):Wait()
 			end
-			--local playerToHeal = nil
+
 			applyHealing(characterToHeal)
 		end
 	end
@@ -205,12 +206,10 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 	
 	--//Animation Handling
 	local eventBehavior = {
-		["meow"] = function()
-			print("meow")
+		["Apply"] = function()
+			CTF.playSound(Sounds,"MagIn",Handle,true,true)
 		end,
-		["woof"] = function()
-			print("woof")
-		end,
+		
 	}
 
 	for animName,animation in pairs(animationTable) do
@@ -324,14 +323,12 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 				textColor = healTextColor[TeamHandler.Check(Player,Players:GetPlayerFromCharacter(selectedCharacter))]
 				if TeamHandler.Check(Player,Players:GetPlayerFromCharacter(selectedCharacter)) == 1  then
 					selectedCharacter = nil
-					--MessageText.Visible = true
 					HealText.Text = ""
 					return
 				end
 			end
 			HealText.Text = "HEAL ".. '<font color='..textColor..'>'..string.upper(selectedCharacter.Name)..'</font>'.." WITH "..string.upper(Tool.Name)
 		else
-			--MessageText.Visible = true
 			HealText.Visible = false
 			HealText.Text = ""
 		end
@@ -346,7 +343,6 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		end
 		CanvasGroup.Visible = false
 		MagBullet:Destroy()
-		--MessageText.Visible = true
 		HealText.Visible = false
 		HealText.Text = ""
 		disconnectFunctions({inputBegan,inputEnded,renderStepped,reviveToolEvent,unequippedTool})

@@ -1,10 +1,14 @@
 local Player = game.Players.LocalPlayer
+
 local UIS = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TextChatService = game:GetService("TextChatService")
+
 local Events = ReplicatedStorage:WaitForChild("Events")
 local Modules = ReplicatedStorage:WaitForChild("Modules")
+
 local LookEvent = Events:WaitForChild("Character"):WaitForChild("LookEvent")
 local KeybindHandler = require(Modules:WaitForChild("UI"):WaitForChild("KeybindHandler"))
 local PlayerAnimations = ReplicatedStorage:WaitForChild("PlayerAssets"):WaitForChild("Animations"):WaitForChild("Character"):WaitForChild("Movement")
@@ -236,13 +240,17 @@ function module.LoadChar(Character)
 		end
 	end)
 
-	local heartBeat = RunService.RenderStepped:Connect(function(dt)
+	local heartBeat = RunService.RenderStepped:Connect(function(dt)		
 		-- set target direction
 		TargetDirection = Vector3.new(
 			(UIS:IsKeyDown(Enum.KeyCode.D) and 1 or 0) - (UIS:IsKeyDown(Enum.KeyCode.A) and 1 or 0),
 			0,
 			(UIS:IsKeyDown(Enum.KeyCode.S) and 1 or 0) - (UIS:IsKeyDown(Enum.KeyCode.W) and 1 or 0)
 		)
+		
+		if TextChatService.ChatInputBarConfiguration.IsFocused then 
+			TargetDirection = Vector3.new(0,0,0) 
+		end
 
 		-- calculate camera lean
 		local relativeMoveDir = CFrame.lookAt(Vector3.zero, HumanoidRootPart.CFrame.LookVector * Vector3.new(1, 0, 1)):VectorToObjectSpace(MoveDirection)

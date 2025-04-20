@@ -149,7 +149,7 @@ function module.LoadChar(Character)
 			Clothing.Parent = ViewModel
 		end
 	end
-	
+
 	for _, clothing in ipairs(ViewModel:GetChildren()) do
 		if clothing:IsA("Model") and clothing:GetAttribute("TargetPart") then
 			clothing:Destroy()
@@ -231,7 +231,7 @@ function module.LoadChar(Character)
 
 	local charChildAdd = Character.ChildAdded:Connect(function(Tool: Tool)
 		if Tool:IsA("Tool") and not Tool:GetAttribute("Removing") and not ViewModel:FindFirstChild("MotorModel") then
-			
+
 			if RightHand:FindFirstChild("RightGrip") then Character["RightHand"]["RightGrip"]:Destroy() end
 			if not Tool:FindFirstChild("Handle") and ViewModel:FindFirstChild("MotorModel") then ToolHandler.UnequipTool(Tool) return end
 			if Tool.RequiresHandle or Tool.CanBeDropped then ToolHandler.UnequipTool(Tool) warn("Attempted to equip tool with RequiresHandle/CanBeDropped set to true") end
@@ -305,12 +305,12 @@ function module.LoadChar(Character)
 			end
 		end
 	end)
-	
+
 	local HandleTransform = nil
 	local OriginalTransform = nil
 	local AimTransform = nil
 	ViewModel:SetAttribute("CloseToWall",false)
-	
+
 	local function uglyViewmodelMath (MouseDelta,updatedSwaySpring,updatedHandleSpring,dt)
 		local WalkSpeed = MovementModule:GetWalkSpeed()
 		if Humanoid and Running and Humanoid:GetState() ~= Enum.HumanoidStateType.Freefall and Humanoid:GetState() ~= Enum.HumanoidStateType.Landed then
@@ -399,9 +399,9 @@ function module.LoadChar(Character)
 			ViewModel["MotorModel"]["Handle"].CFrame = ViewModel["MotorModel"]["Handle"].CFrame*CFrame.Angles(updatedHandleSpring.x/6,updatedHandleSpring.y/6,updatedHandleSpring.z/6)
 		end
 	end
-	
+
 	RunService:BindToRenderStep("UpdateViewModel", Enum.RenderPriority.Camera.Value + 2, function(dt)
-		
+
 		for _, part in ipairs(Character:GetDescendants()) do
 			if not part:IsA("BasePart") then continue end
 			if part.Name ~= "Head" and (ShowArms or table.find(ArmParts, part.Name) == nil) then
@@ -410,7 +410,7 @@ function module.LoadChar(Character)
 				part.LocalTransparencyModifier = 1
 			end
 		end
-		
+
 		CameraModule.AddModifier(ViewModel.CameraPart.HumanoidRootPart.Transform) -- apply camera animations
 		local MouseDelta = UserInputService:GetMouseDelta()
 		local updatedSwaySpring = SwaySpring:update(dt)
@@ -441,7 +441,7 @@ function module.LoadChar(Character)
 		else
 			LocalTransparency = math.min(1, LocalTransparency + dt / LocalTransparencyTransitionTime)
 		end
-		
+
 		if not ShowArms then
 			uglyViewmodelMath(MouseDelta,updatedSwaySpring,updatedHandleSpring,dt)
 		end

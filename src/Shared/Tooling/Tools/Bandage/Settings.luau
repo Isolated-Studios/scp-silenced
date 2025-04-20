@@ -1,21 +1,15 @@
 local Settings = {
-	HealAmount = 0; -- How much health is restored.
+	HealAmount = 30; -- How much health is restored.
+	HealSpeed = 2;
 	MaxDurability = 1;
 	DestroyStatusEffects = { -- Status effects that are destroyed.
-		--"Bleeding",
+		"Bleeding",
 	};
 	StatusEffects = { -- Status effects that are given.
-		["Vigor"] = {
-			Power = 2,
-			Duration = 10.5,
-		},
-		["Absorption"] = {
-			Power = 2,
-			Duration = 10.5,
-		},
+
 	};
 	
-	ReviveHealth = 50; -- How much health the player has after being revived.
+	ReviveHealth = 30; -- How much health the player has after being revived.
 	ReviveTime = 2; -- How long it takes in seconds to revive a player.
 	
 	HasEndMarker = 0.7; -- If number is defined, Apply and/or Aid animation will apply the effects during "End" animation marker. The number determines amount of seconds when the server destroys the tool.
@@ -23,7 +17,7 @@ local Settings = {
 	
 	CanRevive = true; -- If true, can be used to revive players.
 	HealOthers = true; -- If true, can heal other players.
-	RequireHarm = false; -- If true, requires the player to be harmed to use.
+	RequireHarm = true; -- If true, requires the player to be harmed to use.
 	UseDurability = true; -- If true, will use 1 durability each use (Unless HealthAsDurability is true).
 	HealthAsDurability = false; -- If true, makes it so the total amount of health healed is the amount of durability consumed.
 	HasAidAnimation = false; -- If true, will use the Aid animation when healing other players

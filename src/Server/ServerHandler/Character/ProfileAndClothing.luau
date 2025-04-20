@@ -3,6 +3,7 @@ local module = {}
 
 local PlayerAssets  = ReplicatedStorage.PlayerAssets
 local Looks = PlayerAssets.Looks
+local PrimeChatBubble = PlayerAssets.Chat.ChatBubble
 local HumanLooks = Looks.Humans
 local HairLooks = HumanLooks.Hair
 local TeamLooks = HumanLooks.Teams
@@ -85,6 +86,12 @@ local BlackSkinColors = {Color3.fromRGB(90, 76, 66),Color3.fromRGB(65, 59, 48),C
 local AlienSkinColors = {Color3.fromRGB(135, 255, 108),Color3.fromRGB(219, 255, 152),Color3.fromRGB(135, 255, 219),Color3.fromRGB(239, 192, 255),Color3.fromRGB(194, 218, 184),Color3.fromRGB(184, 184, 184)}
 
 function module.Init(Character)
+	
+	local ChatBubble = PrimeChatBubble:Clone()
+	ChatBubble.Parent = Character:WaitForChild("UpperTorso")
+	ChatBubble.Adornee = Character.UpperTorso
+	ChatBubble.PlayerToHideFrom = game.Players:GetPlayerFromCharacter(Character)
+	
 	local Profile = Character:WaitForChild("Profile")
 	
 	local ChosenSkinColor = math.random(0,1)
