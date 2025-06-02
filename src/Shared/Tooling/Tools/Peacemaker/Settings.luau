@@ -33,6 +33,7 @@ local Settings = {
 	Reload2Speed = 0.5; -- Speed of Reload2's animation in seconds
 	Reload3Speed = 0.6; -- Speed of Reload3's animation in seconds
 	ReloadEmptySpeed = 0.5; -- Speed of ReloadEmpty's animation in seconds. Only works if EmptyReload is true
+	RunType = 2; -- Controls the run animation that will play on the viewmodel. 1 is rifle running, 2 is pistol running.
 
 	MinSpread = 1; -- Minimum bullet spread of gun
 	MaxSpread = 10; -- Maximum bullet spread of gun
@@ -40,6 +41,8 @@ local Settings = {
 	SpreadRegenWait = 1; -- How much time in seconds must pass before spread reduces
 	XRecoilDampFactor = 1; -- The factor by which the x in (1/x) which is then multiplied by the recoil. x is the number of subsequent shots.
 	YRecoilDampFactor = 1; -- By increasing this factor, dampening becomes faster which means the gun will stabilize faster.
+	XRecoilDampExponent = 1; -- Exponent applied to each subsequent shot when accounting for recoil dampening of the x axis.
+	YRecoilDampExponent = 1; -- Exponent applied to each subsequent shot when accounting for recoil dampening of the y axis.
 
 	CameraShove = Vector3.new(4,0.01,0.2); -- Shove applied to camera when recoiled
 	LinearShove = Vector3.new(0,0,2); -- Linear shove applied to viewmodel when recoiled

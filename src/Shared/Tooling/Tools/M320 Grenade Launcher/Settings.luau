@@ -49,6 +49,8 @@ local Settings = {
 	SpreadRegenWait = 1; -- How much time in seconds must pass before spread reduces
 	XRecoilDampFactor = 1; -- The factor by which the x in (1/x) which is then multiplied by the recoil. x is the number of subsequent shots.
 	YRecoilDampFactor = 1; -- By increasing this factor, dampening becomes faster which means the gun will stabilize faster.
+	XRecoilDampExponent = 1; -- Exponent applied to each subsequent shot when accounting for recoil dampening of the x axis.
+	YRecoilDampExponent = 1; -- Exponent applied to each subsequent shot when accounting for recoil dampening of the y axis.
 
 	MaxDistance = 500; -- Maximum distance a bullet can travel.
 	MidFallOffDist = 100; -- Studs from Shooter to Target in which damage enters the Medium Fall Off Zone. (Base Damage will Decrease.)
@@ -59,6 +61,11 @@ local Settings = {
 	CameraShove = Vector3.new(4,0.01,0.2); -- Shove applied to camera when recoiled
 	LinearShove = Vector3.new(-0.1,0.1,.1); -- Linear shove applied to viewmodel when recoiled
 	AngularShove = Vector3.new(5,0,0); -- Angular shove applied to viewmodel when recoiled
+	AimLinearShove = nil; -- Linear shove applied to the viewmodel when aiming and recoiled.
+	AimAngularShove = nil; -- Angular shove applied to the viewmodel when aiming and recoiled.
+	
+	RunPosition = nil; -- Table of numbers {1,2,3,4,5,6}. Overrides the run positions, allowing custom run positions. 1 is Front position, 2 is Up position, 3 is Side position, 4 is Front angle, 5 is Up angle, 6 is Side angle.
+	CrouchPosition = nil; -- Table of numbers {1,2,3,4,5,6}. Overrides the crouch positions, allowing custom crouch positions. 1 is Front position, 2 is Up position, 3 is Side position, 4 is Front angle, 5 is Up angle, 6 is Side angle.
 
 	HighlightColor = Color3.fromRGB(100, 210, 210);
 	Size = Vector2.new(1,1); -- Does nothing right now

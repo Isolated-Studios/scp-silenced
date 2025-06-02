@@ -32,8 +32,8 @@ local Settings = {
 	BoltBackWhenEmpty = false;
 	ScrollAffectsAim = true;
 
-	EquipSpeed = 1.23;-- Speed of equipping in seconds
-	EquipTime = 0.8;
+	EquipSpeed = 1.4;-- Speed of equipping in seconds
+	EquipCancel = 0.8;
 	UnequipSpeed = 0.75;
 	AimInSpeed = 0.5; -- Speed of aiming-in in seconds
 	AimOutSpeed = 0.3; -- Speed of aiming-out in seconds
@@ -44,12 +44,16 @@ local Settings = {
 	--Reload3Speed = 0.6; -- Speed of Reload3's animation in seconds
 	--ReloadEmptySpeed = 0.5; -- Speed of ReloadEmpty's animation in seconds. Only works if EmptyReload is true
 
-	MinSpread = 1; -- Minimum bullet spread of gun
-	MaxSpread = 20; -- Maximum bullet spread of gun
-	SpreadCost = 4; -- How much is added onto bullet spread
-	SpreadRegenWait = 1; -- How much time in seconds must pass before spread reduces
+	MinSpread = 0; -- Minimum bullet spread of gun
+	MaxSpread = 15; -- Maximum bullet spread of gun
+	SpreadCost = 0.5; -- How much is added onto bullet spread
+	SpreadRegenWait = 0.25; -- How much time in seconds must pass before spread reduces
+	ReductionIncrement = 0.5; --The incremental amount bulletspread is reduced to its MinSpread
+	ReductionWait = 0.01; --The amount of time for each wait in the reduction spread loop
 	XRecoilDampFactor = 1; -- The factor by which the x in (1/x) which is then multiplied by the recoil. x is the number of subsequent shots.
 	YRecoilDampFactor = 1; -- By increasing this factor, dampening becomes faster which means the gun will stabilize faster.
+	XRecoilDampExponent = 1; -- Exponent applied to each subsequent shot when accounting for recoil dampening of the x axis.
+	YRecoilDampExponent = 1; -- Exponent applied to each subsequent shot when accounting for recoil dampening of the y axis.
 
 	MaxDistance = 500; -- Maximum distance a bullet can travel.
 	MidFallOffDist = 100; -- Studs from Shooter to Target in which damage enters the Medium Fall Off Zone. (Base Damage will Decrease.)
@@ -60,6 +64,13 @@ local Settings = {
 	CameraShove = Vector3.new(4,0.01,0.2); -- Shove applied to camera when recoiled
 	LinearShove = Vector3.new(-0.1,0.1,.1); -- Linear shove applied to viewmodel when recoiled
 	AngularShove = Vector3.new(1,0.4,0.2); -- Angular shove applied to viewmodel when recoiled
+	AimLinearShove = Vector3.new(-0.1,0.1,.1); -- Linear shove applied to viewmodel when recoiled aiming
+	AimAngularShove = Vector3.new(1,0.4,0.2); -- Angular shove applied to viewmodel when recoiled aiming
+	Stability = 40; -- Determines the torque of the gun when recoiling. Lower number is more unstable (more torque), Higher is more stable (less torque).
+	AimStability = nil; -- Determines the torque of the gun when recoiling and aiming. Lower number is more unstable (more torque), Higher is more stable (less torque).
+	
+	RunPosition = nil; -- Table of numbers {1,2,3,4,5,6}. Overrides the run positions, allowing custom run positions. 1 is Front position, 2 is Up position, 3 is Side position, 4 is Front angle, 5 is Up angle, 6 is Side angle.
+	CrouchPosition = nil; -- Table of numbers {1,2,3,4,5,6}. Overrides the crouch positions, allowing custom crouch positions. 1 is Front position, 2 is Up position, 3 is Side position, 4 is Front angle, 5 is Up angle, 6 is Side angle.
 
 	HighlightColor = Color3.fromRGB(100, 210, 210);
 	Size = Vector2.new(1,1); -- Does nothing right now

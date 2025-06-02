@@ -2,7 +2,7 @@ local Settings = {
 	Damage = 22; -- Base damage against target
 	RPM = 1000; -- The amount of rounds that can theoretically be fired in a minute
 	AP = 0; -- Value between 0 and 1 (0 being no armor penetration, 1 being complete armor penetration)
-	MagSize = 16; -- The maximum ammount of ammo held in a gun
+	MagSize = 8; -- The maximum ammount of ammo held in a gun
 	ReloadStyle = 1; -- 0 = single cartridge insert | 1 = mag reload
 	BulletsPerShot = 1; -- The amount of projectiles fired from one shot (Shotgun)
 	BurstAmount = 1; -- The amount of times fired per shot
@@ -20,6 +20,7 @@ local Settings = {
 	TravelSpeed = 3000; -- How fast the projectile is
 	Casing = ".45"; -- What casing is ejected from Casings folder
 	BulletTemplate = "OriginalTracer"; -- Tracer that is fired
+	RunType = 2; -- Controls the run animation that will play on the viewmodel. 1 is rifle running, 2 is pistol running.
 
 	Automatic = false; -- Holding down the mouse button will cause the gun to continuously fire
 	Bolted = false; -- Must manually chamber a round
@@ -33,7 +34,7 @@ local Settings = {
 	ScrollAffectsAim = true;
 
 	EquipSpeed = .97; -- Speed of equipping in seconds
-	EquipTime = 0.3;
+	EquipCancel = 0.3;
 	UnequipSpeed = 0.5;
 	AimInSpeed = 0.5; -- Speed of aiming-in in seconds
 	AimOutSpeed = 0.3; -- Speed of aiming-out in seconds
@@ -50,6 +51,8 @@ local Settings = {
 	SpreadRegenWait = 1; -- How much time in seconds must pass before spread reduces
 	XRecoilDampFactor = 1; -- The factor by which the x in (1/x) which is then multiplied by the recoil. x is the number of subsequent shots.
 	YRecoilDampFactor = 1; -- By increasing this factor, dampening becomes faster which means the gun will stabilize faster.
+	XRecoilDampExponent = 1; -- Exponent applied to each subsequent shot when accounting for recoil dampening of the x axis.
+	YRecoilDampExponent = 1; -- Exponent applied to each subsequent shot when accounting for recoil dampening of the y axis.
 
 	MaxDistance = 500; -- Maximum distance a bullet can travel.
 	MidFallOffDist = 100; -- Studs from Shooter to Target in which damage enters the Medium Fall Off Zone. (Base Damage will Decrease.)
@@ -57,9 +60,16 @@ local Settings = {
 	MidFallOffMult = 0.75; -- Damage Multiplier applied to when damage enters the Medium Fall Off Zone.
 	LongFallOffMult = 0.50; -- Damage Multiplier applied to when damage enters the Long Fall Off Zone.
 
-	CameraShove = Vector3.new(4,0.01,0.2); -- Shove applied to camera when recoiled
-	LinearShove = Vector3.new(-0.1,0.1,.1); -- Linear shove applied to viewmodel when recoiled
-	AngularShove = Vector3.new(1,0.1,0.1); -- Angular shove applied to viewmodel when recoiled
+	CameraShove = Vector3.new(1,0.01,0.2); -- Shove applied to camera when recoiled
+	LinearShove = Vector3.new(0,0.1,.1); -- Linear shove applied to viewmodel when recoiled
+	AngularShove = Vector3.new(0,0.1,0.1); -- Angular shove applied to viewmodel when recoiled
+	AimLinearShove = nil; -- Linear shove applied to the viewmodel when aiming and recoiled.
+	AimAngularShove = nil; -- Angular shove applied to the viewmodel when aiming and recoiled.
+	Stability = 100; -- Determines the torque of the gun when recoiling. Lower number is more unstable (more torque), Higher is more stable (less torque).
+	AimStability = 1; -- Determines the torque of the gun when recoiling and aiming. Lower number is more unstable (more torque), Higher is more stable (less torque).
+	
+	RunPosition = nil; -- Table of numbers {1,2,3,4,5,6}. Overrides the run positions, allowing custom run positions. 1 is Front position, 2 is Up position, 3 is Side position, 4 is Front angle, 5 is Up angle, 6 is Side angle.
+	CrouchPosition = nil; -- Table of numbers {1,2,3,4,5,6}. Overrides the crouch positions, allowing custom crouch positions. 1 is Front position, 2 is Up position, 3 is Side position, 4 is Front angle, 5 is Up angle, 6 is Side angle.
 
 	HighlightColor = Color3.fromRGB(100, 210, 210);
 	Size = Vector2.new(3,2); -- Does nothing right now

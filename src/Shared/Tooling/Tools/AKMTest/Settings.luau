@@ -17,7 +17,7 @@ local Settings = {
 	Weight = 0; -- Does nothing right now
 
 	AimFOV = 35; -- Field of view when aiming
-	TravelSpeed = 2000; -- How fast the projectile is
+	TravelSpeed = 3000; -- How fast the projectile is
 	Casing = ".45"; -- What casing is ejected from Casings folder
 	BulletTemplate = "OriginalTracer"; -- Tracer that is fired
 	RunType = 1; -- Controls the run animation that will play on the viewmodel. 1 is rifle running, 2 is pistol running.
@@ -53,8 +53,8 @@ local Settings = {
 	ReductionWait = 0.01; --The amount of time for each wait in the reduction spread loop
 	XRecoilDampFactor = 1; -- The factor by which the x in (1/x) which is then multiplied by the recoil. x is the number of subsequent shots.
 	YRecoilDampFactor = 1; -- By increasing this factor, dampening becomes faster which means the gun will stabilize faster.
-	XRecoilDampExponent = 1/2; -- Exponent applied to each subsequent shot when accounting for recoil dampening of the x axis.
-	YRecoilDampExponent = 1/2; -- Exponent applied to each subsequent shot when accounting for recoil dampening of the y axis.
+	XRecoilDampExponent = -1/4; -- Exponent applied to each subsequent shot when accounting for recoil dampening of the x axis.
+	YRecoilDampExponent = -1/2; -- Exponent applied to each subsequent shot when accounting for recoil dampening of the y axis.
 
 	MaxDistance = 500; -- Maximum distance a bullet can travel.
 	MidFallOffDist = 100; -- Studs from Shooter to Target in which damage enters the Medium Fall Off Zone. (Base Damage will Decrease.)
@@ -66,10 +66,10 @@ local Settings = {
 	LinearShove = Vector3.new(0.5,0.5,1); -- Linear shove applied to viewmodel when recoiled
 	AngularShove = Vector3.new(1,0.25,.25); -- Angular shove applied to viewmodel when recoiled
 	AimLinearShove = Vector3.new(0,0,5); -- Linear shove applied to the viewmodel when aiming and recoiled.
-	AimAngularShove = Vector3.new(0,0,0.1); -- Angular shove applied to the viewmodel when aiming and recoiled.
+	AimAngularShove = Vector3.new(0,0,0); -- Angular shove applied to the viewmodel when aiming and recoiled.
 	Stability = nil; -- Determines the torque of the gun when recoiling. Lower number is more unstable (more torque), Higher is more stable (less torque).
 	AimStability = nil; -- Determines the torque of the gun when recoiling and aiming. Lower number is more unstable (more torque), Higher is more stable (less torque).
-
+	
 	RunPosition = nil; -- Table of numbers {1,2,3,4,5,6}. Overrides the run positions, allowing custom run positions. 1 is Front position, 2 is Up position, 3 is Side position, 4 is Front angle, 5 is Up angle, 6 is Side angle.
 	CrouchPosition = nil; -- Table of numbers {1,2,3,4,5,6}. Overrides the crouch positions, allowing custom crouch positions. 1 is Front position, 2 is Up position, 3 is Side position, 4 is Front angle, 5 is Up angle, 6 is Side angle.
 
