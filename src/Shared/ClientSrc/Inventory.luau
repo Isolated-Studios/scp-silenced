@@ -12,30 +12,30 @@ local function loadCharacter(Character)
 	local Modules = ReplicatedStorage.Modules
 	local Objects = ReplicatedStorage.Objects
 	local UIModules = Modules.UI
-	
+
 	local ManageAmmoBox = Events:WaitForChild("Tool"):WaitForChild("ManageAmmoBox")
-	
+
 	local Ammo = Character:WaitForChild("Ammo")
-	
+
 	local Tooling = ReplicatedStorage:WaitForChild("Tooling")
 	local Tools = Tooling:WaitForChild("Tools")
-	
+
 	local InventoryUI = Player.PlayerGui:WaitForChild("Inventory")
 	local Main = InventoryUI:WaitForChild("Main")
 	local Container = Main:WaitForChild("Container")
 	local ModalFrame = InventoryUI:WaitForChild("ModalFrame")
 	local SlotTemplate = Container:WaitForChild("SlotTemplate")
 	local ItemTemplate = Container:WaitForChild("ItemTemplate")
-	
+
 	local InventoryHover = Player.PlayerGui.MouseUI.Dot.InventoryHover
 	local MouseHighlight = Container.MouseHighlighter
-	
+
 	local ViewportFrame = Container:WaitForChild("ViewportFrame")
 	local ViewportCharacter = ViewportFrame:WaitForChild("WorldModel"):WaitForChild("Character")
 	local ViewportHumanoid = ViewportCharacter:WaitForChild("Humanoid")
 	local ViewportAnimator = ViewportHumanoid:WaitForChild("Animator")
 	local ViewportIdle = ViewportAnimator:LoadAnimation(ViewportAnimator.Idle)
-	
+
 	local ToolList = {}
 	local ItemList = {}
 	local ToolTypeToTable = {
@@ -47,14 +47,15 @@ local function loadCharacter(Character)
 		[10] = {"Armor"},
 		[11] = {"Torso"},
 	}
-	
+
 	local CTF = require(Modules.Tool.CommonToolFunctions)
 	local KeybindHandler = require(UIModules.KeybindHandler)
+	local HotbarHandler = require(script.Parent.HotbarHandler)
 	local GridPack = require(UIModules.GridPackModules.GridPack)
 	require(UIModules.GridPackModules.GridPack.Item).InventoryKeyCode = KeybindHandler.Keybind("Open Inventory", game.Players.LocalPlayer)
-	
+
 	local Humanoid = Character:WaitForChild("Humanoid")
-	
+
 	local function createGrid(Template, sizex, sizey)
 		local grid = GridPack.createGrid(
 			{
@@ -75,7 +76,7 @@ local function loadCharacter(Character)
 				},
 			}
 		)
-		
+
 		local function connect(event, transparency)
 			transparency = 1 - transparency -- turn it to opacity
 			event:Connect(function(Item)
@@ -93,7 +94,7 @@ local function loadCharacter(Character)
 				end
 			end)
 		end
-		
+
 		connect(grid.ItemMoved, 1)
 		connect(grid.ItemAdded, 1)
 		connect(grid.ItemHeld, 0)
@@ -116,7 +117,7 @@ local function loadCharacter(Character)
 		end)
 		return grid
 	end
-	
+
 	local function createUniqueSlot(Type: string, Template)
 		local slot = GridPack.createSingleSlot(
 			{
@@ -162,11 +163,11 @@ local function loadCharacter(Character)
 		end)
 		return slot
 	end
-	
+
 	local InventoryGrid = createGrid(Container.InventorySize, 5, 6)
 	local ExtraGrid = createGrid(Container.ExtraSize, 5, 3)
 	local ProximityGrid = createGrid(Container.ProximityCanvasGroup.ProximityScrollFrame.Framing, 7, 21)
-	
+
 	local PrimarySlot = createUniqueSlot("Primary", Container.PrimarySize)
 	local SecondarySlot = createUniqueSlot("Secondary", Container.SecondarySize)
 	local MeleeSlot = createUniqueSlot("Melee", Container.MeleeSize)
@@ -174,7 +175,11 @@ local function loadCharacter(Character)
 	local HeadSlot = createUniqueSlot("Head", Container.HeadSize)
 	local ArmorSlot = createUniqueSlot("Armor", Container.ArmorSize)
 	local TorsoSlot = createUniqueSlot("Torso", Container.TorsoSize)
-	
+
+	HotbarHandler.InventoryToolTypeSlotIndex[1] = PrimarySlot
+	HotbarHandler.InventoryToolTypeSlotIndex[2] = SecondarySlot
+	HotbarHandler.InventoryToolTypeSlotIndex[3] = MeleeSlot
+
 	local ToolTypeToSlot = {
 		[1] = PrimarySlot,
 		[2] = SecondarySlot,
@@ -183,7 +188,7 @@ local function loadCharacter(Character)
 		[9] = HeadSlot,
 		[10] = ArmorSlot,
 		[11] = TorsoSlot,
-	} 
+	}
 	local ToolTypeToListing = {
 		[1] = {
 			Repair = false,
@@ -207,7 +212,7 @@ local function loadCharacter(Character)
 			Drop = true,
 		};
 	}
-	
+
 	local function createTool (tool)
 		local toolFolder = Tools[tool:GetAttribute("ToolName")]
 		local Settings = require(toolFolder["Settings"])
@@ -220,17 +225,17 @@ local function loadCharacter(Character)
 			Properties = true,
 			Drop = true,
 		}
-		
+
 		--//Make Ammo
 		if tool:GetAttribute("ToolType") == 12 then
 			Ammo[Settings.AmmoType].Value += tool.Holder.Capacity.Value
 		end
 		--\\
-		
+
 		if ToolTypeToListing[tool:GetAttribute("ToolType")] then
-			listingToUse = ToolTypeToListing[tool:GetAttribute("ToolType")] 
+			listingToUse = ToolTypeToListing[tool:GetAttribute("ToolType")]
 		end
-		
+
 		local itemUI = GridPack.createItem({
 			--Position = Vector2.new(0, 0),
 			Size = Settings.Size or Vector2.new(1, 1),
@@ -249,7 +254,7 @@ local function loadCharacter(Character)
 				Listing = listingToUse;
 			},
 		})
-		
+
 		itemUI.MouseClicked:Connect(function()
 			if UIS:IsKeyDown(Enum.KeyCode.LeftShift) or UIS:IsKeyDown(Enum.KeyCode.RightShift) then
 				local invalid = false
@@ -266,7 +271,7 @@ local function loadCharacter(Character)
 					else
 						local originalPlace = {itemUI.Position, itemUI.Rotation, itemUI.ItemManager}
 						local replaceItem = targetSlot.Item
-						
+
 						if replaceItem then
 							itemUI.ItemManager:RemoveItem(itemUI)
 							if replaceItem:SetItemManager(InventoryGrid, false) then
@@ -298,7 +303,7 @@ local function loadCharacter(Character)
 				end
 			end
 		end)
-		
+
 		table.insert(ToolList,tool)
 		table.insert(ItemList,itemUI)
 		if slotList then
@@ -314,7 +319,7 @@ local function loadCharacter(Character)
 				targetSlot:ChangeItem(itemUI, nil, true)
 				itemUI:Drop(true)
 			end
-		else 
+		else
 			local invalid = InventoryGrid:AddItem(itemUI)
 			if invalid then
 				local invalid2 = ExtraGrid:AddItem(itemUI)
@@ -324,11 +329,11 @@ local function loadCharacter(Character)
 			end
 		end
 	end
-	
+
 	local function removeTool (tool)
 		for _,validItemUI in pairs(ItemList) do
 			if validItemUI.Metadata.Tool == tool then
-				
+
 				--//Remove Ammo
 				if tool:GetAttribute("ToolType") == 12 and tool:GetAttribute("Dropping") then
 					local toolFolder = Tools[tool:GetAttribute("ToolName")]
@@ -336,7 +341,7 @@ local function loadCharacter(Character)
 					Ammo[Settings.AmmoType].Value -= tool.Holder.Capacity.Value
 				end
 				--\\
-				
+
 				table.remove(ToolList,table.find(ToolList,tool))
 				table.remove(ItemList,table.find(ItemList,validItemUI))
 				validItemUI:Destroy()
@@ -344,7 +349,7 @@ local function loadCharacter(Character)
 			end
 		end
 	end
-	
+
 	--//Startup
 	local startTools = {}
 	for _,tool in pairs(Player.Backpack:GetChildren()) do
@@ -369,8 +374,8 @@ local function loadCharacter(Character)
 		end
 	end
 	--\\
-	
-	--//Functions 
+
+	--//Functions
 	local function disconnectFunctions (FunctionList)
 		for _,Function in pairs(FunctionList) do
 			if Function then
@@ -380,19 +385,19 @@ local function loadCharacter(Character)
 			end
 		end
 	end
-	
+
 	local childAdded = Player.Backpack.ChildAdded:Connect(function(tool)
 		if tool:GetAttribute("ToolType") and not table.find(ToolList,tool) then
 			createTool(tool)
 		end
 	end)
-	
+
 	local childRemoved = Player.Backpack.ChildRemoved:Connect(function(tool)
 		if tool:GetAttribute("ToolType") and table.find(ToolList,tool) and tool.Parent ~= Player.Backpack and tool:GetAttribute("Removing") then
 			removeTool(tool)
 		end
 	end)
-	
+
 	--//Manage Ammo Boxes
 	local ammoFunctionsList = {}
 	local ammoTypeToBox = {
@@ -403,7 +408,7 @@ local function loadCharacter(Character)
 		["Shotgun"] = "Shotgun Shells",
 		["Handcannon"] = "Handcannon Ammo",
 	}
-	
+
 	for _,ammoValue in pairs(Ammo:GetChildren()) do
 		local beginningValue = ammoValue.Value
 		local beginningTools = 0
@@ -416,7 +421,7 @@ local function loadCharacter(Character)
 				end
 			end
 		end
-		
+
 		local ammoFunction = ammoValue:GetPropertyChangedSignal("Value"):Connect(function()
 			local ammoToPass = beginningValue - ammoValue.Value
 			local ValidTools = {}
@@ -453,7 +458,7 @@ local function loadCharacter(Character)
 				end
 				return lT,index
 			end
-			
+
 			local function findHighestTool ()
 				local hT = nil
 				local index = 1
@@ -495,7 +500,7 @@ local function loadCharacter(Character)
 					end
 					if total == ammoValue.Value then break end
 					if not highestTool and ammoToPass < 0 then
-						--Create an ammo box 
+						--Create an ammo box
 						ManageAmmoBox:FireServer(ammoToPass,ammoTypeToBox[ammoValue.Name])
 						ammoToPass = 0
 					elseif ammoToPass < 0 then
@@ -510,7 +515,7 @@ local function loadCharacter(Character)
 					end
 				end
 			end
-			
+
 			local total = 0
 			for _,v in pairs(ValidTools) do
 				if v[1].Holder.Capacity.Value > 0 then
@@ -524,9 +529,9 @@ local function loadCharacter(Character)
 		table.insert(ammoFunctionsList,ammoFunction)
 	end
 	--\\
-	
+
 	--\\
-	
+
 	local TransferLink = GridPack.createTransferLink({})
 	InventoryGrid:ConnectTransferLink(TransferLink)
 	ExtraGrid:ConnectTransferLink(TransferLink)
@@ -538,7 +543,7 @@ local function loadCharacter(Character)
 	HeadSlot:ConnectTransferLink(TransferLink)
 	ArmorSlot:ConnectTransferLink(TransferLink)
 	TorsoSlot:ConnectTransferLink(TransferLink)
-	
+
 	local inputBegan = UIS.InputBegan:Connect(function(input,gpe)
 		if gpe or Humanoid.Health <= 0 then return end
 		if input.KeyCode == KeybindHandler.Keybind("Open Inventory", game.Players.LocalPlayer) then
@@ -559,7 +564,7 @@ local function loadCharacter(Character)
 				TweenService:Create(InventoryHover.SecondLabel, TweenInfo.new(0.2), {TextTransparency = 1, TextStrokeTransparency = 1}):Play()
 			end
 		end
-		
+
 		if input.KeyCode == KeybindHandler.Keybind("Drop",game.Players.LocalPlayer) then
 			local HoveredTool = Main.HoveredTool
 			if HoveredTool.Value then
@@ -567,7 +572,7 @@ local function loadCharacter(Character)
 			end
 		end
 	end)
-	
+
 	-- // Mouse Background Glow (Visually broken for some reason)
 	--local HighlightMiddle = MouseHighlight.Middle
 	--local HighlightLeft = MouseHighlight.Left
@@ -585,11 +590,11 @@ local function loadCharacter(Character)
 	--	HighlightTop.Position = UDim2.new(0, 0, -2, HighlightMiddle.Position.Y.Offset + 1)
 	--	HighlightBottom.Position = UDim2.new(0, 0, 0, HighlightMiddle.Position.Y.Offset + HighlightMiddle.AbsoluteSize.Y - 1)
 	--end)
-	
+
 	--// Inventory Person
 	ViewportIdle:Play()
 	--\\
-	
+
 	Humanoid.Died:Once(function()
 		inputBegan:Disconnect()
 		--updateMouseHighlight:Disconnect()
@@ -599,7 +604,7 @@ local function loadCharacter(Character)
 		--myFirstItem:Drop()
 		Humanoid:SetAttribute("InventoryOpen",nil)
 		TweenService:Create(Main,TweenInfo.new(0.2),{GroupTransparency = 1}):Play()
-		
+
 		InventoryGrid:ClearItems()
 		ExtraGrid:ClearItems()
 		ProximityGrid:ClearItems()
@@ -610,6 +615,7 @@ local function loadCharacter(Character)
 		HeadSlot:RemoveItem()
 		ArmorSlot:RemoveItem()
 		TorsoSlot:RemoveItem()
+		HotbarHandler.InventoryToolTypeSlotIndex = {}
 	end)
 end
 

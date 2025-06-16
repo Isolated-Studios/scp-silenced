@@ -1,4 +1,5 @@
 local module = {}
+local RunService = game:GetService("RunService")
 
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
@@ -35,6 +36,8 @@ local AcceptedKeys = {
 	["Five"]  = 5,
 }
 
+module.InventoryToolTypeSlotIndex = {} -- is to be loaded by Inventory, used for checking equipped tools.
+
 function module.Init()
 	game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, false)
 	AcceptedKeys[KeybindHandler.Keybind("Grenade", Player).Name] = 6
@@ -47,29 +50,13 @@ function module.LoadChar(Character)
 	local ListFrame = HUD:WaitForChild("RightFrame"):WaitForChild("ListFrame")
 	local Hotbar = ListFrame:WaitForChild("Hotbar")
 	local ConsumablesFrame = ListFrame:WaitForChild("GunFrame"):WaitForChild("Consumables"):WaitForChild("Frame")
-	local Inventory = {
-		[1] = {},
-		[2] = {},
-		[3] = {},
-		[4] = {},
-		[5] = {},
-		[6] = {},
-	}
-	local scrollSave = {
-		[1] = 1,
-		[2] = 1,
-		[3] = 1,
-		[4] = 1,
-		[5] = 1,
-		[6] = 1,
-	}
-	local function resetHotbar ()
+	local Inventory = {}
+	local function RefreshHotbar ()
 		for _,cell in pairs(Hotbar:GetChildren()) do
 			if cell:IsA("Frame") then
 				local index = tonumber(cell.Name)
-				local toolIndex = scrollSave[index]
 				if Inventory[index] then
-					local actualTool = Inventory[index][toolIndex]
+					local actualTool = Inventory[index]
 					if actualTool then
 						cell.Icon.Image = actualTool.TextureId
 						cell.Icon.Inner.Image = actualTool.TextureId
@@ -91,8 +78,8 @@ function module.LoadChar(Character)
 			end
 		elseif Tool:GetAttribute("ToolType") <= 3 then
 			local cell = Hotbar[tostring(Tool:GetAttribute("ToolType"))]
-			if resetImage and  Inventory[Tool:GetAttribute("ToolType")][scrollSave[Tool:GetAttribute("ToolType")]] then
-				local nextTool = Inventory[Tool:GetAttribute("ToolType")][scrollSave[Tool:GetAttribute("ToolType")]]
+			if resetImage and  Inventory[Tool:GetAttribute("ToolType")] then
+				local nextTool = Inventory[Tool:GetAttribute("ToolType")]
 				cell.Icon.Image = nextTool.TextureId
 				cell.Icon.Inner.Image = nextTool.TextureId
 			elseif resetImage then
@@ -106,92 +93,6 @@ function module.LoadChar(Character)
 				cell.UIStroke.Color = Color3.fromRGB(150,150,150)
 			end
 		end
-	end
-	local function checkScrollCells (toolType)
-		if Inventory[toolType] and #Inventory[toolType] > 0 and toolType <= 3 then
-			local scrollFrame = Hotbar[tostring(toolType)].Scroll
-			for _,othercell in pairs(scrollFrame:GetChildren()) do
-				if othercell:IsA("Frame") then
-					othercell.BackgroundColor3 = Color3.fromRGB(150,150,150)
-				end
-			end
-			scrollFrame[tostring(scrollSave[toolType])].BackgroundColor3 = Color3.fromRGB(255,255,255)
-		end
-	end
-	local function resetScrollCell (Tool)
-		local index = Tool:GetAttribute("ToolType")
-		if index > 3 then return end
-		for _,deadCell in pairs(Hotbar[tostring(index)].Scroll:GetChildren()) do
-			if deadCell:IsA("Frame") then
-				deadCell:Destroy()
-			end
-		end
-		local value = #Inventory[index]
-		if value > 0 then
-			local HotbarCell = Hotbar[tostring(index)]
-			local PrimeCell = HotbarCell.Cell
-			for i=1,value do
-				local Cell = PrimeCell:Clone()
-				Cell.Name = tostring(i)
-				HotbarCell.Scroll.UIGridLayout.CellSize = UDim2.new(1/value,-1,1,0)
-				Cell.Parent = HotbarCell.Scroll
-			end
-		else
-			for _,deadCell in pairs(Hotbar[tostring(index)].Scroll:GetChildren()) do
-				if deadCell:IsA("Frame") then
-					deadCell:Destroy()
-				end
-			end
-		end
-		checkScrollCells(index)
-	end
-
-	local function resetScrollCells (destroyTool)
-		if destroyTool then
-			if destroyTool:GetAttribute("ToolType") > 3 then return end
-
-			for _,deadCell in pairs(Hotbar[tostring(destroyTool:GetAttribute("ToolType"))].Scroll:GetChildren()) do
-				if deadCell:IsA("Frame") then
-					deadCell:Destroy()
-				end
-			end
-		end
-		for index,_ in pairs(Inventory) do
-			local value = #Inventory[index]
-			if index > 3 then return end
-			if value > 0 then
-				local HotbarCell = Hotbar[tostring(index)]
-				local PrimeCell = HotbarCell.Cell
-				for i=1,value do
-					local Cell = PrimeCell:Clone()
-					Cell.Name = tostring(i)
-					HotbarCell.Scroll.UIGridLayout.CellSize = UDim2.new(1/value,-1,1,0)
-					Cell.Parent = HotbarCell.Scroll
-				end
-			else
-				for _,deadCell in pairs(Hotbar[tostring(index)].Scroll:GetChildren()) do
-					if deadCell:IsA("Frame") then
-						deadCell:Destroy()
-					end
-				end
-			end
-			checkScrollCells(index)
-		end
-	end
-	local function addScrollCell (Tool)
-		local index = Tool:GetAttribute("ToolType")
-		if index > 3 then return end
-		local HotbarCell = Hotbar[tostring(index)]
-		local PrimeCell = HotbarCell.Cell
-		local scrollIndex = 1
-		if index > 3 then return end
-		if Inventory[index] then
-			scrollIndex = #Inventory[index]
-		end
-		local Cell = PrimeCell:Clone()
-		Cell.Name = tostring(scrollIndex)
-		HotbarCell.Scroll.UIGridLayout.CellSize = UDim2.new(1/scrollIndex,-1,1,0)
-		Cell.Parent = HotbarCell.Scroll
 	end
 
 	local function setCell (Tool)
@@ -207,6 +108,7 @@ function module.LoadChar(Character)
 			cell:WaitForChild("Icon"):WaitForChild("Inner").Image = Tool.TextureId
 		end
 	end
+
 	local function unequipTool (Tool)
 		if Character:FindFirstChildOfClass("Tool") and Character:FindFirstChildOfClass("Tool") == Tool and Tool:GetAttribute("Activated") then
 			Unequipping = true
@@ -216,22 +118,8 @@ function module.LoadChar(Character)
 			Unequipping = false
 		end
 	end
-	local function addTool (Tool)
-		if Inventory[Tool:GetAttribute("ToolType")] then
-			table.insert(Inventory[Tool:GetAttribute("ToolType")],Tool)
-		end
-	end
-	local function removeTool (Tool)
-		if Inventory[Tool:GetAttribute("ToolType")] and table.find(Inventory[Tool:GetAttribute("ToolType")],Tool) then
-			if scrollSave[Tool:GetAttribute("ToolType")] > 1 then
-				scrollSave[Tool:GetAttribute("ToolType")] += -1
-			end
-			table.remove(Inventory[Tool:GetAttribute("ToolType")],table.find(Inventory[Tool:GetAttribute("ToolType")],Tool))
-			resetCell(Tool,true)
-			resetScrollCell(Tool)
-		end
-	end
-	local function actOnTool (Tool, scroll)
+
+	local function actOnTool(Tool)
 		local activatedTool = false
 		for _,tool in pairs(Player.Backpack:GetChildren()) do
 			if tool:GetAttribute("Activated") then
@@ -241,7 +129,7 @@ function module.LoadChar(Character)
 		end
 
 		if activatedTool or Unequipping or Tool:GetAttribute("Removing") or UserInputService:IsKeyDown(KeybindHandler.Keybind("Drop",Player)) or Humanoid:GetAttribute("DisableEquip") or Humanoid:GetAttribute("Downed") or Acting then return end
-		if Character:FindFirstChildOfClass("Tool") and Tool:GetAttribute("ToolType") == Character:FindFirstChildOfClass("Tool"):GetAttribute("ToolType") and not scroll then
+		if Character:FindFirstChildOfClass("Tool") and Tool:GetAttribute("ToolType") == Character:FindFirstChildOfClass("Tool"):GetAttribute("ToolType") then
 			unequipTool(Tool)
 		else
 			Acting = true
@@ -249,82 +137,42 @@ function module.LoadChar(Character)
 			task.wait() --/ I put this here because the function Clean()
 			if not Inventory[Tool:GetAttribute("ToolType")] then Acting = false warn("could not table.find tooltype in inventory") return end
 			--/ this line above fixes a bug where equipping after dying breaks the script
-			scrollSave[Tool:GetAttribute("ToolType")] = table.find(Inventory[Tool:GetAttribute("ToolType")],Tool)
-			resetHotbar()
+			RefreshHotbar()
 			setCell(Tool)
 			pcall(ToolHandler.EquipTool, Tool)
-			checkScrollCells(Tool:GetAttribute("ToolType"))
 			Acting = false
 		end
 	end
-	local function scrollTool (direction)
-		if not Unequipping and not Acting and Character:FindFirstChildOfClass("Tool") and Character:FindFirstChildOfClass("Tool"):GetAttribute("ToolType") and Inventory[Character:FindFirstChildOfClass("Tool"):GetAttribute("ToolType")] and table.find(Inventory[Character:FindFirstChildOfClass("Tool"):GetAttribute("ToolType")],Character:FindFirstChildOfClass("Tool")) and #Inventory[Character:FindFirstChildOfClass("Tool"):GetAttribute("ToolType")] > 1 and not Humanoid:GetAttribute("Aiming") then
-			local Tool = Character:FindFirstChildOfClass("Tool")
-			local ToolTable = Inventory[Character:FindFirstChildOfClass("Tool"):GetAttribute("ToolType")]
-			local index = table.find(ToolTable,Tool)
-			local targetIndex = index+direction
-			if targetIndex > #ToolTable then
-				targetIndex = 1
-			elseif targetIndex < 1 then
-				targetIndex = #ToolTable
-			end
-			if ToolTable[targetIndex] then
-				actOnTool(ToolTable[targetIndex], true)
+
+	RunService.Stepped:Connect(function(time, deltaTime)
+		if module.InventoryToolTypeSlotIndex then
+			for i = 1, 3 do
+				Inventory[i] = module.InventoryToolTypeSlotIndex[i].Item and module.InventoryToolTypeSlotIndex[i].Item.Metadata.Tool
 			end
 		end
-	end
-	local Backpack = Player.Backpack
-	for _,Tool in pairs(Backpack:GetChildren()) do
-		addTool(Tool)
-	end
-	characterTrove:Connect(Backpack.ChildAdded, function(Tool)
-		if Tool:GetAttribute("NewTool") then
-			Tool:SetAttribute("NewTool",nil)
-			addTool(Tool)
-			addScrollCell(Tool)
-			resetHotbar()
-			checkScrollCells(Tool:GetAttribute("ToolType"))
+		RefreshHotbar()
+		local Tool = Character:FindFirstChildOfClass("Tool")
+		if Tool and Tool:GetAttribute("ToolType") and Inventory[Tool:GetAttribute("ToolType")] ~= Tool then
+			actOnTool(Tool)
 		end
 	end)
-	characterTrove:Connect(Backpack.ChildRemoved, function(Tool)
-		if Tool:IsA("Tool") and Tool:GetAttribute("Removing") then
-			removeTool(Tool)
-			resetScrollCell(Tool)
-		end
-	end)
-	characterTrove:Connect(Character.ChildRemoved, function(Tool)
-		if Tool:IsA("Tool") then
-			resetCell(Tool, nil, 0)
-		end
-	end)
-	resetHotbar()
-	resetScrollCells()
+
+	RefreshHotbar()
 	Humanoid = Character:WaitForChild("Humanoid")
 	RootPart = Character.PrimaryPart
 
 	characterTrove:Connect(UserInputService.InputBegan, function(Input, gameProcessedEvent)
 		if gameProcessedEvent then return end
-		if AcceptedKeys[Input.KeyCode.Name] and Inventory[AcceptedKeys[Input.KeyCode.Name]] and Inventory[AcceptedKeys[Input.KeyCode.Name]][1] and not Humanoid:GetAttribute("Equipping") then
-			local pickedTool = Inventory[AcceptedKeys[Input.KeyCode.Name]][1]
-			if scrollSave[AcceptedKeys[Input.KeyCode.Name]] then
-				pickedTool = Inventory[AcceptedKeys[Input.KeyCode.Name]][scrollSave[AcceptedKeys[Input.KeyCode.Name]]]
-			end
+		if AcceptedKeys[Input.KeyCode.Name] and Inventory[AcceptedKeys[Input.KeyCode.Name]] and not Humanoid:GetAttribute("Equipping") then
+			local pickedTool = Inventory[AcceptedKeys[Input.KeyCode.Name]]
 			actOnTool(pickedTool)
 		end
-	end)
-
-	characterTrove:Connect(Mouse.WheelForward, function()
-		scrollTool(1)
-	end)
-
-	characterTrove:Connect(Mouse.WheelBackward, function()
-		scrollTool(-1)
 	end)
 
 	Humanoid.Died:Once(function()
 		ToolHandler.UnequipTools()
 		Inventory = {}
-		resetHotbar()
+		RefreshHotbar()
 		characterTrove:Clean()
 	end)
 end
