@@ -25,6 +25,7 @@ local function loadCharacter(Character)
 	local RightFrame = HUD:WaitForChild("RightFrame")
 	local DownedFrame = HUD:WaitForChild("DownedFrame")
 	local ReviveFrame = HUD:WaitForChild("ReviveFrame")
+	local GunVignette = HUD:WaitForChild("GunVignette")
 	
 	local ListFrame = RightFrame:WaitForChild("ListFrame")
 	local GunFrame = ListFrame:WaitForChild("GunFrame")
@@ -34,6 +35,9 @@ local function loadCharacter(Character)
 	local ThrowableFrame = ConsumablesFrame:WaitForChild("6")
 	local MedicalNumber = MedicalFrame:WaitForChild("Number")
 	local ThrowableNumber = ThrowableFrame:WaitForChild("Number")
+	local Gradient = GunVignette.Gradient
+	local VignetteAmount = Gradient.VignetteAmount
+	local EarRinging = GunVignette.EarRinging
 	
 	local BloodScreen = HUD:WaitForChild("BloodScreen")
 	local StaminaFrame = Bars:WaitForChild("Stamina")
@@ -65,6 +69,14 @@ local function loadCharacter(Character)
 		[2] = {Color3.fromRGB(255,255,255)},
 	}
 	local lastAbsorption = Humanoid:GetAttribute("Absorption")
+	
+	local function disconnectFunctions (FunctionList)
+		for _,Function in pairs(FunctionList) do
+			if Function then
+				Function:Disconnect()
+			end
+		end
+	end
 	
 	local function barSetup (bar,value)
 		bar.Main.Size = UDim2.fromScale(value,1)
@@ -110,6 +122,26 @@ local function loadCharacter(Character)
 	local maxStaminaChanged = Humanoid:GetAttributeChangedSignal("MaxStamina"):Connect(function()
 		barChange(StaminaL,Humanoid:GetAttribute("Stamina")/Humanoid:GetAttribute("MaxStamina"))
 		barChange(StaminaR,Humanoid:GetAttribute("Stamina")/Humanoid:GetAttribute("MaxStamina"))
+	end)
+	
+	local GradientChange = VignetteAmount.Changed:Connect(function() -- Darkens vignette based on VignetteAmount
+		local Amount = VignetteAmount.Value
+		if Amount <= 0.8 then
+			if not EarRinging.IsPlaying then
+				EarRinging:Play()
+			end
+			EarRinging.Volume = (1-Amount)*2
+		else
+			EarRinging:Stop()
+			EarRinging.Volume = 0
+		end
+		Gradient.Transparency = NumberSequence.new(
+			{
+				NumberSequenceKeypoint.new(0,math.clamp(Amount,0.2,1)),
+				NumberSequenceKeypoint.new(0.5,1),
+				NumberSequenceKeypoint.new(1,math.clamp(Amount,0.2,1)),
+			}
+		)
 	end)
 	
 	local healthChanged = Humanoid.HealthChanged:Connect(function()
@@ -310,15 +342,7 @@ local function loadCharacter(Character)
 	end)
 		
 	Humanoid.Died:Once(function()
-		staminaChanged:Disconnect()
-		maxStaminaChanged:Disconnect()
-		healthChanged:Disconnect()
-		backpackAdded:Disconnect()
-		backpackRemoved:Disconnect()
-		charAdded:Disconnect()
-		charRemoved:Disconnect()
-		DownedEventFunction:Disconnect()
-		absorptionChanged:Disconnect()
+		disconnectFunctions(staminaChanged,maxStaminaChanged,healthChanged,backpackAdded,backpackRemoved,charAdded,charRemoved,DownedEventFunction,absorptionChanged,GradientChange)
 	end)
 end
 

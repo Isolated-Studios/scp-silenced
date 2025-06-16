@@ -99,7 +99,7 @@ function module.EquipTool(Tool: Tool)
 			end
 		end
 
-		task.wait(Settings.EquipTime or 0)
+		task.wait(Settings.EquipCancel or 0)
 
 		for _,animationEvent in pairs(animationEventsList) do --/ Disconnect all animation events
 			animationEvent:Disconnect()

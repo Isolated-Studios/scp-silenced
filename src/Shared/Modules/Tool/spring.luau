@@ -35,12 +35,15 @@ function SPRING.new(self, mass, force, damping, speed)
 		self.Velocity	= self.Velocity + Vector3.new(x, y, z)
 	end
 
-	function spring.update(self, dt)
+	function spring.update(self, dt, stability)
 		local scaledDeltaTime = math.min(dt,1) * self.Speed / ITERATIONS
 
 		for i = 1, ITERATIONS do
 			local iterationForce = self.Target - self.Position
 			local acceleration	= (iterationForce * self.Force) / self.Mass
+			if i < 3 and stability then
+				acceleration	= (iterationForce * stability) / self.Mass
+			end
 			acceleration		= acceleration - self.Velocity * self.Damping
 			self.Velocity	= self.Velocity + acceleration * scaledDeltaTime
 			self.Position	= self.Position + self.Velocity * scaledDeltaTime

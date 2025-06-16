@@ -68,7 +68,7 @@ function BLOOD.create(r, dt, ua, da)
 			DownwardsAngle = da or 3;
 		}
 		function blood.ProjectBlood(self,RegDirection,Origin,Caster,HitCharacter,Damage,Force,Size)
-			local GraphicsSettings = PlayerData[Player.UserId].Settings.Graphics
+			local GraphicsSettings = PlayerData[Player.UserId].Settings.Display
 			if Player.Character and Player.Character.PrimaryPart and math.round((Player.Character.PrimaryPart.Position-Origin).Magnitude) > GraphicsSettings["Blood Cull Distance"].Value 
 			and #TemporaryParts:GetChildren() >= GraphicsSettings["Max Blood"].Value then return end
 			local function bloodTrail (Damage,Negative)
@@ -145,7 +145,7 @@ fastCaster.RayHit:Connect(function(cast, raycastResult)
 		--	bloodFolder = BloodObjects2
 		--	RandomSize = Random.new():NextNumber(1,3)
 		--end
-		local GraphicsSettings = PlayerData[Player.UserId].Settings.Graphics
+		local GraphicsSettings = PlayerData[Player.UserId].Settings.Display
 		if #TemporaryParts:GetChildren() >= GraphicsSettings["Max Blood"].Value then return end
 		local BloodPart = bloodFolder:GetChildren()[math.random(1, #bloodFolder:GetChildren())]:Clone()
 		if cast.UserData.Color then

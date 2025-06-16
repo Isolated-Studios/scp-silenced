@@ -46,6 +46,8 @@ function module.LoadChar(Character)
 	local CrouchWalking = false
 	local DownedWalking = false
 	local Humanoid: Humanoid = Character:WaitForChild('Humanoid')
+	local ViewmodelCrouch = Humanoid:WaitForChild("ViewmodelCrouch")
+	local ViewmodelRun = Humanoid:WaitForChild("ViewmodelRun")
 	local Animator = Humanoid:WaitForChild("Animator")
 	local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
 	local LeftShoulder = Character:WaitForChild("LeftUpperArm"):WaitForChild("LeftShoulder")
@@ -135,12 +137,14 @@ function module.LoadChar(Character)
 	local function stopRunning ()
 		if Humanoid:GetAttribute("Running") then
 			Humanoid:SetAttribute("Running", false)
+			TweenService:Create(ViewmodelRun,TweenInfo.new(0.2),{Value = 0}):Play()
 		end
 	end
 
 	local function startRunning ()
 		if not Humanoid:GetAttribute("Running") and not standingStill and not Humanoid:GetAttribute("Crouching") and not walkingBackwards and UIS:IsKeyDown(KeybindHandler.Keybind("Sprint",Player)) and not Humanoid:GetAttribute("Downed") then
 			Humanoid:SetAttribute("Running",true)
+			TweenService:Create(ViewmodelRun,TweenInfo.new(0.2),{Value = 1}):Play()
 		end
 	end
 
@@ -187,12 +191,14 @@ function module.LoadChar(Character)
 		
 		["Crouching"] = function()
 			if Humanoid:GetAttribute("Crouching") and CharCrouchIdle then
+				TweenService:Create(ViewmodelCrouch,TweenInfo.new(0.2),{Value = 1}):Play()
 				CharCrouchIdle:Play()
 				if currentSpeed > 0 and CharCrouchWalk and not CrouchWalking then
 					CrouchWalking = true
 					CharCrouchWalk:Play(.3)
 				end
 			elseif Humanoid:GetAttribute("Crouching") == false and CharCrouchIdle then	
+				TweenService:Create(ViewmodelCrouch,TweenInfo.new(0.2),{Value = 0}):Play()
 				CrouchWalking = false
 				CharCrouchIdle:Stop(.2)
 				CharCrouchWalk:Stop(.2)

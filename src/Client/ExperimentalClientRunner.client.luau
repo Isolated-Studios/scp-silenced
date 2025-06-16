@@ -47,6 +47,7 @@ loadModule(ClientSrc.StatusEffectsClient)
 loadModule(ClientSrc.Environment)
 loadModule(ClientSrc.Inventory)
 loadModule(ClientSrc.CustomChat)
+loadModule(ClientSrc.SettingsHandler)
 
 -- // Character-specific modules
 --loadModule(ClientSrc.Vaulting)   [[ ON HALT ]]

@@ -36,6 +36,7 @@ local HumanoidAttributeEvent = CharacterEvents.HumanoidAttribute
 local Shove = ViewmodelEvents.Shove
 local Aim = ViewmodelEvents.Aim
 local SetItemHolder = ToolEvents.SetItemHolder
+local AnimationModifier = ToolEvents.AnimationModifier
 
 ---//Module Setup
 local recoilSpring = springModule.new(nil,nil,nil,nil,6)
@@ -55,8 +56,11 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 	local HRP = Character:WaitForChild("HumanoidRootPart")
 
 	--UI
+	local HUD = PlayerGui:WaitForChild("HUD")
 	local CrosshairPercent = PlayerGui:WaitForChild("MouseUI"):WaitForChild("Crosshair")
-	local GunFrame = PlayerGui:WaitForChild("HUD"):WaitForChild("RightFrame"):WaitForChild("ListFrame"):WaitForChild("GunFrame")
+	local GunVignette = HUD:WaitForChild("GunVignette")
+	local VignetteAmount = GunVignette.Gradient.VignetteAmount
+	local GunFrame = HUD:WaitForChild("RightFrame"):WaitForChild("ListFrame"):WaitForChild("GunFrame")
 	local CanvasGroup = GunFrame:WaitForChild("CanvasGroup")
 	local InnerFrame = CanvasGroup:WaitForChild("InnerFrame")
 	local InnerScaleLayout = InnerFrame:WaitForChild("InnerScale")
@@ -84,6 +88,8 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 	local Cylinder = nil
 	local BackBoltC1 = nil
 	local DefaultBoltC1 = nil
+	local BoltBackTween = nil
+	local Equipped = true
 	local HoldFire = false
 	local FireCooldown = false
 	local Aiming = false
@@ -98,6 +104,8 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 	local SubsequentShotsFired = 0
 	local LastShotTick = 0
 	local BoltPosition = Settings.BoltPosition or {"LookVector",0.2}
+	local VignetteTween = nil
+	local ModificationList = {}
 
 	--//Beginning Priming
 	CrosshairPercent.Value = BulletSpread
@@ -136,7 +144,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 	local CharBolt = nil
 	local VMRecoil = nil
 	local CharRecoil = nil
-	local VMRun = nil
+	--local VMRun = nil
 	local CharRun = nil
 
 	if VMAnimations:FindFirstChild("Bolt") then
@@ -164,7 +172,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		CharRecoil = Animator:LoadAnimation(CharacterAnimations.Recoil)
 	end
 	if VMAnimations:FindFirstChild("Run") then
-		VMRun = VMAnimator:LoadAnimation(VMAnimations.Run)
+		--VMRun = VMAnimator:LoadAnimation(VMAnimations.Run)
 		CharRun = Animator:LoadAnimation(CharacterAnimations.Run)
 	end
 	local animationEvents = {
@@ -176,7 +184,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		["Bolt"] = CTF.getAllAnimationEventNames(VMBolt)
 	}
 	local animationTable = {
-		["Run"] = {VMRun,CharRun},
+		["Run"] = {nil,CharRun},
 		["Recoil"] = {VMRecoil,CharRecoil},
 		["Bolt"] = {VMBolt,CharBolt},
 		["Reload1"] = {VMReload1,CharReload1},
@@ -189,19 +197,26 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 	local function animationHandle (animation,action,num,secondNum)
 		if not num then num = 0 end
 		if not secondNum then secondNum = num end
-		local VManim = animationTable[animation][1]
-		local Charanim = animationTable[animation][2]
-		if VManim and Charanim then
-			if action == "Play" then
-				VManim:Play(num)
-				Charanim:Play(secondNum)
-			elseif action == "Stop" then
-				VManim:Stop(num)
-				Charanim:Stop(secondNum)
-			elseif action == "Speed" then
-				VManim:AdjustSpeed(num)
-				Charanim:AdjustSpeed(secondNum)
-			end
+		local VManim = animationTable[animation][1] or nil
+		local Charanim = animationTable[animation][2] or nil
+		
+		local actionFunctions = {
+			["Play"] = function (anim,number)
+				anim:Play(number)
+			end,
+			["Stop"] = function (anim,number)
+				anim:Stop(number)
+			end,
+			["Speed"] = function (anim,number)
+				anim:AdjustSpeed(number)
+			end,
+		}
+		
+		if VManim then
+			actionFunctions[action](VManim,num)
+		end
+		if Charanim then
+			actionFunctions[action](Charanim,secondNum)
 		end
 	end
 	--\\
@@ -269,6 +284,9 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		else
 			ModeText.Text = "Semi"
 		end
+		if not MagFrame:FindFirstChild("1") then
+			return
+		end
 		editMagTable[action](tweenTime)
 	end
 
@@ -298,29 +316,31 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		Debris:AddItem(Casing,10)
 	end
 
-	local function regenWait ()
-		local beginningSpread = BulletSpread
+	local function regenWait (Value,WaitTime)
+		local beginningValue = Value
 		local startTime = tick()
-		while BulletSpread == beginningSpread do
+		while Value == beginningValue do
 			local currentTime = tick() - startTime
-			if currentTime >= Settings.SpreadRegenWait then
+			if currentTime >= WaitTime then
 				break
 			end
 			task.wait()
 		end
 		local currentTime = tick() - startTime
 		if currentTime < Settings.SpreadRegenWait then
-			regenWait()
+			regenWait(Value,WaitTime)
 		end
 	end
 
 	local function beginSpreadReduction ()
 		spreadReduction = true
-		regenWait()
+		regenWait(BulletSpread,Settings.SpreadRegenWait)
 		while not FireCooldown and BulletSpread > Settings.MinSpread do
-			BulletSpread = math.clamp(BulletSpread-0.2,Settings.MinSpread,Settings.MaxSpread)
+			local ReductionIncrement = Settings.ReductionIncrement or 0.2
+			local ReductionWait = Settings.ReductionWait or 0.01
+			BulletSpread = math.clamp(BulletSpread-ReductionIncrement,Settings.MinSpread,Settings.MaxSpread)
 			CrosshairPercent.Value = BulletSpread
-			task.wait()
+			task.wait(ReductionWait)
 		end
 		spreadReduction = false
 		if BulletSpread > Settings.MinSpread then
@@ -336,6 +356,33 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 				beginSpreadReduction()
 			end
 		end)
+	end
+	
+	local function DarkenVignette () -- darkens a vignette when shooting
+		if GunVignette then
+			local startTime = tick()
+			if VignetteTween then VignetteTween:Cancel() end
+			local TimeToTween = math.clamp(8*(VignetteAmount.Value-1)^2,0.2,8) -- GENIUS equation....
+			VignetteTween = TweenService:Create(VignetteAmount,TweenInfo.new(TimeToTween),{Value = 1})
+			local DarkenAmount = Settings.Damage*Settings.BulletsPerShot/400
+			if Settings.Automatic then
+				DarkenAmount = Settings.Damage*Settings.BulletsPerShot/(Settings.RPM*2)
+			end
+			if VignetteAmount.Value > 0 then
+				local newValue = math.clamp(VignetteAmount.Value-DarkenAmount,0,1)
+				VignetteAmount.Value = newValue
+			end
+			
+			local WaitTime = TimeToTween*2+2
+			task.delay(WaitTime,function()
+				local otherTime = tick()-startTime
+				if math.abs(otherTime-WaitTime) < 0.1 and (spreadReduction or BulletSpread == Settings.MinSpread) then -- really cheap way to check if gun is still "firing"
+					-- another really cheap way to check if gun is still "firing" when gun is automatic
+					if UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) and Settings.Automatic and magBool.Value > 0 and not Humanoid:GetAttribute("Running") then return end
+					VignetteTween:Play()
+				end
+			end)
+		end
 	end
 
 	local function ProjectBullet (randomValue)
@@ -360,7 +407,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 	end
 
 	local function boltGun ()
-		if Tool:GetAttribute("Unequipping") then return end -- Prevents bolting when unequipping
+		if not Equipped then return end -- Prevents bolting when unequipping
 		HoldFire = true
 		if Settings.PlayHammerClick then
 			CTF.playSound(Sounds,"BoltBack",Handle,true,true)
@@ -444,35 +491,42 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 			--/ bullets aren't pitched up
 			CTF.playSound(Sounds,"Fire",Handle,true,true)
 		end
-
-		Shove:Fire(Settings.LinearShove,Settings.AngularShove) --/ shove event
-
+		
 		gunSpread() --/ apply gun spread
-
 		CTF.flashGun(Flash,Flash.FlashLight,true) -- uses CTF to flash the gun for light and particles
+		DarkenVignette() -- Darken the gun vignette for coolness
 
 		SubsequentShotsFired += 1
-		local recoil_modifier = Vector2.new(1/(SubsequentShotsFired * Settings.XRecoilDampFactor), 1/(SubsequentShotsFired * Settings.YRecoilDampFactor)) --/ This section reduces the shove of the gun if you're aiming
+		local XRecoilDampExponent = Settings.XRecoilDampExponent or 1
+		local YRecoilDampExponent = Settings.YRecoilDampExponent or 1
+		local recoil_modifier = Vector2.new(1/((SubsequentShotsFired^XRecoilDampExponent) * Settings.XRecoilDampFactor), 1/((SubsequentShotsFired^YRecoilDampExponent) * Settings.YRecoilDampFactor)) --/ This section reduces the shove of the gun if you're aiming
 		local possibleNegative = math.random(0, 1) * 2 - 1
 		if Aiming then
 			recoil_modifier /= 2
 		end
-
+		
+		local randomValue = math.random(1,999999999) -- I might be a little stupid (for a "key" in determining uniqueness of tracers)
+		for i=1,Settings.BulletsPerShot,1 do
+			ProjectBullet(randomValue)
+		end
+		
 		animationHandle("Recoil","Play") --/ play the recoil animation
 
 		if magBool.Value == 0 and Settings.BoltBackWhenEmpty and Handle:FindFirstChild("Bolt") then
 			--/ pushes the bolt back if BoltBackWhenEmpty is true and mag is empty
 			local Bolt = Handle.Bolt
-			TweenService:Create(Bolt,TweenInfo.new(0.1,Enum.EasingStyle.Linear),{C1 = BackBoltC1}):Play()
+			BoltBackTween:Play()
 			Tool:SetAttribute("BoltSet",true)
 		end
 
 		local ShoveAmount = Vector3.new(Settings.CameraShove.X*recoil_modifier.X,Settings.CameraShove.Y*recoil_modifier.Y*possibleNegative,Settings.CameraShove.Z*recoil_modifier*possibleNegative)
-		recoilSpring:shove(ShoveAmount)
-		local randomValue = math.random(1,999999999)
-		for i=1,Settings.BulletsPerShot,1 do
-			ProjectBullet(randomValue)
+		recoilSpring:shove(ShoveAmount) -- shoves the camera
+		if Aiming and Settings.AimLinearShove and Settings.AimAngularShove then
+			Shove:Fire(Settings.AimLinearShove,Settings.AimAngularShove) --/ shove event but aiming!
+		else
+			Shove:Fire(Settings.LinearShove,Settings.AngularShove) --/ shove event
 		end
+		
 		if Settings.AutomaticBolt then
 			task.wait(60/Settings.RPM)
 			boltGun()
@@ -564,6 +618,11 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 					if Settings.EmptyReloadSpeed then
 						animationHandle("EmptyReload","Speed",VMEmptyReload.Length/Settings.EmptyReloadSpeed,CharEmptyReload.Length/Settings.EmptyReloadSpeed)
 					end
+					
+					if Settings.BoltBackWhenEmpty then -- Set to default bolt position when empty reloading because it bolt back in the empty reload animation.
+						BoltBackTween:Cancel()
+						TweenService:Create(Handle.Bolt,TweenInfo.new(0.05,Enum.EasingStyle.Linear),{C1 = DefaultBoltC1}):Play()
+					end
 				else
 					animationHandle("Reload1","Play")
 					if Settings.Reload1Speed then
@@ -629,7 +688,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 	end
 
 	local function mouseButtonFire () --/ Checks if gun is full
-		if not Bursting and not FireCooldown and (not Humanoid:GetAttribute("Running") or Settings.RunAndGun) then
+		if not Bursting and not FireCooldown and Equipped and (not Humanoid:GetAttribute("Running") or Settings.RunAndGun) then
 			if Reloading and not CancelReload and Settings.ReloadStyle == 0 and magBool.Value > 0 then
 				CancelReload = true
 			elseif not Reloading then
@@ -671,7 +730,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 	end
 	local function starterFireFunction ()
 		if Settings.Automatic then
-			while Settings.Automatic and UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) do
+			while Settings.Automatic and UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) and Equipped do
 				mouseButtonFire()
 			end
 		else
@@ -742,6 +801,27 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		["InsertShell"] = function()
 			CTF.playSound(Sounds,"Insert",Handle,true,true)
 		end,
+		["Hide"] = function(Target) -- Hide a part and replicate it to others
+			if MotorModel:FindFirstChild(Target) then
+				if not table.find(ModificationList,Target) then
+					print("wow!")
+					MotorModel[Target]:SetAttribute("OrigicalTransparency",MotorModel[Target].Transparency)
+					table.insert(ModificationList,Target)
+				end
+				MotorModel[Target].Transparency = 1
+				AnimationModifier:FireServer("Transparency",1,Tool,Target)
+			end
+		end,
+		["Appear"] = function(Target) -- Make a part appear replicate it to others
+			if MotorModel:FindFirstChild(Target) then
+				if not table.find(ModificationList,Target) then
+					MotorModel[Target]:SetAttribute("OrigicalTransparency",MotorModel[Target].Transparency)
+					table.insert(ModificationList,Target)
+				end
+				MotorModel[Target].Transparency = 0
+				AnimationModifier:FireServer("Transparency",0,Tool,Target)
+			end
+		end,
 		["ReloadMag"] = function()
 			if Settings.ReloadStyle == 0 then
 				magBool.Value += 1
@@ -780,7 +860,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 
 			if magBool.Value == 0 and Settings.BoltBackWhenEmpty and Handle:FindFirstChild("Bolt") then
 				local Bolt = Handle.Bolt
-				TweenService:Create(Bolt,TweenInfo.new(0.05,Enum.EasingStyle.Linear),{C1 = DefaultBoltC1}):Play()
+				TweenService:Create(Bolt,TweenInfo.new(0.1,Enum.EasingStyle.Linear),{C1 = DefaultBoltC1}):Play()
 				Tool:SetAttribute("BoltSet",nil)
 			end
 		end,
@@ -887,19 +967,21 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		CanvasGroup.Visible = true
 		--\\
 	if Handle:FindFirstChild("Bolt") then
-		DefaultBoltC1 = Handle.Bolt:GetAttribute("DefaultC1") or Handle.Bolt.C1
-		BackBoltC1 = Handle.Bolt.C1+Handle.Bolt.C1[BoltPosition[1]]*BoltPosition[2]
+		DefaultBoltC1 = Handle.Bolt:GetAttribute("DefaultC1") or CFrame.new(0,0,0)
+		BackBoltC1 = DefaultBoltC1+DefaultBoltC1[BoltPosition[1]]*BoltPosition[2]
 	end
+	BoltBackTween = TweenService:Create(Handle.Bolt,TweenInfo.new(0.2,Enum.EasingStyle.Linear),{C1 = BackBoltC1})
 	--\\
 
 	--//Events
+	
 	local renderStep = RunService.RenderStepped:Connect(function(dt)
 		local updatedRecoilSpring = recoilSpring:update(dt)
 		CameraModule.AddModifier(CFrame.Angles(math.rad(updatedRecoilSpring.x),updatedRecoilSpring.y,updatedRecoilSpring.z), true)
 	end)
 
 	local inputBegan = UIS.InputBegan:Connect(function(Input,gpe)
-		if Tool:GetAttribute("Unequipping") or gpe or Humanoid:GetAttribute("InventoryOpen") then return end
+		if not Equipped or gpe or Humanoid:GetAttribute("InventoryOpen") then return end
 		if Input.KeyCode == KeybindHandler.Keybind("Drop",Player) then
 			CTF.dropItem(Character,Tool)
 		end
@@ -918,10 +1000,14 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 
 	local unequippedTool = Tool:GetAttributeChangedSignal("Unequipping"):Connect(function()
 		if Tool:GetAttribute("Unequipping") then
+			Equipped = false
 			TweenService:Create(CanvasGroup,TweenInfo.new(Settings.UnequipSpeed or 0.1),{GroupTransparency = 1}):Play()
 			AimGun(false)
 			for index,_ in pairs(animationTable) do
 				animationHandle(index,"Stop",0)
+			end
+			if Settings.BoltBackWhenEmpty and magBool.Value == 0 then -- If gun is empty and BoltBackWhenEmpty, set bolt because reload could be cancelled
+				Handle.Bolt.C1 = BackBoltC1
 			end
 		end
 	end)
@@ -964,12 +1050,26 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		for _,animationEvent in pairs(animationEventsList) do
 			animationEvent:Disconnect()
 		end
+		
+		for _,TargetName in pairs(ModificationList) do -- Reset any animation modified parts
+			if Tool:FindFirstChild(TargetName) then
+				if Tool[TargetName]:GetAttribute("OriginalTransparency") then
+					Tool[TargetName].Transparency = Tool[TargetName]:GetAttribute("OriginalTransparency")
+					AnimationModifier:FireServer("Transparency",Tool[TargetName]:GetAttribute("OriginalTransparency"),Tool,TargetName)
+					Tool[TargetName]:SetAttribute("OriginalTransparency",nil)
+				end
+			end
+		end
 
 		if MotorModel:FindFirstChild("ScopeObject") then
 			ScopeModule.SetEnabled(false)
 		end
-
+		
+		if Settings.BoltBackWhenEmpty and magBool.Value == 0 and Handle:FindFirstChild("Bolt") then -- If gun is empty and BoltBackWhenEmpty, set bolt because reload could be cancelled
+			Handle.Bolt.C1 = BackBoltC1
+		end
 		CanvasGroup.Visible = false
+		Equipped = false
 		HoldFire = false
 		Bolted = false
 		FireCooldown = false
@@ -979,6 +1079,11 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		CancelReload = false
 		spreadReduction = false
 		CrosshairPercent.Value = 0
+		if VignetteTween then -- Reset Vignette	
+			VignetteTween:Play()
+		else
+			VignetteAmount.Value = 1
+		end
 		--ChargePercent.Value = 0
 		Humanoid:SetAttribute("Aiming",nil)
 		AimGun(false)
@@ -990,7 +1095,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 			if bulletFrames:IsA("Frame") then
 				bulletFrames:Destroy()
 			end
-		end
+		end		
 		disconnectFunctions{inputBegan,inputEnded,renderStep,runChange,wheelBackward,wheelBackward,unequippedTool,backpackChildRemoved}
 		Tool:SetAttribute("Activated",nil)
 	end)

@@ -1,14 +1,15 @@
 local module = {}
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Modules = ReplicatedStorage:WaitForChild("Modules")
-local Events = ReplicatedStorage:WaitForChild("Events")
-local ToolEvents = Events:WaitForChild("Tool")
-local CTF = require(Modules:WaitForChild("Tool"):WaitForChild("CommonToolFunctions"))
-local FlashGunEvent = ToolEvents:WaitForChild("FlashGun")
-local MakeTracerEvent = ToolEvents:WaitForChild("MakeTracer")
-local SoundEvent =ToolEvents:WaitForChild("SoundEvent")
-local ParticleEvent = ToolEvents:WaitForChild("ParticleEvent")
+local Modules = ReplicatedStorage.Modules
+local Events = ReplicatedStorage.Events
+local ToolEvents = Events.Tool
+local CTF = require(Modules.Tool.CommonToolFunctions)
+local FlashGunEvent = ToolEvents.FlashGun
+local MakeTracerEvent = ToolEvents.MakeTracer
+local SoundEvent = ToolEvents.SoundEvent
+local ParticleEvent = ToolEvents.ParticleEvent
+local AnimationModifier = ToolEvents.AnimationModifier
 
 local Player = game:GetService("Players").LocalPlayer
 
@@ -27,7 +28,6 @@ function module.Init()
 			CTF.playSound(SoundToPlay, nil, ParentToSound, false, ApplyRandomPitch)
 		end
 	end)
-	
 	ParticleEvent.OnClientEvent:Connect(function(particleTable)
 		for _,particle in pairs(particleTable) do
 			if particle:IsA("ParticleEmitter") then
@@ -35,7 +35,16 @@ function module.Init()
 			end
 		end
 	end)
-	
+	local AnimationModifierActions = {
+		["Transparency"] = function(TargetPart,Information)
+			TargetPart.Transparency = Information
+		end,
+	}
+	AnimationModifier.OnClientEvent:Connect(function(Action,Information,Tool,Target)
+		if Tool:FindFirstChild(Target) and AnimationModifierActions[Action] then
+			AnimationModifierActions[Action](Tool[Target],Information)
+		end
+	end)
 end
 
 return module

@@ -31,22 +31,36 @@ local KeybindHandler = require(UIModules.KeybindHandler)
 local ToolHandler = require(script.Parent.ToolHandler)
 ToolHandler.injectViewModelHandler(module)
 
+local RunType = nil
+local RunPosition = nil
+local CrouchPosition = nil
 local Humanoid = nil
 local RootPart = nil
 local RightHand = nil
 local Character: Model? = nil
 local ViewModel: Model? = nil
 local ViewModelAnimator: Animator? = nil
+local HandleTransform = nil
+local OriginalTransform = nil
+local AimTransform = nil
 local Sensitivity = 1
 local SwaySize = 1
 local SwayDividend = 16
+local Stability = 10
+local AimStability = 10
+local randomStabilityNum = 1
 
 local Running = false
 
-local sway = Vector3.new(0,0,0)
-local walksway = CFrame.new(0,0,0)
-local strafesway = CFrame.Angles(0,0,0)
-local jumpsway = CFrame.new(0,0,0)
+local WalkSway = CFrame.new(0,0,0)
+local StrafeSway = CFrame.new(0,0,0)
+local finalcf = CFrame.new(0,0,0)
+
+local lastCameraCFVM = workspace.CurrentCamera.CFrame
+local swayOffsetVM = CFrame.new(0,0,0)
+local swayOffsetTool = CFrame.new(0,0,0)
+local swayMultvm = 0
+local swayMulttool = 0
 
 local wallcheckFilterList = {}
 local wallcheckParams = RaycastParams.new()
@@ -104,6 +118,8 @@ function module.LoadChar(Character)
 	AimSpring.Speed = 16
 	local Offset = CFrame.identity
 	Humanoid = Character:WaitForChild("Humanoid")
+	local ViewmodelRun = Humanoid:WaitForChild("ViewmodelRun")
+	local ViewmodelCrouch = Humanoid:WaitForChild("ViewmodelCrouch")
 	local BodyColor = Character:WaitForChild("BodyColor")
 	RootPart = Character:WaitForChild("HumanoidRootPart")
 	RightHand = Character:WaitForChild("RightHand")
@@ -203,12 +219,14 @@ function module.LoadChar(Character)
 		if AimSpring.Target == 1 then
 			divisor = 3
 		end
+		--local Force = Vector3.new(Force.X,Force.Y,Force.Z)
 		SwaySpring:shove(Force/divisor)
 		if rotForce then
 			local GripWeld = ViewModel["RightArm"]["RightArm"]
+			--local rotForce = Vector3.new(rotForce.X,rotForce.Y,rotForce.Z)
 			HandleSpring:shove(rotForce/divisor/2)
-			local g0X,g0Y,g0Z = GripWeld.C0:ToEulerAnglesXYZ()
-			local g1X,g1Y,g1Z = GripWeld.C1:ToEulerAnglesXYZ()
+			--local g0X,g0Y,g0Z = GripWeld.C0:ToEulerAnglesXYZ()
+			--local g1X,g1Y,g1Z = GripWeld.C1:ToEulerAnglesXYZ()
 		end
 	end)
 
@@ -236,6 +254,8 @@ function module.LoadChar(Character)
 			if not Tool:FindFirstChild("Handle") and ViewModel:FindFirstChild("MotorModel") then ToolHandler.UnequipTool(Tool) return end
 			if Tool.RequiresHandle or Tool.CanBeDropped then ToolHandler.UnequipTool(Tool) warn("Attempted to equip tool with RequiresHandle/CanBeDropped set to true") end
 
+			-- Set RunType if it exists in the tool
+
 			local GripWeld = Instance.new("Motor6D")
 			GripWeld.Name = "GripWeld"
 			GripWeld.C1 = Tool.Grip
@@ -243,6 +263,24 @@ function module.LoadChar(Character)
 			GripWeld.Parent = ViewModel.UpperTorso
 			GripWeld.Part0 = ViewModel.UpperTorso
 			GripWeld.Part1 = Tool.Handle
+
+			if ReplicatedStorage.Tooling.Tools:FindFirstChild(Tool:GetAttribute("ToolName")) then
+				local toolSettings = require(ReplicatedStorage.Tooling.Tools[Tool:GetAttribute("ToolName")].Settings)
+				RunType = toolSettings.RunType
+				RunPosition = toolSettings.RunPosition
+				CrouchPosition = toolSettings.CrouchPosition
+				Stability = toolSettings.Stability or 10
+				AimStability = toolSettings.AimStability or 10
+				if toolSettings.BindToHand then
+					GripWeld.Part0 = ViewModel.RightArm
+				end
+			else
+				RunType = nil
+				RunPosition = nil
+				CrouchPosition = nil
+				Stability = 10
+				AimStability = 10
+			end
 
 			local MotorModel = Instance.new("Model")
 			MotorModel.Name = "MotorModel"
@@ -290,7 +328,6 @@ function module.LoadChar(Character)
 				VMlook = 0
 				VMsway = 1
 				VMaimsway = 0.1
-				-- task.wait()
 				if ViewModel:FindFirstChild("UpperTorso") and ViewModel.UpperTorso:FindFirstChild("GripWeld") then--and ViewModel.UpperTorso.GripWeld.Part1 == Child:FindFirstChild("Handle") then
 					ViewModel.UpperTorso.GripWeld:Destroy()
 				end
@@ -306,93 +343,159 @@ function module.LoadChar(Character)
 		end
 	end)
 
-	local HandleTransform = nil
-	local OriginalTransform = nil
-	local AimTransform = nil
-	ViewModel:SetAttribute("CloseToWall",false)
+	local changeRunTransforms = {
+		[1] = function () -- Rifle run
+			local Front = 0.4
+			local Up = -0.2
+			local Side = 0.8
+			local FrontRot = 20
+			local UpRot = -15
+			local SideRot = 60
+			return Front,Up,Side,FrontRot,UpRot,SideRot
+		end,
 
+		[2] = function () -- Pistol run
+			local Front = 0
+			local Up = -0.84
+			local Side = 0.3
+			local FrontRot = 0 
+			local UpRot = 30
+			local SideRot = 10
+			return Front,Up,Side,FrontRot,UpRot,SideRot
+		end,
+
+		[3] = function () -- Random tool run (medical items, etc.)
+			local Front = 0
+			local Up = 0
+			local Side = 0
+			local FrontRot = 0 
+			local UpRot = -20
+			local SideRot = 0
+			return Front,Up,Side,FrontRot,UpRot,SideRot
+		end,
+	}
+
+	local function swayRotLoop (swayMultvm,swayMulttool) -- Rotational sway for turning camera
+		if ViewModel and ViewModel:FindFirstChild("MotorModel") and ViewModel.MotorModel:FindFirstChild("Handle") then
+			local rotationVM = workspace.CurrentCamera.CFrame:toObjectSpace(lastCameraCFVM) 
+			local xVM,yVM,zVM = rotationVM:ToOrientation()
+			swayOffsetVM = swayOffsetVM:Lerp(CFrame.Angles(math.sin(xVM)*swayMultvm,math.sin(yVM)*swayMultvm,0), 0.1)
+			swayOffsetTool = swayOffsetTool:Lerp(CFrame.Angles(math.sin(xVM)*swayMulttool,math.sin(yVM)*swayMulttool,0), 0.1)
+			ViewModel:PivotTo(ViewModel.PrimaryPart.CFrame * swayOffsetVM)
+			ViewModel.MotorModel.Handle.CFrame = ViewModel.MotorModel.Handle.CFrame * swayOffsetTool
+			lastCameraCFVM = workspace.CurrentCamera.CFrame
+		end
+	end
+
+	ViewModel:SetAttribute("CloseToWall",false)
 	local function uglyViewmodelMath (MouseDelta,updatedSwaySpring,updatedHandleSpring,dt)
 		local WalkSpeed = MovementModule:GetWalkSpeed()
+		local AppliedSwaySize = SwaySize
+		if AimSpring.Target == 1 then
+			AppliedSwaySize = SwaySize/5
+		end
 		if Humanoid and Running and Humanoid:GetState() ~= Enum.HumanoidStateType.Freefall and Humanoid:GetState() ~= Enum.HumanoidStateType.Landed then
-			walksway = walksway:Lerp(
-				CFrame.new((0.07*SwaySize) * math.sin(tick() * (2 * math.floor(WalkSpeed/4))),(0.07*SwaySize) * math.cos(tick() * (4 * math.floor(WalkSpeed/4))),0)*
-					CFrame.Angles(0,0,(-.06*SwaySize) * math.cos(tick() * (2 * WalkSpeed/4))),3*Sensitivity*dt)
+			WalkSway = WalkSway:Lerp(
+				CFrame.new((0.07*AppliedSwaySize) * math.sin(tick() * (2 * math.floor(WalkSpeed/4))),(0.07*AppliedSwaySize) * math.cos(tick() * (4 * math.floor(WalkSpeed/4))),0)*
+					CFrame.Angles(0,0,(-.06*AppliedSwaySize) * math.cos(tick() * (2 * WalkSpeed/4))),3*Sensitivity*dt)
 		else
-			walksway = walksway:Lerp(CFrame.new(), 1.5*Sensitivity*dt)
+			WalkSway = WalkSway:Lerp(CFrame.new(), 1.5*Sensitivity*dt)
 		end
-		sway = sway:Lerp(Vector3.new(MouseDelta.X/2,MouseDelta.Y/2,MouseDelta.X/4), 3*Sensitivity*dt)
-		if RootPart and Humanoid then
-			wallcheckFilterList = {ViewModel,Character}
-			wallcheckParams.FilterDescendantsInstances = wallcheckFilterList
-			local wallcheckDistance = 1.8
-			local raycastResult = workspace:Raycast(RootPart.Position+RootPart.CFrame.RightVector*.8+Vector3.new(0,2,0), RootPart.CFrame.LookVector * (wallcheckDistance), wallcheckParams)
-			if raycastResult and not raycastResult.Instance.Parent:FindFirstChildOfClass("Humanoid") and not raycastResult.Instance.Parent.Parent:FindFirstChildOfClass("Humanoid") then
-				if not ViewModel:GetAttribute("CloseToWall") then
-					ViewModel:SetAttribute("CloseToWall",true)
-				end
-			else
-				if ViewModel:GetAttribute("CloseToWall") then
-					ViewModel:SetAttribute("CloseToWall",false)
-				end
-			end
-			local walkingLeanForward = 0
-			local walkingLeanSide = 0
-			local walkingLeanRot = -RootPart.CFrame.RightVector:Dot(Humanoid.MoveDirection)*(WalkSpeed/16)/(SwayDividend/SwaySize)
+
+		--//Sway that deals with Strafing
+		local AimSwayDivisor = 1
+		local Handle = ViewModel["MotorModel"]["Handle"]
+		local Aim = nil
+		if ViewModel.MotorModel:FindFirstChild("Aim") then
+			Aim = ViewModel.MotorModel.Aim
+		end
+
+		local SwayDividend = 16
+		if AimSpring.Target == 1 then
+			SwayDividend = 5
+		end
+		local walkingLeanForward = 0
+		local walkingLeanSide = 0
+		local walkingLeanRot = -RootPart.CFrame.RightVector:Dot(Humanoid.MoveDirection)/(SwayDividend/SwaySize)
+		if AimSpring.Target == 0 then
 			local divisorForward = 0.8
-			local divisorSide = 1
 			if (-RootPart.CFrame.LookVector:Dot(Humanoid.MoveDirection)) > 0 then
-				divisorForward = 0.4
+				divisorForward = 3
 			end
-			if AimSpring.Target == 1 then
-				divisorForward = 0
-				divisorSide = 0
-				SwaySize = VMaimsway
-				SwaySpring:shove(Vector3.new(-MouseDelta.X/1600,MouseDelta.Y/1600,0))
-			else
-				SwaySize = VMsway
-				SwaySpring:shove(Vector3.new(-MouseDelta.X/200,MouseDelta.Y/200,0))
-			end
-			walkingLeanForward = -RootPart.CFrame.LookVector:Dot(Humanoid.MoveDirection)/(SwayDividend/SwaySize/divisorForward)*(WalkSpeed/16)
-			walkingLeanSide = RootPart.CFrame.RightVector:Dot(Humanoid.MoveDirection)/(SwayDividend/(SwaySize*divisorSide))*(WalkSpeed/16)
-			if Humanoid and Running then
-				strafesway = strafesway:Lerp(CFrame.Angles(walkingLeanForward,walkingLeanSide,walkingLeanRot), 3*Sensitivity*dt)
-			else
-				strafesway = strafesway:Lerp(CFrame.new(), 3*Sensitivity*dt)
-			end
+
+			walkingLeanForward = -RootPart.CFrame.LookVector:Dot(Humanoid.MoveDirection)/(SwayDividend/(SwaySize/divisorForward))
+			walkingLeanSide = RootPart.CFrame.RightVector:Dot(Humanoid.MoveDirection)/(SwayDividend/(SwaySize*1.5))
 		end
-		jumpsway = jumpswaygoal.Value
+		--local StrafeSway = StrafeSway:Lerp(CFrame.Angles(walkingLeanForward,walkingLeanSide,walkingLeanRot), 0.1)
+		--\\
 
-		if Character and not Character:FindFirstChildOfClass("Tool") then
-			VMup = 0
-			VMright = 0
-			VMlook = 0
+		--//Set viewmodel cframe based on if you're aiming or not
+		if Aim then
+			Aim.CFrame = Camera.CFrame:ToWorldSpace(CFrame.new(Vector3.new(0.5, -0.5, -0.8), Vector3.new(0, 0, -100)))
+		end
+		local HeadOffset =  0.2
+		local FrontOffset =  0
+		local SideOffset =  0
+		finalcf = Camera.CFrame:ToObjectSpace((Camera.CFrame*WalkSway*StrafeSway+Camera.CFrame.UpVector*-HeadOffset+Camera.CFrame.LookVector*FrontOffset+Camera.CFrame.RightVector*SideOffset))
+
+		-- Default transforms
+		local Front = 0
+		local Up = 0
+		local Side = 0
+		local FrontRot = 0 
+		local UpRot = 0
+		local SideRot = 0
+
+		if RunType then
+			Front,Up,Side,FrontRot,UpRot,SideRot = changeRunTransforms[RunType]()
 		end
 
-		local finalcf =
-			(Camera.CFrame:ToWorldSpace(Offset)*walksway*jumpsway*strafesway *
-				CFrame.Angles(math.rad(sway.Y*SwaySize),math.rad(sway.X*SwaySize)/10,math.rad(sway.Z*SwaySize)/2))
-			+ (ViewModel.PrimaryPart.CFrame.UpVector*VMup)
-			+ (ViewModel.PrimaryPart.CFrame.RightVector*VMright)
-			+ (ViewModel.PrimaryPart.CFrame.LookVector*VMlook)
-		finalcf *= CFrame.new(updatedSwaySpring.X,updatedSwaySpring.Y,updatedSwaySpring.Z)
-		finalcf *= CFrame.new(updatedHandleSpring.Z/4,updatedHandleSpring.Y/4,updatedHandleSpring.X/4)
-		ViewModel:PivotTo(finalcf)
+		if RunPosition then -- If RunPosition in tool settings, override run positions
+			Front = RunPosition[1]
+			Up = RunPosition[2]
+			Side = RunPosition[3]
+			FrontRot = RunPosition[4] 
+			UpRot = RunPosition[5]
+			SideRot = RunPosition[6]
+		end
 
-		if ViewModel:FindFirstChild("MotorModel") and ViewModel["MotorModel"]:FindFirstChild("Handle") then
-			local Handle = ViewModel["MotorModel"]["Handle"]
-			local HandleTransform = ViewModel:GetPrimaryPartCFrame():ToObjectSpace(Handle.CFrame)
-			OriginalTransform = HandleTransform * HandleTransform:Inverse()
-			if ViewModel["MotorModel"]["Handle"]:FindFirstChild("Aim") then
-				local AimPart = Handle["Aim"]
-				AimTransform = AimPart.WorldCFrame:ToObjectSpace(Handle.CFrame) * HandleTransform:Inverse()
+		-- Apply run transforms
+		finalcf = finalcf:Lerp((finalcf+finalcf.RightVector*Side+finalcf.LookVector*Front+finalcf.UpVector*Up)*CFrame.Angles(math.rad(UpRot),math.rad(SideRot),math.rad(FrontRot)),ViewmodelRun.Value)
+		--Crouch Transforms
+		local CrouchFront = -0
+		local CrouchUp = -0.1
+		local CrouchSide = -0.1
+		local CrouchFrontRot = 27
+		local CrouchUpRot = 0
+		local CrouchSideRot = 0
 
+		if CrouchPosition then -- If CrouchPosition in tool settings, override crouch positions
+			CrouchFront = RunPosition[1]
+			CrouchUp = RunPosition[2]
+			CrouchSide = RunPosition[3]
+			CrouchFrontRot = RunPosition[4] 
+			CrouchUpRot = RunPosition[5]
+			CrouchSideRot = RunPosition[6]
+		end
+
+		-- Apply crouch transforms
+		finalcf = finalcf:Lerp((finalcf+finalcf.RightVector*CrouchSide+finalcf.LookVector*CrouchFront+finalcf.UpVector*CrouchUp)*CFrame.Angles(math.rad(CrouchUpRot),math.rad(CrouchSideRot),math.rad(CrouchFrontRot)),ViewmodelCrouch.Value)
+		--~~~~~~~~~~~~~~~~~
+		if finalcf and ViewModel and ViewModel.PrimaryPart then
+			-- set stability based on aiming or not
+			local stabilityToUse = Stability/10
+			if AimSpring.Target == 1 and AimStability then
+				stabilityToUse = AimStability/10
 			end
-			if AimTransform then
-				Offset = OriginalTransform:Lerp(AimTransform, AimSpring.Position)
+
+			ViewModel:PivotTo((((Camera.CFrame:ToWorldSpace(finalcf)*WalkSway*StrafeSway))) * CFrame.new(0, 0.175, 0))
+			if Aim then -- Set aim using aim spring
+				Aim.CFrame = Aim.CFrame:Lerp(Camera.CFrame:ToWorldSpace(CFrame.new(Vector3.new(0, 0, -0.3), Vector3.new(0, 0, -100))*WalkSway*StrafeSway), AimSpring.Position) 
 			end
-		else
-			AimSpring.Target = 0
-			Offset = CFrame.new(0,0,0)
+
+			ViewModel:PivotTo(ViewModel.PrimaryPart.CFrame*CFrame.new(updatedSwaySpring.x,updatedSwaySpring.y,updatedSwaySpring.z))
+			Handle.CFrame = Handle.CFrame*CFrame.Angles( (((updatedHandleSpring.z)^2)^0.5) / stabilityToUse , (((updatedHandleSpring.y)^2)^0.5) / (stabilityToUse*2) ,0)	
+			if AimSpring.Target == 0 then swayRotLoop(1,1.2) else swayRotLoop(0.3,0.5) end -- Apply rotational sway
 		end
 
 		if ViewModel:FindFirstChild("MotorModel") and ViewModel["MotorModel"]:FindFirstChild("Handle") then
@@ -410,11 +513,16 @@ function module.LoadChar(Character)
 				part.LocalTransparencyModifier = 1
 			end
 		end
+		-- set stability based on aiming or not
+		local stabilityToUse = Stability/10
+		if AimSpring.Target == 1 and AimStability then
+			stabilityToUse = AimStability/10
+		end
 
 		CameraModule.AddModifier(ViewModel.CameraPart.HumanoidRootPart.Transform) -- apply camera animations
 		local MouseDelta = UserInputService:GetMouseDelta()
 		local updatedSwaySpring = SwaySpring:update(dt)
-		local updatedHandleSpring = HandleSpring:update(dt)
+		local updatedHandleSpring = HandleSpring:update(dt,stabilityToUse)
 		ViewModel:PivotTo(Camera.CFrame:ToWorldSpace(Offset))
 
 		if Character and Character:FindFirstChildOfClass("Tool") then
@@ -449,7 +557,6 @@ function module.LoadChar(Character)
 
 	Humanoid.Died:Once(function()
 		task.wait()
-		--shirtChange:Disconnect()
 		bodyColorChange:Disconnect()
 		charChildAdd:Disconnect()
 		charChildRemove:Disconnect()
