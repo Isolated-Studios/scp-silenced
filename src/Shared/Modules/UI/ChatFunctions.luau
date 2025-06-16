@@ -54,18 +54,20 @@ end
 
 function ChatFunctions.VisualizeTyping (Character: model, Typing: bool, Replicate: bool)
 	local UpperTorso = Character.UpperTorso
+	local Humanoid = Character.Humanoid
 	local ChatBubble = UpperTorso.ChatBubble
 	local TypingBubble = ChatBubble.Chatting
 	
 	if Replicate then
-		ChatEvent:FireServer(Character,Typing)
+		ChatEvent:FireServer(Character,Typing,0)
 	end
 	
 	if Typing then
 		TypingBubble.Visible = true
-		while TypingBubble.Visible and Character do
+		while TypingBubble.Visible and Character and Humanoid.Health > 0 do
 			for i=1,3,1 do
-				if not TypingBubble.Visible or not Character then
+				if not TypingBubble.Visible or not Character or Humanoid.Health <= 0 then
+					TypingBubble.Visible = false
 					break
 				end
 				local x = (i*0.02)+0.46
@@ -89,6 +91,7 @@ function ChatFunctions.VisualizeChat (Character: model, unreactedMessage: string
 	if Message == "Roblox automatically translates supported languages in chat" or not Message then return end -- I hate you roblox
 	local letterCount = #Message -- The amount of characters in the message
 	local UpperTorso = Character.UpperTorso
+	local Humanoid = Character.Humanoid
 	local Profile = Character.Profile
 	local PickedVoice = ChatSounds.Voices[Profile:GetAttribute("Voice")] -- Get the voice from Profile of Character
 	
@@ -112,6 +115,11 @@ function ChatFunctions.VisualizeChat (Character: model, unreactedMessage: string
 		end
 		
 		for i=1,letterCount,1 do
+			if Humanoid.Health <= 0 then 
+				BubbleMessage.Text = BubbleMessage.Text.."-"
+				letterCount = #BubbleMessage.Text
+				break
+			end
 			local letter = string.sub(Message,i,i)
 			if BubbleMessage then
 				local NewText = BubbleMessage.Text..letter
@@ -153,7 +161,7 @@ function ChatFunctions.VisualizeChat (Character: model, unreactedMessage: string
 	end)
 	
 	if Replicate then -- Replicate to other clients through server
-		ChatEvent:FireServer(Character,Message,Redacted)
+		ChatEvent:FireServer(Character,Message,1,Redacted)
 	end
 end
 

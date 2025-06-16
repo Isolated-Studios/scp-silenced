@@ -49,11 +49,13 @@ function module.Init()
 		Message.Text = newText
 	end
 	
-	ChatEvent.OnClientEvent:Connect(function(OtherCharacter,Message,Redacted)
-		if typeof(Message) == "boolean" then
+	ChatEvent.OnClientEvent:Connect(function(OtherCharacter,Message,Type,Redacted)
+		if Type == 0 then
 			ChatFunctions.VisualizeTyping(OtherCharacter,Message)
-		else
+		elseif Type == 1 then
 			ChatFunctions.VisualizeChat(OtherCharacter,Message,Redacted)
+		elseif Type == 2 then
+			ChatFunctions.DisableChatting(OtherCharacter)
 		end
 	end)
 end

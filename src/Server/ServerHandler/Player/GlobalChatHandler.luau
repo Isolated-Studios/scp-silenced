@@ -26,11 +26,11 @@ function module.Init()
 	end
 	--\\
 	
-	ChatEvent.OnServerEvent:Connect(function(sendingPlayer, Character, Message, Redacted)
+	ChatEvent.OnServerEvent:Connect(function(sendingPlayer, Character, Message, Type, Redacted)
 		if sendingPlayer.Character == Character then
 			for _,otherPlayer in pairs(Players:GetPlayers()) do
 				if sendingPlayer ~= otherPlayer then 
-					ChatEvent:FireClient(otherPlayer,Character,Message,Redacted)
+					ChatEvent:FireClient(otherPlayer,Character,Message,Type,Redacted)
 				end
 			end
 		end
