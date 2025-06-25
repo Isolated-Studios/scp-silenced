@@ -125,6 +125,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 
 	--//Animation Priming
 	local animationEventsList = {}
+	local animationFunctionsList = {}
 	local Animator = Humanoid:WaitForChild("Animator")
 	local VMAnimator = Viewmodel.Humanoid.Animator
 	local CharacterAnimations = ToolObjects:WaitForChild("CharacterAnimations")
@@ -788,6 +789,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 
 	--//Animation Handling
 	local eventBehavior = {
+		--/DEPRECATED, PLEASE USE "Sound" EVENT FOR SOUNDS 
 		["LoadGate"] = function()
 			CTF.playSound(Sounds,"GateOpen",Handle,true,true)
 		end,
@@ -801,6 +803,24 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		["InsertShell"] = function()
 			CTF.playSound(Sounds,"Insert",Handle,true,true)
 		end,
+		["MagOut"] = function()
+			CTF.playSound(Sounds,"MagOut",Handle,true,true)
+		end,
+		["MagIn"] = function()
+			CTF.playSound(Sounds,"MagIn",Handle,true,true)
+		end,
+		["BoltBack"] = function()
+			CTF.playSound(Sounds,"BoltBack",Handle,true,true)
+		end,
+		--\
+		["Sound"] = function(SoundName)
+			if Sounds:FindFirstChild(SoundName) then
+				CTF.playSound(Sounds,SoundName,Handle,true,true)
+			else
+				warn("Sound animation event call error. Could not find sound named: ".. SoundName.." in folder.")
+			end
+		end,
+		
 		["Hide"] = function(Target) -- Hide a part and replicate it to others
 			if MotorModel:FindFirstChild(Target) then
 				if not table.find(ModificationList,Target) then
@@ -846,15 +866,6 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 				MotorModel["Bullet"].Transparency = transparency
 			end
 		end,
-		["MagOut"] = function()
-			CTF.playSound(Sounds,"MagOut",Handle,true,true)
-		end,
-		["MagIn"] = function()
-			CTF.playSound(Sounds,"MagIn",Handle,true,true)
-		end,
-		["BoltBack"] = function()
-			CTF.playSound(Sounds,"BoltBack",Handle,true,true)
-		end,
 		["BoltForward"] = function()
 			CTF.playSound(Sounds,"BoltForward",Handle,true,true)
 
@@ -881,12 +892,15 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		local animationEvents = animationEvents[animName]
 		if VManimation and animationEvents then
 			for _,event in pairs(animationEvents) do
-				local eventFunction = VManimation:GetMarkerReachedSignal(event):Connect(function(parameter)
-					if eventBehavior[event] then
-						eventBehavior[event](parameter)
-					end
-				end)
-				table.insert(animationEventsList,eventFunction)
+				if not table.find(animationEventsList,event) then
+					local eventFunction = VManimation:GetMarkerReachedSignal(event):Connect(function(parameter)
+						if eventBehavior[event] then
+							eventBehavior[event](parameter)
+						end
+					end)
+					table.insert(animationEventsList,event)
+					table.insert(animationFunctionsList,eventFunction)
+				end
 			end
 		end
 	end
@@ -1047,8 +1061,8 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		for index,_ in pairs(animationTable) do
 			animationHandle(index,"Stop",0)
 		end
-		for _,animationEvent in pairs(animationEventsList) do
-			animationEvent:Disconnect()
+		for _,animationFunction in pairs(animationFunctionsList) do
+			animationFunction:Disconnect()
 		end
 		
 		for _,TargetName in pairs(ModificationList) do -- Reset any animation modified parts

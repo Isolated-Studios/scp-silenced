@@ -87,23 +87,27 @@ function module.EquipTool(Tool: Tool)
 		end
 
 		local animationEventsList = {}
+		local animationFunctionsList = {}
 		local animationEvents = CTF.getAllAnimationEventNames(VMEquip) --/ get event marker names of VMEquip
 		if animationEvents then
 			for _,event in pairs(animationEvents) do
-				local eventFunction = VMEquip:GetMarkerReachedSignal(event):Connect(function(parameter) --/ Marker of any kind was reached
-					if ToolObjects.Sounds:FindFirstChild(event) then --/ Play sound for marker with corresponding sound name
-						CTF.playSound(ToolObjects.Sounds,"MagOut",ViewModel.MotorModel.Handle,true,true)
-					end
-				end)
-				table.insert(animationEventsList,eventFunction) --/ add to a table to later be disconnected
+				if not table.find(animationEventsList,event) then
+					local eventFunction = VMEquip:GetMarkerReachedSignal(event):Connect(function(parameter) --/ Marker of any kind was reached
+						if event == "Sound" and ToolObjects.Sounds:FindFirstChild(parameter) then --/ Play sound for marker with corresponding sound name
+							CTF.playSound(ToolObjects.Sounds,parameter,ViewModel.MotorModel.Handle,true,true)
+						end
+					end)
+					table.insert(animationFunctionsList,eventFunction) --/ add to a table to later be disconnected
+					table.insert(animationEventsList,event) --/ add to a table to check if the event is already in the table
+				end
 			end
 		end
 
 		task.wait(Settings.EquipCancel or 0)
 
-		for _,animationEvent in pairs(animationEventsList) do --/ Disconnect all animation events
-			animationEvent:Disconnect()
-		end
+		--for _,animationFunction in pairs(animationFunctionsList) do --/ Disconnect all animation functions
+		--	animationFunction:Disconnect()
+		--end
 
 		if thisEquipID ~= CurrentEquipID then return end
 		if Tool.Parent ~= Character then return end

@@ -2,7 +2,7 @@ local Settings = {
 	Damage = 40; -- Base damage against target
 	RPM = 250; -- The amount of rounds that can theoretically be fired in a minute
 	AP = 0.7; -- Value between 0 and 1 (0 being no armor penetration, 1 being complete armor penetration)
-	MagSize = 9; -- The maximum ammount of ammo held in a gun
+	MagSize = 2; -- The maximum ammount of ammo held in a gun
 	ReloadStyle = 1; -- 0 = single cartridge insert | 1 = mag reload
 	BulletsPerShot = 1; -- The amount of projectiles fired from one shot (Shotgun)
 	BurstAmount = 1; -- The amount of times fired per shot
@@ -33,14 +33,14 @@ local Settings = {
 	BoltBackWhenEmpty = true;
 	ScrollAffectsAim = true;
 
-	EquipSpeed = 0.75; -- Speed of equipping in seconds
+	EquipSpeed = 1.26; -- Speed of equipping in seconds
 	EquipCancel = 0.5;
-	UnequipSpeed = 0.75;
+	UnequipSpeed = 0.35;
 	AimInSpeed = 0.35; -- Speed of aiming-in in seconds
 	AimOutSpeed = 0.35; -- Speed of aiming-out in seconds
 	--SqueezeTrigger = 0.2; -- How long it takes to squeeze the trigger to fire/bolt gun in seconds (AFFECTS FIRE SPEED)
 	--FireDelay = 0.1; -- Delay after mouse button is clicked to fire gun (AFFECTS FIRE SPEED)
-	Reload1Speed = 2.0; -- Speed of Reload1's animation in seconds
+	Reload1Speed = 3.1; -- Speed of Reload1's animation in seconds
 	--Reload2Speed = 0.5; -- Speed of Reload2's animation in seconds
 	--Reload3Speed = 0.6; -- Speed of Reload3's animation in seconds
 	ReloadEmptySpeed = 3.25; -- Speed of ReloadEmpty's animation in seconds. Only works if EmptyReload is true
