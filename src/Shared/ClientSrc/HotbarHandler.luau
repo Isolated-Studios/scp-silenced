@@ -145,10 +145,8 @@ function module.LoadChar(Character)
 	end
 
 	RunService.Stepped:Connect(function(time, deltaTime)
-		if module.InventoryToolTypeSlotIndex then
-			for i = 1, 3 do
-				Inventory[i] = module.InventoryToolTypeSlotIndex[i].Item and module.InventoryToolTypeSlotIndex[i].Item.Metadata.Tool
-			end
+		for i, v in module.InventoryToolTypeSlotIndex do
+			Inventory[i] = module.InventoryToolTypeSlotIndex[i].Item and module.InventoryToolTypeSlotIndex[i].Item.Metadata.Tool
 		end
 		RefreshHotbar()
 		local Tool = Character:FindFirstChildOfClass("Tool")
