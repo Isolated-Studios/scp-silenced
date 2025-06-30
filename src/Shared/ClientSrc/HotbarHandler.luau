@@ -49,7 +49,7 @@ function module.LoadChar(Character)
 	local HUD = Player.PlayerGui:WaitForChild("HUD")
 	local ListFrame = HUD:WaitForChild("RightFrame"):WaitForChild("ListFrame")
 	local Hotbar = ListFrame:WaitForChild("Hotbar")
-	local ConsumablesFrame = ListFrame:WaitForChild("GunFrame"):WaitForChild("Consumables"):WaitForChild("Frame")
+	local ConsumablesFrame = ListFrame:WaitForChild("Consumables"):WaitForChild("Frame")
 	local Inventory = {}
 	local function RefreshHotbar ()
 		for _,cell in pairs(Hotbar:GetChildren()) do

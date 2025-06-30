@@ -3,7 +3,7 @@ local TweenService = game:GetService("TweenService")
 local UIS = game:GetService("UserInputService")
 local Player = game:GetService("Players").LocalPlayer
 
-local function loadCharacter(Character)
+function module.LoadChar(Character)
 	local ReplicatedStorage = game:GetService("ReplicatedStorage")
 	local RunService = game:GetService("RunService")
 	local Lighting = game:GetService("Lighting")
@@ -69,14 +69,6 @@ local function loadCharacter(Character)
 		[2] = {Color3.fromRGB(255,255,255)},
 	}
 	local lastAbsorption = Humanoid:GetAttribute("Absorption")
-	
-	local function disconnectFunctions (FunctionList)
-		for _,Function in pairs(FunctionList) do
-			if Function then
-				Function:Disconnect()
-			end
-		end
-	end
 	
 	local function barSetup (bar,value)
 		bar.Main.Size = UDim2.fromScale(value,1)
@@ -199,25 +191,25 @@ local function loadCharacter(Character)
 	
 	local backpackAdded = Backpack.ChildAdded:Connect(function(Tool)
 		if Tool:IsA("Tool") and (Tool:GetAttribute("ToolType") == 6 or Tool:GetAttribute("ToolType") == 4) then
-			getConsumableTotal()	
+			getConsumableTotal()
 		end
 	end)
 	
 	local backpackRemoved = Backpack.ChildRemoved:Connect(function(Tool)
 		if Tool:IsA("Tool") and (Tool:GetAttribute("ToolType") == 6 or Tool:GetAttribute("ToolType") == 4) then
-			getConsumableTotal()	
+			getConsumableTotal()
 		end
 	end)
 	
 	local charAdded = Character.ChildAdded:Connect(function(Tool)
 		if Tool:IsA("Tool") and (Tool:GetAttribute("ToolType") == 6 or Tool:GetAttribute("ToolType") == 4) then
-			getConsumableTotal()	
+			getConsumableTotal()
 		end
 	end)
 
 	local charRemoved = Character.ChildRemoved:Connect(function(Tool)
 		if Tool:IsA("Tool") and (Tool:GetAttribute("ToolType") == 6 or Tool:GetAttribute("ToolType") == 4) then
-			getConsumableTotal()	
+			getConsumableTotal()
 		end
 	end)
 	
@@ -228,15 +220,6 @@ local function loadCharacter(Character)
 	CircleFramesModule.Progress(MainDownedProgressFrame,DownedProgress,DownedProgress.Value)
 	CircleFramesModule.Progress(MainReviveProgressFrame,ReviveProgress,ReviveProgress.Value)
 	local bannedParts = {"Head"}--,"RightUpperArm","LeftUpperArm","RightLowerArm","LeftLowerArm","RightHand","LeftHand"}
-	local function updateCharacterTransparency(Character)
-		if Character then
-			for _, part in ipairs(Character:GetDescendants()) do
-				if part:IsA("BasePart") and not table.find(bannedParts,part.Name) then
-					part.LocalTransparencyModifier = 0
-				end
-			end
-		end
-	end
 	
 	local DownedEventFunction = DownedEvent.OnClientEvent:Connect(function(interactCharacter)
 		
@@ -252,8 +235,6 @@ local function loadCharacter(Character)
 			end
 			return
 		end
-		
-		--RunService:BindToRenderStep("CharacterTransparency", Enum.RenderPriority.Character.Value-5, function() updateCharacterTransparency(Character) end )
 		
 		local beginningheartbeatPitch = 0.8
 		local droneVolume = 3
@@ -342,15 +323,10 @@ local function loadCharacter(Character)
 	end)
 		
 	Humanoid.Died:Once(function()
-		disconnectFunctions(staminaChanged,maxStaminaChanged,healthChanged,backpackAdded,backpackRemoved,charAdded,charRemoved,DownedEventFunction,absorptionChanged,GradientChange)
+		for _, connection in {staminaChanged,maxStaminaChanged,healthChanged,backpackAdded,backpackRemoved,charAdded,charRemoved,DownedEventFunction,absorptionChanged,GradientChange} do
+			connection:Disconnect()
+		end
 	end)
-end
-
-function module.Init()
-	Player.CharacterAdded:Connect(loadCharacter)
-	if Player.Character then
-		loadCharacter(Player.Character)
-	end
 end
 
 return module
