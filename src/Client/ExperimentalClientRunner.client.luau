@@ -55,7 +55,7 @@ loadModule(ClientSrc.MechanismHandler)
 loadModule(ClientSrc.EnvironmentalDamage)
 loadModule(ClientSrc.Movement)
 loadModule(ClientSrc.Camera)
-loadModule(ClientSrc.ViewmodelHandler)
+loadModule(ClientSrc.ViewModelHandler)
 loadModule(ClientSrc.ToolHandler)
 loadModule(ClientSrc.Blood)
 

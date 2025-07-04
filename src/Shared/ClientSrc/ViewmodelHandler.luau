@@ -568,6 +568,8 @@ function module.LoadChar(Character)
 		RunService:UnbindFromRenderStep("UpdateViewModel")
 		Running = false
 		ViewModel:Destroy()
+		ViewModel = nil
+		ViewModelAnimator = nil
 	end)
 end
 

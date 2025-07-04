@@ -13,7 +13,7 @@ local DefaultPlayerAnimations = ReplicatedStorage.PlayerAssets.Animations
 local OtherCharacterAnimations = DefaultPlayerAnimations.Character.Other
 local OtherVMAnimations = DefaultPlayerAnimations.Viewmodel.Other
 
-local ViewmodelHandler = require(ReplicatedStorage.ClientSrc.ViewmodelHandler)
+local ViewModelHandler = require(ReplicatedStorage.ClientSrc.ViewModelHandler)
 local KeybindHandler = require(Modules.UI.KeybindHandler)
 
 --local ExecuteAnim = Animator:LoadAnimation(OtherCharacterAnimations.Execute)
@@ -44,7 +44,7 @@ return {
 					currentReviveAnimation = Animator:LoadAnimation(ToolsFolder.CharacterAnimations.Revive)
 				end
 				if ToolsFolder.VMAnimations:FindFirstChild("Revive") then
-					currentVMReviveAnimation = ViewmodelHandler.getAnimation(ToolsFolder.VMAnimations.Revive)
+					currentVMReviveAnimation = ViewModelHandler.getAnimation(ToolsFolder.VMAnimations.Revive)
 				end
 				local Settings = require(ToolsFolder.Settings)
 				if Settings.CanRevive then
