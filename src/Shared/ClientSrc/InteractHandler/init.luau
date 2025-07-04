@@ -108,6 +108,9 @@ function module.Init()
 	local GuideLabel: TextLabel = InteractUI:WaitForChild("Guide")
 	local ProgressBar: CanvasGroup = InteractUI:WaitForChild("ProgressBar")
 	ProgressBar:WaitForChild("Fill")
+	
+	local MouseUI = PlayerGui:WaitForChild("MouseUI")
+	local Dot: Frame = MouseUI:WaitForChild("Dot")
 
 	local Highlight = Instance.new("Highlight")
 	Highlight.FillColor = Color3.fromRGB(255, 255, 255)
@@ -120,12 +123,11 @@ function module.Init()
 	RunService.RenderStepped:Connect(function(dt)
 		-- update interaction progress bar if currently interacting
 		if Current then
+			Dot.Visible = false
 			Highlight.FillTransparency = math.clamp(Highlight.FillTransparency - dt * 2, 0.85, 1)
-
 			if Interacting and Current:GetAttribute("InteractTime") then
 				ProgressBar.Fill.Size = UDim2.new((tick() - lastInteractionStart) / Current:GetAttribute("InteractTime"), 0, 1, 0)
 				ProgressBar.GroupTransparency = math.clamp(ProgressBar.GroupTransparency - dt * 8, 0, 1)
-
 				GuideLabel.TextTransparency = math.clamp(GuideLabel.TextTransparency + dt * 8, 0, 1)
 				GuideLabel.TextStrokeTransparency = math.clamp(GuideLabel.TextStrokeTransparency + dt * 3.2, 0.6, 1)
 			else
@@ -144,6 +146,7 @@ function module.Init()
 				GuideLabel.TextStrokeTransparency = math.clamp(GuideLabel.TextStrokeTransparency - dt * 3.2, 0.6, 1)
 			end
 		else
+			Dot.Visible = true
 			ProgressBar.GroupTransparency = math.clamp(ProgressBar.GroupTransparency + dt * 8, 0, 1)
 			Highlight.FillTransparency = math.clamp(Highlight.FillTransparency + dt * 2, 0.85, 1)
 			GuideLabel.TextTransparency = math.clamp(GuideLabel.TextTransparency + dt * 8, 0, 1)
