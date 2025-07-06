@@ -13,6 +13,7 @@ local Trove = require(ReplicatedStorage.Packages.Trove)
 local KeybindHandler = require(Modules.UI.KeybindHandler)
 local ToolHandler = require(script.Parent.ToolHandler)
 local CommonFuncs = require(Modules.CommonFuncs)
+local ToolClass = require(Modules.Tool)
 
 local ViewmodelEvents = Events.Viewmodel
 local ResetIcons = ViewmodelEvents.ResetIcons
@@ -110,14 +111,17 @@ function module.LoadChar(Character)
 		end
 	end
 
-	local function unequipTool (Tool)
-		if Character:FindFirstChildOfClass("Tool") and Character:FindFirstChildOfClass("Tool") == Tool and Tool:GetAttribute("Activated") then
-			Unequipping = true
-			local unequipSpeed = require(Tools[Tool:GetAttribute("ToolName")].Settings).UnequipSpeed
-			resetCell(Character:FindFirstChildOfClass("Tool"),nil,unequipSpeed)
-			ToolHandler.UnequipTool(Tool)
-			Unequipping = false
+	local function unequipTools()
+		Unequipping = true
+		local tool = ToolHandler:getCurrentTool()
+		if tool then
+			local unequipSpeed = require(Tools[tool.Instance:GetAttribute("ToolName")].Settings).UnequipSpeed
+			resetCell(tool.Instance, nil, unequipSpeed)
+		else
+			-- !! NOTE: ADD resetCell(nil, nil, 0.5) <- 0.3 is an arbitrary number
 		end
+		ToolHandler.UnequipTools()
+		Unequipping = false
 	end
 
 	local function actOnTool(Tool)
@@ -130,19 +134,21 @@ function module.LoadChar(Character)
 		end
 
 		if activatedTool or Unequipping or Tool:GetAttribute("Removing") or UserInputService:IsKeyDown(KeybindHandler.Keybind("Drop",Player)) or Humanoid:GetAttribute("DisableEquip") or Humanoid:GetAttribute("Downed") or Acting then return end
-		if Character:FindFirstChildOfClass("Tool") and Tool:GetAttribute("ToolType") == Character:FindFirstChildOfClass("Tool"):GetAttribute("ToolType") then
-			unequipTool(Tool)
-		else
-			Acting = true
-			ToolHandler.UnequipTools()
-			task.wait() --/ I put this here because the function Clean()
-			if not Inventory[Tool:GetAttribute("ToolType")] then Acting = false warn("could not table.find tooltype in inventory") return end
-			--/ this line above fixes a bug where equipping after dying breaks the script
-			RefreshHotbar()
-			setCell(Tool)
-			CommonFuncs.SafeCall(ToolHandler.EquipTool, Tool)
-			Acting = false
+		if ToolHandler:getCurrentToolState() == ToolClass.State.Equipped then
+			local equippedTool = ToolHandler.getCurrentTool().Instance
+			unequipTools()
+			if equippedTool == Tool then return end
 		end
+		
+		Acting = true
+		ToolHandler.UnequipTools()
+		task.wait() --/ I put this here because the function Clean()
+		if not Inventory[Tool:GetAttribute("ToolType")] then Acting = false warn("could not table.find tooltype in inventory") return end
+		--/ this line above fixes a bug where equipping after dying breaks the script
+		RefreshHotbar()
+		setCell(Tool)
+		CommonFuncs.SafeCall(ToolHandler.EquipTool, Tool)
+		Acting = false
 	end
 
 	RunService.Stepped:Connect(function(time, deltaTime)
@@ -162,7 +168,7 @@ function module.LoadChar(Character)
 
 	characterTrove:Connect(UserInputService.InputBegan, function(Input, gameProcessedEvent)
 		if gameProcessedEvent then return end
-		if AcceptedKeys[Input.KeyCode.Name] and Inventory[AcceptedKeys[Input.KeyCode.Name]] and not Humanoid:GetAttribute("Equipping") then
+		if AcceptedKeys[Input.KeyCode.Name] and Inventory[AcceptedKeys[Input.KeyCode.Name]] and ToolHandler.getCurrentToolState ~= ToolClass.State.Equipping and ToolHandler.getCurrentToolState ~= ToolClass.State.Unequipping then
 			local pickedTool = Inventory[AcceptedKeys[Input.KeyCode.Name]]
 			actOnTool(pickedTool)
 		end
