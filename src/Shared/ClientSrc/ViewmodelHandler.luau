@@ -28,8 +28,7 @@ local springModule = require(ToolModules.spring)
 local spring2Module = require(ToolModules.spring2)
 local CommonToolFunctions = require(ToolModules.CommonToolFunctions)
 local KeybindHandler = require(UIModules.KeybindHandler)
-local ToolHandler = require(script.Parent.ToolHandler)
-ToolHandler.injectViewModelHandler(module)
+local ToolHandler = nil -- will be set later to avoid memory leaks
 
 local RunType = nil
 local RunPosition = nil
@@ -98,6 +97,10 @@ function module.getViewModelAnimator(): Animator?
 end
 
 local Player = game.Players.LocalPlayer
+
+function module.Init()
+	ToolHandler = require(script.Parent.ToolHandler)
+end
 
 function module.LoadChar(Character)
 	local Camera = workspace.CurrentCamera

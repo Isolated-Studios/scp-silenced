@@ -12,6 +12,7 @@ local Events = ReplicatedStorage.Events
 local Trove = require(ReplicatedStorage.Packages.Trove)
 local KeybindHandler = require(Modules.UI.KeybindHandler)
 local ToolHandler = require(script.Parent.ToolHandler)
+local CommonFuncs = require(Modules.CommonFuncs)
 
 local ViewmodelEvents = Events.Viewmodel
 local ResetIcons = ViewmodelEvents.ResetIcons
@@ -139,7 +140,7 @@ function module.LoadChar(Character)
 			--/ this line above fixes a bug where equipping after dying breaks the script
 			RefreshHotbar()
 			setCell(Tool)
-			pcall(ToolHandler.EquipTool, Tool)
+			CommonFuncs.SafeCall(ToolHandler.EquipTool, Tool)
 			Acting = false
 		end
 	end

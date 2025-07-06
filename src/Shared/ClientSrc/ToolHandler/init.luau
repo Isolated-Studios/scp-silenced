@@ -2,9 +2,9 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 
-local ViewModelHandler = nil -- has to be injected to avoid circular dependencies
-local KeybindHandler = require(ReplicatedStorage.Modules.UI.KeybindHandler)
 local CTF = require(ReplicatedStorage.Modules.Tool.CommonToolFunctions)
+local KeybindHandler = require(ReplicatedStorage.Modules.UI.KeybindHandler)
+local ViewModelHandler = nil -- set in Init() to avoid recursive require()s
 
 local module = {}
 
@@ -20,15 +20,15 @@ local Animator: Animator? = nil
 local CurrentEquipID = ""
 local UnequipFunctions = {}
 
-function module.injectViewModelHandler(h)
-	ViewModelHandler = h
-end
-
 function module.LoadChar(Char)
 	Character = Char
 	Backpack = Players.LocalPlayer:WaitForChild("Backpack")
 	Humanoid = Char:WaitForChild("Humanoid")
 	Animator = Humanoid:WaitForChild("Animator")
+end
+
+function module.Init()
+	ViewModelHandler = require(ReplicatedStorage.ClientSrc.ViewModelHandler)
 end
 
 function module.UnloadChar(char)
