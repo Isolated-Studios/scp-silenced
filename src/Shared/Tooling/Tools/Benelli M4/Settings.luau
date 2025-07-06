@@ -3,7 +3,7 @@ local Settings = {
 	RPM = 200; -- The amount of rounds that can theoretically be fired in a minute
 	AP = 0.7; -- Value between 0 and 1 (0 being no armor penetration, 1 being complete armor penetration)
 	MagSize = 8; -- The maximum ammount of ammo held in a gun
-	ReloadStyle = 1; -- 0 = single cartridge insert | 1 = mag reload
+	ReloadStyle = 0; -- 0 = single cartridge insert | 1 = mag reload
 	BulletsPerShot = 16; -- The amount of projectiles fired from one shot (Shotgun)
 	BurstAmount = 1; -- The amount of times fired per shot
 	--BurstDelay = 0.05; -- The amount of time it takes to recover from each burst shot in seconds (AFFECTS FIRE SPEED)
