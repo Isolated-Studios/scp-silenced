@@ -1,44 +1,115 @@
+---@diagnostic disable: undefined-global
 local module = {}
 local TweenService = game:GetService("TweenService")
 local UIS = game:GetService("UserInputService")
 local Player = game:GetService("Players").LocalPlayer
 
+function module.Init()
+	Backpack = Player.Backpack
+	HUD = Player.PlayerGui:WaitForChild("HUD")
+
+	Bars = HUD:WaitForChild("Bars")
+	RightFrame = HUD:WaitForChild("RightFrame")
+	DownedFrame = HUD:WaitForChild("DownedFrame")
+	ReviveFrame = HUD:WaitForChild("ReviveFrame")
+	GunVignette = HUD:WaitForChild("GunVignette")
+	ListFrame = RightFrame:WaitForChild("ListFrame")
+	Consumables = ListFrame:WaitForChild("Consumables")
+	ConsumablesFrame = Consumables:WaitForChild("Frame")
+	MedicalFrame = ConsumablesFrame:WaitForChild("4")
+	ThrowableFrame = ConsumablesFrame:WaitForChild("6")
+	MedicalNumber = MedicalFrame:WaitForChild("Number")
+	ThrowableNumber = ThrowableFrame:WaitForChild("Number")
+	Gradient = GunVignette.Gradient
+	VignetteAmount = Gradient.VignetteAmount
+	EarRinging = GunVignette.EarRinging
+
+	-- // Gun frame stuff
+	GunFrame = ListFrame:WaitForChild("GunFrame")
+	GunInfoFrame = GunFrame:WaitForChild("GunInfo")
+	PrimeMagBullet = GunFrame:WaitForChild("MagBullet")
+	InnerFrame = GunInfoFrame:WaitForChild("InnerFrame")
+	ReserveFrame = GunInfoFrame:WaitForChild("ReserveFrame")
+	InnerScaleLayout = InnerFrame:WaitForChild("InnerScale")
+	MagFrame = InnerFrame:WaitForChild("MagFrame")
+	ReserveText = ReserveFrame:WaitForChild("Reserve")
+	InfoFrame = InnerFrame:WaitForChild("InfoFrame")
+	NameText = InfoFrame:WaitForChild("Name")
+	ModeText = InfoFrame:WaitForChild("Mode")
+end
+
+local editMagTable = {
+	["Empty"] = function(tweenTime)
+		if not tweenTime then tweenTime = 0.1 end
+		local bullet = MagFrame["1"]
+		local round = bullet.Round
+		TweenService:Create(round,TweenInfo.new(tweenTime,Enum.EasingStyle.Linear),{Size = UDim2.fromScale(1,0)}):Play()
+	end,
+	["Cycle"] = function(tweenTime)
+		if not tweenTime then tweenTime = 0.1 end
+		if magBool.Value+1 <= Settings.MagSize and magBool.Value > 0 and MagFrame:FindFirstChild((magBool.Value+1)) then
+			local bullet = MagFrame[tostring(magBool.Value+1)]
+			local round = bullet.Round
+			TweenService:Create(round,TweenInfo.new(tweenTime,Enum.EasingStyle.Linear),{Size = UDim2.fromScale(1,0)}):Play()
+			local firstBullet = MagFrame["1"]
+			local firstRound = firstBullet.Round
+			TweenService:Create(firstRound,TweenInfo.new(tweenTime,Enum.EasingStyle.Linear),{Size = UDim2.fromScale(1,1),}):Play()
+		end
+	end,
+	["Load"] = function(tweenTime)
+		if not tweenTime then tweenTime = 0.1 end
+		local bullet = MagFrame[tostring(magBool.Value)]
+		local round = bullet.Round
+		if MagFrame["1"].Round.Size.Y.Scale < 1 then
+			bullet = MagFrame["1"]
+			round = bullet.Round
+		end
+		TweenService:Create(round,TweenInfo.new(tweenTime,Enum.EasingStyle.Linear),{Size = UDim2.fromScale(1,1)}):Play()
+	end,
+	["Mag"] = function(tweenTime)
+		if not tweenTime then tweenTime = 0.1 end
+		for i=1,magBool.Value,1 do
+			local bullet = MagFrame[tostring(i)]
+			local round = bullet.Round
+			TweenService:Create(round,TweenInfo.new(tweenTime,Enum.EasingStyle.Linear),{Size = UDim2.fromScale(1,1)}):Play()
+		end
+	end,
+}
+
+local function editBulletFrame (action,tweenTime)
+	ReserveText.Text = ammoBool.Value
+	NameText.Text = Tool.Name
+	if Settings.Automatic then
+		ModeText.Text = "Auto"
+	else
+		ModeText.Text = "Semi"
+	end
+	if not MagFrame:FindFirstChild("1") then
+		return
+	end
+	editMagTable[action](tweenTime)
+end
+
+local function updateGunDisplay(gun: Tool, smoothly: boolean)
+
+end
+
 function module.LoadChar(Character)
 	local ReplicatedStorage = game:GetService("ReplicatedStorage")
 	local RunService = game:GetService("RunService")
 	local Lighting = game:GetService("Lighting")
-	local Events = ReplicatedStorage:WaitForChild("Events")
-	local Modules = ReplicatedStorage:WaitForChild("Modules")
-	local Objects = ReplicatedStorage:WaitForChild("Objects")
-	local UIModules = Modules:WaitForChild("UI")
-	local DownedEvent = Events:WaitForChild("Character"):WaitForChild("DownedEvent")
-	local DowningObjects = Objects:WaitForChild("DowningObjects")
-	
-	local CircleFramesModule = require(UIModules:WaitForChild("CircleFrames"))
-	local KeybindHandler = require(UIModules:WaitForChild("KeybindHandler"))
-	local CameraManipulator = require(UIModules:WaitForChild("CameraManipulator"))
-	local TeamHandler = require(Modules:WaitForChild("Interaction"):WaitForChild("TeamHandler"))
-	
-	local Backpack = Player.Backpack
-	local HUD = Player.PlayerGui:WaitForChild("HUD")
-	local Bars = HUD:WaitForChild("Bars")
-	local RightFrame = HUD:WaitForChild("RightFrame")
-	local DownedFrame = HUD:WaitForChild("DownedFrame")
-	local ReviveFrame = HUD:WaitForChild("ReviveFrame")
-	local GunVignette = HUD:WaitForChild("GunVignette")
-	
-	local ListFrame = RightFrame:WaitForChild("ListFrame")
-	local GunFrame = ListFrame:WaitForChild("GunFrame")
-	local Consumables = GunFrame:WaitForChild("Consumables")
-	local ConsumablesFrame = Consumables:WaitForChild("Frame")
-	local MedicalFrame = ConsumablesFrame:WaitForChild("4")
-	local ThrowableFrame = ConsumablesFrame:WaitForChild("6")
-	local MedicalNumber = MedicalFrame:WaitForChild("Number")
-	local ThrowableNumber = ThrowableFrame:WaitForChild("Number")
-	local Gradient = GunVignette.Gradient
-	local VignetteAmount = Gradient.VignetteAmount
-	local EarRinging = GunVignette.EarRinging
-	
+	local Events = ReplicatedStorage.Events
+	local Modules = ReplicatedStorage.Modules
+	local Objects = ReplicatedStorage.Objects
+	local UIModules = Modules.UI
+	local DownedEvent = Events.Character.DownedEvent
+	local DowningObjects = Objects.DowningObjects
+
+	local CircleFramesModule = require(UIModules.CircleFrames)
+	local KeybindHandler = require(UIModules.KeybindHandler)
+	local CameraManipulator = require(UIModules.CameraManipulator)
+	local TeamHandler = require(Modules.Interaction.TeamHandler)
+
 	local BloodScreen = HUD:WaitForChild("BloodScreen")
 	local StaminaFrame = Bars:WaitForChild("Stamina")
 	local StaminaL = StaminaFrame:WaitForChild("L")
@@ -308,7 +379,6 @@ function module.LoadChar(Character)
 				end
 				task.wait(waitTime)
 			end
-			RunService:UnbindFromRenderStep("CharacterTransparency")
 			DownedFrame.GroupTransparency = 1
 			DownedProgress.Value = 100
 			DownedFrame.Visible = false
