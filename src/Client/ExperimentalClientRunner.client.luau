@@ -48,6 +48,7 @@ loadModule(ClientSrc.Environment)
 loadModule(ClientSrc.Inventory)
 loadModule(ClientSrc.CustomChat)
 loadModule(ClientSrc.SettingsHandler)
+loadModule(ClientSrc.PlayerHover)
 
 -- // Character-specific modules
 --loadModule(ClientSrc.Vaulting)   [[ ON HALT ]]

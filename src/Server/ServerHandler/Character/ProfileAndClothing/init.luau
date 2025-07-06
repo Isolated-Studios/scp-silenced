@@ -1,5 +1,9 @@
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local module = {}
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local HairColorsList = require(script.HairColors)
+local SkinColorsList = require(script.SkinColors)
+local NamesList = require(script.Names)
 
 local PlayerAssets  = ReplicatedStorage.PlayerAssets
 local Looks = PlayerAssets.Looks
@@ -79,12 +83,16 @@ local function Clothingify(Character: Model, Article: Model | BasePart, isClone:
 	Article:SetAttribute("Welded", true)
 end
 
-local WhiteHairColors = {Color3.fromRGB(86, 66, 54),Color3.fromRGB(99, 95, 98),Color3.fromRGB(17, 17, 17),Color3.fromRGB(159, 161, 172),Color3.fromRGB(188, 155, 93),Color3.fromRGB(248, 217, 109),Color3.fromRGB(70, 42, 0),Color3.fromRGB(60, 50, 40),Color3.fromRGB(60, 50, 40),Color3.fromRGB(27, 42, 53),Color3.fromRGB(170, 85, 0)}
-local BlackHairColors = {Color3.fromRGB(17, 17, 17),Color3.fromRGB(27, 42, 53),Color3.fromRGB(40, 40, 40),Color3.fromRGB(159, 161, 172)}
-local WhiteSkinColors = {Color3.fromRGB(255, 204, 153),Color3.fromRGB(240, 180, 150),Color3.fromRGB(167, 125, 104),Color3.fromRGB(170, 136, 102),Color3.fromRGB(118, 94, 71),Color3.fromRGB(189, 163, 133)}
-local BlackSkinColors = {Color3.fromRGB(90, 76, 66),Color3.fromRGB(65, 59, 48),Color3.fromRGB(160, 110, 70),Color3.fromRGB(136, 110, 84),Color3.fromRGB(118, 94, 71)}
-local AlienSkinColors = {Color3.fromRGB(135, 255, 108),Color3.fromRGB(219, 255, 152),Color3.fromRGB(135, 255, 219),Color3.fromRGB(239, 192, 255),Color3.fromRGB(194, 218, 184),Color3.fromRGB(184, 184, 184)}
-
+local WhiteHairColors = HairColorsList.WhiteHairColors
+local BlackHairColors = HairColorsList.BlackHairColors
+local WhiteSkinColors = SkinColorsList.WhiteSkinColors
+local BlackSkinColors = SkinColorsList.BlackSkinColors
+local AlienSkinColors = SkinColorsList.AlienSkinColors
+local MaleNames = NamesList.MaleNames
+local FemaleNames = NamesList.FemaleNames
+local LastNames = NamesList.LastNames
+local AlienNames = NamesList.AlienNames
+local AlienLastNames = NamesList.AlienLastNames
 function module.Init(Character)
 	
 	local ChatBubble = PrimeChatBubble:Clone()
@@ -93,7 +101,7 @@ function module.Init(Character)
 	ChatBubble.PlayerToHideFrom = game.Players:GetPlayerFromCharacter(Character)
 	
 	local Profile = Character:WaitForChild("Profile")
-	
+
 	local ChosenSkinColor = math.random(0,1)
 	local AlienChance = math.random(1,100)
 	
@@ -119,12 +127,19 @@ function module.Init(Character)
 	
 	local Gender = math.random(0,1)
 	local genderTable = {
-		[0] = {"Male",{0.95,1.05}},
-		[1] = {"Female",{0.9,1.05}},
+		[0] = "Male",
+		[1] = "Female",
 	}
 	Profile:SetAttribute("Gender",Gender)
+	Profile:SetAttribute("LastName",LastNames[math.random(1,#LastNames)])
+	
 	if Gender == 1 then
+		-- Changes torso to be "woman" and gives a female first name.
 		Character.UpperTorso.Mesh.MeshId = Character.UpperTorso.Mesh:GetAttribute("MeshId")
+		Profile:SetAttribute("FirstName",FemaleNames[math.random(1,#FemaleNames)])
+	else
+		-- Gives male name.
+		Profile:SetAttribute("FirstName",MaleNames[math.random(1,#MaleNames)])
 	end
 	
 	local optionVoices = {}
@@ -135,17 +150,20 @@ function module.Init(Character)
 	end
 	Profile:SetAttribute("Voice",optionVoices[math.random(1,#optionVoices)]) -- assign a voice
 	
-	local PickedFolder = TeamLooks.Scientist[genderTable[Profile:GetAttribute("Gender")][1]].Standard
+	local PickedFolder = TeamLooks.Scientist[genderTable[Profile:GetAttribute("Gender")]].Standard
 
 	for _, primeArticle in pairs(PickedFolder:GetChildren()) do
 		Clothingify(Character, primeArticle)
 	end
 	
-	local HairFolder = HairLooks[genderTable[Profile:GetAttribute("Gender")][1]]
+	local HairFolder = HairLooks[genderTable[Profile:GetAttribute("Gender")]]
 	
 	if AlienChance == 1 then -- Pick alien "hair"
 		HairFolder = HairLooks["Alien"]
 		HairColor = SkinColor
+		
+		Profile:SetAttribute("FirstName",AlienNames[math.random(1,#AlienNames)])
+		Profile:SetAttribute("LastName",AlienNames[math.random(1,#AlienNames)])
 	end
 	
 	local pickedHair = HairFolder:GetChildren()[math.random(1,#HairFolder:GetChildren())]
