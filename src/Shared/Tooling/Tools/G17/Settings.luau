@@ -72,7 +72,7 @@ local Settings = {
 	CrouchPosition = nil; -- Table of numbers {1,2,3,4,5,6}. Overrides the crouch positions, allowing custom crouch positions. 1 is Front position, 2 is Up position, 3 is Side position, 4 is Front angle, 5 is Up angle, 6 is Side angle.
 
 	HighlightColor = Color3.fromRGB(100, 210, 210);
-	Size = Vector2.new(4,3);
-	Image = "rbxassetid://18385551620";
+	InventorySize = Vector2.new(4,3);
+	InventoryImage = "rbxassetid://18385551620";
 }
 return Settings

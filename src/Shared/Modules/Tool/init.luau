@@ -109,6 +109,10 @@ function Tool.new(tool: Tool, data: ClassType): ClassType
 	-- Animations
 	self.Animations = data.Animations or {}
 	self.__loaded_animations = {} -- Don't use this, it's only used as a strong reference to loaded animations, as the global one is a weak table.
+	-- Inventory Stuff
+	self.Description = data.Description or ""
+	self.InventorySize = data.InventorySize or Vector2.new(1, 1)
+	self.InventoryImage = data.InventoryImage or ""
 	
 	return self
 end

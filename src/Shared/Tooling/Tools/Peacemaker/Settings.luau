@@ -51,8 +51,8 @@ local Settings = {
 	HammerAngle = Vector3.new(70,0,0); -- Angle at which Hammer is pulled back when preparing to fire. Comment out if no Hammer or Hammer should not move
 	CylinderAngle = Vector3.new(0,0,-60); -- Angle at which Cylinder is pulled back when preparing to fire. Comment out if no Cylinder or Cylinder should not move
 
-	Size = Vector2.new(1,1); -- Does nothing right now
-	Image = "rbxassetid://0"; -- Does nothing right now
+	InventorySize = Vector2.new(1,1); -- Does nothing right now
+	InventoryImage = "rbxassetid://0"; -- Does nothing right now
 	Description = "" -- Does nothing right now
 }
 return Settings

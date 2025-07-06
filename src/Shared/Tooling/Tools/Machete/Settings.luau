@@ -28,7 +28,7 @@ local Settings = {
 	RecoveryMarker = true;
 	
 	HighlightColor = Color3.fromRGB(100, 210, 210);
-	Size = Vector2.new(5,2);
-	Image = "rbxassetid://18387587518";
+	InventorySize = Vector2.new(5,2);
+	InventoryImage = "rbxassetid://18387587518";
 }
 return Settings

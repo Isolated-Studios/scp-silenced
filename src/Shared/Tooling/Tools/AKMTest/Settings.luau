@@ -74,8 +74,8 @@ local Settings = {
 	CrouchPosition = nil; -- Table of numbers {1,2,3,4,5,6}. Overrides the crouch positions, allowing custom crouch positions. 1 is Front position, 2 is Up position, 3 is Side position, 4 is Front angle, 5 is Up angle, 6 is Side angle.
 
 	HighlightColor = Color3.fromRGB(100, 210, 210);
-	Size = Vector2.new(6,3); -- Does nothing right now
-	Image = "rbxassetid://10811553601"; -- Does nothing right now
+	InventorySize = Vector2.new(6,3); -- Does nothing right now
+	InventoryImage = "rbxassetid://10811553601"; -- Does nothing right now
 	Description = "A reliable Soviet-era rifle used by a wide variety of groups, especially those based outside of the US and Western Europe. Despite lower than average RPM, the 7.62x39mm rounds it fires have substantial stopping power. " -- Does nothing right now
 }
 return Settings

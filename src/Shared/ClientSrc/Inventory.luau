@@ -238,14 +238,14 @@ local function loadCharacter(Character)
 
 		local itemUI = GridPack.createItem({
 			--Position = Vector2.new(0, 0),
-			Size = Settings.Size or Vector2.new(1, 1),
+			Size = Settings.InventorySize or Vector2.new(1, 1),
 
 			Assets = {
 				Item = ItemTemplate,
 			},
 
 			Metadata = {
-				Image = Settings.Image;
+				Image = Settings.InventoryImage;
 				Color = Settings.HighlightColor;
 				AllowedSingleSlots = slotList;
 				Name = tool.Name;
@@ -358,8 +358,8 @@ local function loadCharacter(Character)
 			local toolFolder = Tools[tool:GetAttribute("ToolName")]
 			local Settings = require(toolFolder["Settings"])
 			local size = 1
-			if Settings.Size then
-				size = Settings.Size.X*Settings.Size.Y
+			if Settings.InventorySize then
+				size = Settings.InventorySize.X*Settings.InventorySize.Y
 			end
 			table.insert(startTools, {size, tool})
 		end

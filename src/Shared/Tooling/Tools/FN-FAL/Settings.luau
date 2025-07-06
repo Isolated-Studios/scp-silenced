@@ -73,8 +73,8 @@ local Settings = {
 	CrouchPosition = nil; -- Table of numbers {1,2,3,4,5,6}. Overrides the crouch positions, allowing custom crouch positions. 1 is Front position, 2 is Up position, 3 is Side position, 4 is Front angle, 5 is Up angle, 6 is Side angle.
 
 	HighlightColor = Color3.fromRGB(100, 210, 210);
-	Size = Vector2.new(3,6); -- Does nothing right now
-	Image = "rbxassetid://0"; -- Does nothing right now
+	InventorySize = Vector2.new(3,6); -- Does nothing right now
+	InventoryImage = "rbxassetid://0"; -- Does nothing right now
 	Description = "A semi-automatic battle rifle used by the Foundation. 7.62x51mm rounds pack a significant punch, and can be incredibly helpful for subduing escaping Anomalies." -- Does nothing right now
 }
 return Settings

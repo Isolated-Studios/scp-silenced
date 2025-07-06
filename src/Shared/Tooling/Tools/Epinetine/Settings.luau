@@ -30,8 +30,8 @@ local Settings = {
 	BindToHand = true;
 	
 	HighlightColor = Color3.fromRGB(100, 210, 210);
-	Size = Vector2.new(1,2); -- Inventory Size
-	Image = "rbxassetid://18387305281"; -- Inventory Image
+	InventorySize = Vector2.new(1,2); -- Inventory Size
+	InventoryImage = "rbxassetid://18387305281"; -- Inventory Image
 	Description = "" -- Does nothing right now
 }
 return Settings
