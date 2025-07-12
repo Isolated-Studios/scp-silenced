@@ -87,8 +87,8 @@ function module.Init()
 			local Humanoid = Current.Humanoid
 			
 			PlayerName.Text = Profile:GetAttribute("FirstName").." "..Profile:GetAttribute("LastName") .." ("..CurrentPlayer.Name..")"
-			PlayerRole.Text = CurrentPlayer.Team.Name
-			PlayerRole.TextColor3 = CurrentPlayer.TeamColor.Color
+			PlayerRole.Text = Profile:GetAttribute("Role")
+			PlayerRole.TextColor3 = Profile:GetAttribute("RoleColor")
 			
 			PlayerName.Visible = true
 			PlayerRole.Visible = true

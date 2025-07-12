@@ -80,7 +80,13 @@ function module.Damage(
 	LegMultiplier: number,
 	AnnihilationRange: table
 )
-	if not Damage or not HitHumanoid or HitHumanoid:GetAttribute("DownedRagdolling") then return end
+	if not Damage 
+		or not HitHumanoid 
+		or HitHumanoid:GetAttribute("DownedRagdolling") 
+	then 
+		return 
+	end
+	
    	local originalDamage = Damage
 	local HitLimb = "Torso"
 	if not LegMultiplier then LegMultiplier = 0.75 end

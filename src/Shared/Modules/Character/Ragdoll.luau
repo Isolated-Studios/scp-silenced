@@ -3,6 +3,8 @@ local Module = {}
 local PS = game:GetService("PhysicsService")
 local CS = game:GetService("CollectionService")
 
+local AnchorTime = 300
+
 Module.Bot = function(bot)
 	task.spawn(function()
 		local H = bot.Humanoid
@@ -27,14 +29,12 @@ Module.Bot = function(bot)
 		H:SetStateEnabled(Enum.HumanoidStateType.GettingUp,false)
 		H:ChangeState(Enum.HumanoidStateType.Physics)
 		
-		task.wait(game:GetService("Players").RespawnTime+6.1)
-		
-		--task.wait(100)
-		--for _,part in pairs(bot:GetDescendants()) do
-		--	if part:IsA("BasePart") then
-		--	--	part.Anchored = true
-		--	end
-		--end
+		task.wait(game:GetService("Players").RespawnTime + 6.1 + AnchorTime)
+		for _,part in pairs(bot:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.Anchored = true
+			end
+		end
 	end)
 end
 

@@ -94,14 +94,18 @@ local LastNames = NamesList.LastNames
 local AlienNames = NamesList.AlienNames
 local AlienLastNames = NamesList.AlienLastNames
 function module.Init(Character)
-	
+	local Player = game:GetService("Players"):GetPlayerFromCharacter(Character)
 	local ChatBubble = PrimeChatBubble:Clone()
 	ChatBubble.Parent = Character:WaitForChild("UpperTorso")
 	ChatBubble.Adornee = Character.UpperTorso
-	ChatBubble.PlayerToHideFrom = game.Players:GetPlayerFromCharacter(Character)
+	ChatBubble.PlayerToHideFrom = Player
 	
 	local Profile = Character:WaitForChild("Profile")
-
+	
+	-- Role and RoleColor will just be set as the Team and TeamColor for now
+	Profile:SetAttribute("Role", Player.Team.Name)
+	Profile:SetAttribute("RoleColor", Player.TeamColor.Color)
+	
 	local ChosenSkinColor = math.random(0,1)
 	local AlienChance = math.random(1,100)
 	

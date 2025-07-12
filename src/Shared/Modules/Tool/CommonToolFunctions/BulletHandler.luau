@@ -143,7 +143,7 @@ BulletCaster.RayHit:Connect(function(cast, raycastResult,segmentVelocity,cosmeti
 	
 	local hitPerson = nil
 	local HitPart = raycastResult.Instance
-	local HitModel = CommonFuncs.GetAncestorFromAttribute(HitPart,{"isCharacter",true}) or CommonFuncs.GetAncestorFromAttribute(HitPart,{"Ragdoll",true})
+	local HitModel = CommonFuncs.GetAncestorFromAttribute(HitPart, "isCharacter", true) or CommonFuncs.GetAncestorFromAttribute(HitPart, "Ragdoll", true)
 	if HitModel then
 		local HitHumanoid = HitModel:FindFirstChildOfClass("Humanoid")
 		if HitHumanoid then

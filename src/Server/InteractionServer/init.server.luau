@@ -31,7 +31,11 @@ local InteractFunctions = {
     -- change the '1' to a number that isnt already taken
     --[1] = function(interactObject, player) -- you should add a lable here so people can know what it does
     --    // code goes here
-    --end, -- dontforget the comma
+	--end, -- dontforget the comma
+	
+	[0] = function(interactObject, player) -- message (nothing on server)
+		
+	end,
     
     [1] = function(interactObject, player) -- cargo box
 

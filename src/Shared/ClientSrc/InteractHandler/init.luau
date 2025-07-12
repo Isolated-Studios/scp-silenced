@@ -13,6 +13,7 @@ local Animations = InteractPrimes.Animations
 local CommonToolFunctions = require(Modules.Tool.CommonToolFunctions)
 local CommonFunctions = require(Modules.CommonFuncs)
 local KeybindHandler = require(Modules.UI.KeybindHandler)
+local Deathnote = require(script.Deathnotes)
 
 local module = {}
 
@@ -94,7 +95,7 @@ function module.UnloadChar(char)
 end
 
 function module.Init()
-	for _, mod in script:GetChildren() do
+	local function loadInteractionModule(mod)
 		local funcs = CommonFunctions.SafeCallOrNil(require, mod)
 		if typeof(funcs) == "table" then
 			for name, func in pairs(funcs) do
@@ -102,6 +103,9 @@ function module.Init()
 			end
 		end
 	end
+	
+	-- add interaction modules here
+	loadInteractionModule(script.PlayerInteractions)
 
 	PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 	local InteractUI = PlayerGui:WaitForChild("InteractUI")
@@ -109,6 +113,9 @@ function module.Init()
 	local InteractFrame: Frame = InteractElements:WaitForChild("InteractFrame")
 	local GuideLabel: TextLabel = InteractFrame:WaitForChild("Guide")
 	local ProgressBar: CanvasGroup = InteractFrame:WaitForChild("ProgressBar")
+	local Title: TextLabel = InteractElements:WaitForChild("Title")
+	local Subtext: TextLabel = InteractElements:WaitForChild("Subtext")
+	
 	ProgressBar:WaitForChild("Fill")
 	
 	local Highlight = Instance.new("Highlight")
@@ -122,19 +129,45 @@ function module.Init()
 	RunService.RenderStepped:Connect(function(dt)
 		-- update interaction progress bar if currently interacting
 		if Current then
-			
-			
-			
 			Highlight.FillTransparency = math.clamp(Highlight.FillTransparency - dt * 2, 0.85, 1)
+			
+			-- Will show information pertaining to corpses
+			if Current:GetAttribute("Ragdoll")
+				and Current:FindFirstChild("Profile")
+			then
+				local Profile = Current.Profile
+				Title.Text = Profile:GetAttribute("FirstName").." "..Profile:GetAttribute("LastName") .." ("..string.gsub(Current.Name, "'s Ragdoll", "")..")" or ""
+				Subtext.Text = Profile:GetAttribute("Role") or ""
+				Subtext.TextColor3 = Profile:GetAttribute("RoleColor") or Color3.fromRGB(255,255,255)
+				
+				Title.TextTransparency = math.clamp(Title.TextTransparency - dt * 8, 0, 1)
+				Title.TextStrokeTransparency = math.clamp(Title.TextStrokeTransparency - dt * 3.2, 0.6, 1)
+				Subtext.TextTransparency = math.clamp(Subtext.TextTransparency - dt * 8, 0, 1)
+				Subtext.TextStrokeTransparency = math.clamp(Subtext.TextStrokeTransparency - dt * 3.2, 0.6, 1)
+				
+				Title.Visible = true
+				Subtext.Visible = true
+			else
+				Title.TextTransparency = math.clamp(Title.TextTransparency + dt * 8, 0, 1)
+				Title.TextStrokeTransparency = math.clamp(Title.TextStrokeTransparency + dt * 3.2, 0.6, 1)
+				Subtext.TextTransparency = math.clamp(Subtext.TextTransparency + dt * 8, 0, 1)
+				Subtext.TextStrokeTransparency = math.clamp(Subtext.TextStrokeTransparency + dt * 3.2, 0.6, 1)
+				
+				Title.Visible = Title.TextTransparency > 0
+				Subtext.Visible = Subtext.TextTransparency > 0
+			end
+			
 			if Interacting and Current:GetAttribute("InteractTime") then
+				-- if interacting, guide label (the one that says "E | Interact")
 				ProgressBar.Fill.Size = UDim2.new((tick() - lastInteractionStart) / Current:GetAttribute("InteractTime"), 0, 1, 0)
 				ProgressBar.GroupTransparency = math.clamp(ProgressBar.GroupTransparency - dt * 8, 0, 1)
 				GuideLabel.TextTransparency = math.clamp(GuideLabel.TextTransparency + dt * 8, 0, 1)
 				GuideLabel.TextStrokeTransparency = math.clamp(GuideLabel.TextStrokeTransparency + dt * 3.2, 0.6, 1)
 			else
+				-- ...otherwise show the guide label
 				ProgressBar.GroupTransparency = math.clamp(ProgressBar.GroupTransparency + dt * 8, 0, 1)
 
-				local interactText = Current:GetAttribute("InteractText") and "E | " .. Current:GetAttribute("InteractText") or "E"
+				local interactText = if Current:GetAttribute("InteractText") then "E | " .. Current:GetAttribute("InteractText") else "E"
 				if interactText ~= GuideLabel.Text then
 					local c = GuideLabel:Clone()
 					c.Parent = GuideLabel.Parent
@@ -147,11 +180,18 @@ function module.Init()
 				GuideLabel.TextStrokeTransparency = math.clamp(GuideLabel.TextStrokeTransparency - dt * 3.2, 0.6, 1)
 			end
 		else
-			--Dot.Visible = true
 			ProgressBar.GroupTransparency = math.clamp(ProgressBar.GroupTransparency + dt * 8, 0, 1)
 			Highlight.FillTransparency = math.clamp(Highlight.FillTransparency + dt * 2, 0.85, 1)
 			GuideLabel.TextTransparency = math.clamp(GuideLabel.TextTransparency + dt * 8, 0, 1)
 			GuideLabel.TextStrokeTransparency = math.clamp(GuideLabel.TextStrokeTransparency + dt * 3.2, 0.6, 1)
+			
+			Title.TextTransparency = math.clamp(Title.TextTransparency + dt * 8, 0, 1)
+			Title.TextStrokeTransparency = math.clamp(Title.TextStrokeTransparency + dt * 3.2, 0.6, 1)
+			Subtext.TextTransparency = math.clamp(Subtext.TextTransparency + dt * 8, 0, 1)
+			Subtext.TextStrokeTransparency = math.clamp(Subtext.TextStrokeTransparency + dt * 3.2, 0.6, 1)
+			
+			Title.Visible = Title.TextTransparency > 0
+			Subtext.Visible = Subtext.TextTransparency > 0
 		end
 
 		-- cancel any current interactions if the player is dead, and skip search
@@ -166,7 +206,7 @@ function module.Init()
 		-- search for interactable objects
 		if Current and Interacting then return end -- skip if currently interacting, allowing user to continue interacting after breaking line of sight with object
 		Current = Mouse.Target and Mouse.Target:FindFirstAncestorOfClass("Model")
-		if Current and not Current:GetAttribute("interactable") then Current = Current:FindFirstAncestorOfClass("Model") end
+		if Current and not Current:GetAttribute("interactable") then Current = CommonFunctions.GetAncestorFromAttribute(Current, "interactable", true) end
 		if Current and not Current:GetAttribute("interactable") then Current = nil end
 		if Current and not Current.PrimaryPart then Current = nil end
 		if Current and Current.PrimaryPart and CommonToolFunctions.getDistance(Current.PrimaryPart.Position, Character.PrimaryPart.Position) > Current:GetAttribute("maxRange") then Current = nil end

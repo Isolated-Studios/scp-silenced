@@ -124,8 +124,8 @@ function module.Init()
 		end
 		
 		if HitPart:GetAttribute("TargetPart") and Ragdoll:FindFirstChild(HitPart:GetAttribute("TargetPart")) or 
-			CommonFuncs.GetAncestorFromAttribute(HitPart,{"TargetPart"}) and Ragdoll:FindFirstChild(CommonFuncs.GetAncestorFromAttribute(HitPart,{"TargetPart"}):GetAttribute("TargetPart")) then
-			HitPart = Ragdoll[HitPart:GetAttribute("TargetPart") or CommonFuncs.GetAncestorFromAttribute(HitPart,{"TargetPart"}):GetAttribute("TargetPart")]
+			CommonFuncs.GetAncestorFromAttribute(HitPart, "TargetPart") and Ragdoll:FindFirstChild(CommonFuncs.GetAncestorFromAttribute(HitPart, "TargetPart"):GetAttribute("TargetPart")) then
+			HitPart = Ragdoll[HitPart:GetAttribute("TargetPart") or CommonFuncs.GetAncestorFromAttribute(HitPart, "TargetPart"):GetAttribute("TargetPart")]
 		end
 		
 		if HitPart:GetAttribute("Gibbed") then return end

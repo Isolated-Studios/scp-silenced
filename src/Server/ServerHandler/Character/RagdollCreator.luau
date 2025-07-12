@@ -77,7 +77,9 @@ function module.Init(Character)
 			Died = true
 			healthChanged:Disconnect()
 			local ragdoll = Instance.new("Model")
+			-- Ragdoll attribute just means this is a corpse (not alive person). A downed ragdolling person would have DownedRagdolling enabled.
 			ragdoll:SetAttribute("Ragdoll",true)
+
 			ragdoll.Name = Character.Name.."'s Ragdoll"
 			ragdoll.Parent = workspace.Corpses
 			local objVal = Instance.new("ObjectValue")
@@ -93,14 +95,39 @@ function module.Init(Character)
 			ragdollHRP.CanTouch = false
 			ragdoll.PrimaryPart = ragdollHRP
 			for _,part in pairs(Character:GetChildren()) do
-				if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" and part.Name ~= "CollisionBox" or part:IsA("Model") or part:IsA("Clothing") or part:IsA("Accessory") then
+				if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" and part.Name ~= "CollisionBox" 
+					or part:IsA("Model") 
+					or part:IsA("Clothing") 
+					or part:IsA("Accessory") 
+				then
 					part.Parent = ragdoll
+					if part.Name == "UpperTorso" then
+						-- For SOME REASON roblox can't understand that setting something on the server doesn't set it for the client
+						-- so NOW i have to use a stupid task.wait(0.2) because this is the only simple way without tearing my head off
+						
+						-- TODO: find a more sustainable approach because i suspect this might break with slow internet players
+						task.delay(0.2, function(model)
+							model.PrimaryPart = part
+						end, ragdoll) -- passing ragdoll as an argument instead of directly including it in the function for closure caching optimization stuff
+					end
 				elseif part.Name == "CollisionBox" then
 					part.CanCollide = false
 				elseif part.Name == "Profile" then
 					part:Clone().Parent = ragdoll
 				end
 			end
+			
+			-- This makes the corpse interactable, we must get the Profile first for all the info we need though.
+			local Profile = ragdoll:WaitForChild("Profile")
+			local Player = Players:GetPlayerFromCharacter(Character)
+			ragdoll:SetAttribute("interactable",true)
+			ragdoll:SetAttribute("InteractTime",0)
+			ragdoll:SetAttribute("maxRange",10)
+			ragdoll:SetAttribute("InteractText","Inspect")
+			ragdoll:SetAttribute("interactFinishEventId",0)
+			ragdoll:SetAttribute("freezePlayer",false)
+			ragdoll:SetAttribute("interactAnimId",0)
+			
 			RagdollHandler.Joints(ragdoll)
 			RagdollHandler.Bot(ragdoll)
 		end
