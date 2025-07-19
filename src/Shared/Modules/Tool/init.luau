@@ -4,6 +4,7 @@ local UserInputService = game:GetService("UserInputService")
 
 local KeybindHandler = require(ReplicatedStorage.Modules.UI.KeybindHandler)
 local ViewModelHandler = require(ReplicatedStorage.ClientSrc.ViewModelHandler)
+local Utils = require(ReplicatedStorage.Modules.Utils)
 
 -- Preliminary important global variables.
 local LocalPlayer = Players.LocalPlayer
@@ -27,6 +28,11 @@ local function __load_character(character)
 		task.wait()
 		ViewModel = ViewModelHandler.getViewModel()
 		ViewModelAnimator = ViewModelHandler.getViewModelAnimator()
+	end
+	for _, Motor: Motor6D in ViewModel:GetDescendants() do
+		if Motor:IsA("Motor6D") then
+			Motor.MaxVelocity = math.huge
+		end
 	end
 	CharacterLoaded = true
 end
@@ -94,6 +100,10 @@ function Tool.isReady()
 	return CharacterLoaded
 end
 
+function Tool.getHumanoid()
+	return Humanoid
+end
+
 function Tool.new(tool: Tool, data: ClassType): ClassType
 	assert(tool and typeof(tool) == "Instance" and tool:IsA("Tool"), `You must provide a 'Tool' instance, got {tool}.`)
 	local self: Tool = setmetatable({}, Tool)
@@ -103,8 +113,10 @@ function Tool.new(tool: Tool, data: ClassType): ClassType
 	self.UnequipSpeed = data.UnequipSpeed
 
 	self.Instance = tool
+	self.Instance.Destroying:Once(Utils.wrapMethod(self, self.Destroy))
 	self.State = Tool.State.Unequipped
 	self.Bindings = {}
+	self.AnimationEvents = {}
 	self.Connections = {} -- All connections here are disconnected automatically on unequipping.
 	-- Animations
 	self.Animations = data.Animations or {}
@@ -147,8 +159,10 @@ function Tool:Destroy()
 end
 
 function Tool:Equip()
+	if self.State ~= Tool.State.Unequipped then return end
 	self.State = Tool.State.Equipping
 	Humanoid:EquipTool(self.Instance)
+	self.Instance.Unequipped:Once(Utils.wrapMethod(self, self.Unequip))
 	self:PlayAnimationFor("Equip", self.EquipSpeed)
 	self.__task = task.delay(self.EquipSpeed, self.PlayAnimation, self, "Hold")
 	task.wait(self.EquipCancel)
@@ -156,11 +170,19 @@ function Tool:Equip()
 end
 
 function Tool:Unequip()
+	if self.State ~= Tool.State.Equipped then return end
 	self.State = Tool.State.Unequipping
 	self:PlayAnimationFor("Unequip", self.UnequipSpeed)
 	self:StopAnimation("Equip")
 	self:StopAnimation("Hold")
 	task.wait(self.UnequipSpeed)
+	for _, PlayingAnimation in ViewModelAnimator:GetPlayingAnimationTracks() do
+		-- this down here looks stupid, but don't remove it. you have to PLAY the animation with the desired fadeTime and weight
+		-- if you want them to work, because fadeTime and weight parameters of both :Stop() and :AdjustWeight() DON'T EVEN WORK.
+		-- in fact, im pretty sure removing the 0.0001 parameter in StopAnimation() will have NO impact whatsoever.
+		PlayingAnimation:Play(0.0001, 0.0001)
+		PlayingAnimation:Stop(0.0001)
+	end
 	Humanoid:UnequipTools()
 	self:__disable()
 end

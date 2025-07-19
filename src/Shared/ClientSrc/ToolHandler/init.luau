@@ -1,7 +1,16 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local ToolClass = require(ReplicatedStorage.Modules.Tool)
+local ToolModule = ReplicatedStorage.Modules.Tool
+local ToolClass = require(ToolModule)
+local GunClass = require(ToolModule.Gun)
+local MeleeeClass = require(ToolModule.Melee)
+-- local GrenadeClass = require(ToolModule.Grenade)
+
+local TOOL_SRC_TO_CLASS = {
+	Gun = GunClass;
+	Melee = MeleeeClass;
+}
 
 local module = {}
 
@@ -23,7 +32,7 @@ local function loadTool(Tool: Instance): ToolClass.ClassType?
 		for _, v in ToolObjects.VMAnimations:GetChildren() do
 			Settings.Animations[v.Name] = v
 		end
-		LoadedTools[Tool] = ToolClass.new(Tool, Settings)
+		LoadedTools[Tool] = (TOOL_SRC_TO_CLASS[Tool:GetAttribute("ToolSource")] or ToolClass).new(Tool, Settings)
 	end
 	LoadedTools[Tool]:Init()
 	return LoadedTools[Tool]

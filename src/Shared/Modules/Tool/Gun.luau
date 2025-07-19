@@ -1,4 +1,4 @@
-local Tool = require(script.Parent)
+local ToolClass = require(script.Parent)
 
 --[[
 	====== TYPE DEFINITIONS ======
@@ -7,7 +7,7 @@ local Tool = require(script.Parent)
 	useful definitions such as the custom Enum 'Tool.State'.
 ]]
 
-export type ClassType = Tool.ClassType & {
+export type ClassType = ToolClass.ClassType & {
 	Damage: number,
 	RPM: number,
 	AP: number,
@@ -80,7 +80,7 @@ export type ClassType = Tool.ClassType & {
 	CrouchPosition: {number}?,
 }
 
-local Gun: ClassType = {}
+local Gun = setmetatable({}, ToolClass)
 Gun.__index = Gun
 
 --[[
@@ -91,8 +91,10 @@ Gun.__index = Gun
 	other utilities.
 ]]
 
-function Gun.new(data: ClassType): ClassType
-	local self: ClassType = setmetatable(Tool.new(data), Gun)
+function Gun.new(Tool: Tool, data: ClassType): ClassType
+	local self: ClassType = setmetatable(ToolClass.new(Tool, data), Gun)
+	
+	self.Bolted = false
 
 	return self
 end
@@ -103,5 +105,26 @@ end
 	Functions defined here are associated with unique objects.
 	This includes functions for animation handling, default methods, etc.
 ]]
+	
+function Gun:Equip()
+	if self.State ~= ToolClass.State.Unequipped then return end
+	self.State = ToolClass.State.Equipping
+	ToolClass.getHumanoid():EquipTool(self.Instance)
+	if self.Bolted then
+		self:PlayAnimationFor("Equip", self.EquipSpeed)
+	else
+		self:PlayAnimation("FirstEquip")
+	end
+	self.__task = task.delay(self.EquipSpeed, self.PlayAnimation, self, "Hold")
+	task.wait(self.EquipCancel)
+	self.Bolted = true -- !!TODO: Link this to an animation event instead maybe? So bolting matches with the animation
+	self:__enable()
+end
+
+function Gun:Unequip()
+	if self.State ~= ToolClass.State.Equipped then return end
+	self:StopAnimation("FirstEquip", math.min(0.2, self.UnequipSpeed))
+	ToolClass.Unequip(self)
+end
 
 return Gun

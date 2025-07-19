@@ -143,7 +143,11 @@ function module.LoadChar(Character)
 		Acting = true
 		ToolHandler.UnequipTools()
 		task.wait() --/ I put this here because the function Clean()
-		if not Inventory[Tool:GetAttribute("ToolType")] then Acting = false warn("could not table.find tooltype in inventory") return end
+		if not Inventory[Tool:GetAttribute("ToolType")] then
+			Acting = false
+			warn(`couldn't find a tool in inventory with tooltype {Tool:GetAttribute("ToolType")} of {Tool:GetFullName()}`)
+			return
+		end
 		--/ this line above fixes a bug where equipping after dying breaks the script
 		RefreshHotbar()
 		setCell(Tool)

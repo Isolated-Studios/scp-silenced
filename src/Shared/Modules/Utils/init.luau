@@ -8,7 +8,9 @@
 	Utils.wrapMethod(object, method) -> returns a function that wraps object:method().
 ]]
 
-local Utils = {}
+local Utils = {
+	Animation = require(script.Animation);
+}
 
 --[=[
 	Returns a function that wraps the method provided of the given object.
