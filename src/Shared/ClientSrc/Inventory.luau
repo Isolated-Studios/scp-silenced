@@ -1,4 +1,5 @@
 local module = {}
+
 local TweenService = game:GetService("TweenService")
 local UIS = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -52,6 +53,7 @@ local function loadCharacter(Character)
 	local KeybindHandler = require(UIModules.KeybindHandler)
 	local HotbarHandler = require(script.Parent.HotbarHandler)
 	local GridPack = require(UIModules.GridPackModules.GridPack)
+	local CommonFuncs = require(Modules.CommonFuncs)
 	require(UIModules.GridPackModules.GridPack.Item).InventoryKeyCode = KeybindHandler.Keybind("Open Inventory", game.Players.LocalPlayer)
 
 	local Humanoid = Character:WaitForChild("Humanoid")
@@ -545,7 +547,7 @@ local function loadCharacter(Character)
 	TorsoSlot:ConnectTransferLink(TransferLink)
 
 	local inputBegan = UIS.InputBegan:Connect(function(input,gpe)
-		if gpe or Humanoid.Health <= 0 then return end
+		if CommonFuncs.AreInputUIsActive("Inventory") or Humanoid.Health <= 0 then return end
 		if input.KeyCode == KeybindHandler.Keybind("Open Inventory", game.Players.LocalPlayer) then
 			Main.Interactable = not Main.Interactable
 			ModalFrame.Modal = not ModalFrame.Modal

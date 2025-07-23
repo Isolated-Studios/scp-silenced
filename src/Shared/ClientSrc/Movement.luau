@@ -1,21 +1,25 @@
-local Player = game.Players.LocalPlayer
+local module = {}
 
 local UIS = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TextChatService = game:GetService("TextChatService")
 
-local Events = ReplicatedStorage:WaitForChild("Events")
-local Modules = ReplicatedStorage:WaitForChild("Modules")
+local Events = ReplicatedStorage.Events
+local Modules = ReplicatedStorage.Modules
 
-local LookEvent = Events:WaitForChild("Character"):WaitForChild("LookEvent")
-local KeybindHandler = require(Modules:WaitForChild("UI"):WaitForChild("KeybindHandler"))
-local PlayerAnimations = ReplicatedStorage:WaitForChild("PlayerAssets"):WaitForChild("Animations"):WaitForChild("Character"):WaitForChild("Movement")
-local Camera = workspace.CurrentCamera
 local CameraModule = require(script.Parent.Camera)
-local module = {}
+local CommonFuncs = require(Modules.CommonFuncs)
+local KeybindHandler = require(Modules.UI.KeybindHandler)
+
+local Player = game.Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+local LookEvent = Events.Character.LookEvent
+local PlayerAnimations = ReplicatedStorage.PlayerAssets.Animations.Character.Movement
+
 local CrouchTweenInfo = TweenInfo.new(.2,Enum.EasingStyle.Linear,Enum.EasingDirection.InOut)
+
 local DefaultWalkSpeed = 16
 local DefaultRunSpeed = 28
 local DefaultCrouchSpeed = 10
@@ -208,8 +212,8 @@ function module.LoadChar(Character)
 	
 	
 	
-	local inputBegan = UIS.InputBegan:Connect(function(Input,gpe)
-		if gpe then return end
+	local inputBegan = UIS.InputBegan:Connect(function(Input)
+		if CommonFuncs.AreInputUIsActive() then return end
 		if Input.KeyCode == KeybindHandler.Keybind("Crouch",Player) then
 			startCrouching()
 		end
@@ -254,7 +258,7 @@ function module.LoadChar(Character)
 			(UIS:IsKeyDown(Enum.KeyCode.S) and 1 or 0) - (UIS:IsKeyDown(Enum.KeyCode.W) and 1 or 0)
 		)
 		
-		if TextChatService.ChatInputBarConfiguration.IsFocused then 
+		if CommonFuncs.AreInputUIsActive() then 
 			TargetDirection = Vector3.new(0,0,0) 
 		end
 

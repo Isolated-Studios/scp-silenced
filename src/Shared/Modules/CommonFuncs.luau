@@ -10,6 +10,8 @@
 ]]
 
 local CommonFuncs = {}
+local TextChatService = game:GetService("TextChatService")
+local Players = game:GetService("Players")
 
 --[=[
     Prints an error and a stacktrace using `warn()` function to keep
@@ -59,6 +61,20 @@ function CommonFuncs.GetAncestorFromAttribute(object: Instance, attributeName: s
 			return parent
 		end
 		parent = parent.Parent
+	end
+end
+
+--[=[
+	returns true if any major input UI (Chat, Settings, Inventory) is on.
+	`exception` is the name of an input UI to be excepted from the check.
+]=]
+function CommonFuncs.AreInputUIsActive(exception: string)
+	local Player = Players.LocalPlayer
+	if (TextChatService.ChatInputBarConfiguration.IsFocused and exception ~= "Chat")
+		or (Player.PlayerGui.Inventory.Main.GroupTransparency < 1 and exception ~= "Inventory")
+		or (Player.PlayerGui.Settings.Main.GroupTransparency < 1 and exception ~= "Settings")
+	then
+		return true
 	end
 end
 
