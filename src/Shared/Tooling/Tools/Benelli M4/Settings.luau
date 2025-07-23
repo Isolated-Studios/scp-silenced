@@ -33,9 +33,9 @@ local Settings = {
 	BoltBackWhenEmpty = true;
 	ScrollAffectsAim = true;
 
-	EquipSpeed = 1.0; -- Speed of equipping in seconds
+	EquipSpeed = 0.76; -- Speed of equipping in seconds
 	EquipCancel = 0.66;
-	UnequipSpeed = 1.0;
+	UnequipSpeed = 0.51;
 	AimInSpeed = 0.35; -- Speed of aiming-in in seconds
 	AimOutSpeed = 0.35; -- Speed of aiming-out in seconds
 	--SqueezeTrigger = 0.2; -- How long it takes to squeeze the trigger to fire/bolt gun in seconds (AFFECTS FIRE SPEED)
