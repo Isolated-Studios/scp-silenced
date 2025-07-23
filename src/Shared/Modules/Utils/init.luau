@@ -10,6 +10,7 @@
 
 local Utils = {
 	Animation = require(script.Animation);
+	SFX = require(script.SFX);
 }
 
 --[=[

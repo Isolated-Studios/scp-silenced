@@ -3,7 +3,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 
 local KeybindHandler = require(ReplicatedStorage.Modules.UI.KeybindHandler)
-local ViewModelHandler = require(ReplicatedStorage.ClientSrc.ViewModelHandler)
+local ViewModelHandler = nil -- STUPID recursive requires() 💔
 local Utils = require(ReplicatedStorage.Modules.Utils)
 
 -- Preliminary important global variables.
@@ -22,6 +22,7 @@ local function __load_character(character)
 		ViewModel = nil
 		ViewModelAnimator = nil
 	end)
+	ViewModelHandler = ViewModelHandler or require(ReplicatedStorage.ClientSrc.ViewModelHandler)
 	ViewModel = ViewModelHandler.getViewModel()
 	ViewModelAnimator = ViewModelHandler.getViewModelAnimator()
 	while ViewModel == nil or ViewModelAnimator == nil do
@@ -37,7 +38,7 @@ local function __load_character(character)
 	CharacterLoaded = true
 end
 LocalPlayer.CharacterAdded:Connect(__load_character)
-if LocalPlayer.Character then __load_character(LocalPlayer.Character) end
+if LocalPlayer.Character then task.defer(__load_character, LocalPlayer.Character) end -- task.defer because STUPID recursive requires() 💔
 
 --[[
 	====== TYPE DEFINITIONS ======
@@ -113,7 +114,13 @@ function Tool.new(tool: Tool, data: ClassType): ClassType
 	self.UnequipSpeed = data.UnequipSpeed
 
 	self.Instance = tool
+	for _, Motor: Motor6D in self.Instance:GetDescendants() do
+		if Motor:IsA("Motor6D") then
+			Motor.MaxVelocity = math.huge
+		end
+	end
 	self.Instance.Destroying:Once(Utils.wrapMethod(self, self.Destroy))
+	
 	self.State = Tool.State.Unequipped
 	self.Bindings = {}
 	self.AnimationEvents = {}
@@ -145,11 +152,6 @@ end
 -- REMEMBER TO CALL THIS BEFORE DEREFERENCING TO AVOID MEMORY LEAKS!!!
 function Tool:Destroy()
 	self:__disable()
-	for _, connection in self.Connections do
-		if connection.Connected then
-			connection:Disconnect()
-		end
-	end
 	for i, _ in self do
 		self[i] = nil
 	end
@@ -216,7 +218,11 @@ end
 function Tool:PlayAnimation(name: string, fadeTime: number?, weight: number?, speed: number?): AnimationTrack?
 	local Animation = self:GetAnimation(name, self.Animations[name])
 	if not Animation then return nil end
+	for event, callback in self.AnimationEvents do
+		self:__connect(name .. "Event" .. event, Animation:GetMarkerReachedSignal(event), callback)
+	end
 	Animation:Play(fadeTime, weight, speed)
+	
 	return Animation
 end
 
@@ -269,6 +275,11 @@ end
 
 function Tool:__disable()
 	self.State = Tool.State.Unequipped
+	for _, connection in self.Connections do
+		if connection.Connected then
+			connection:Disconnect()
+		end
+	end
 	if self.__task then
 		task.cancel(self.__task)
 		self.__task = nil

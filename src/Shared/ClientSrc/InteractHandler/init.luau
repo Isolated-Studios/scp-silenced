@@ -53,7 +53,7 @@ local function completeInteraction()
 	UserInputService.MouseDeltaSensitivity = 1
 	if CurrentAnimTrack then CurrentAnimTrack:Stop() end
 	if InteractClientFunctions[Current:GetAttribute("interactFinishEventId")] then
-		InteractClientFunctions[Current:GetAttribute("interactFinishEventId")](LocalPlayer, Current)
+		InteractClientFunctions[Current:GetAttribute("interactFinishEventId")](Current)
 	end
 	ReplicatedStorage.Events.Interaction.FinishInteraction:FireServer(Current, Current:GetAttribute("interactFinishEventId"))
 end

@@ -2,6 +2,8 @@ local module = {}
 
 --//Services
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local ToolHandler = if RunService:IsClient() then require(ReplicatedStorage.ClientSrc.ToolHandler) else nil
 
 --//Service Objects
 local Events = ReplicatedStorage:WaitForChild("Events")
@@ -24,7 +26,10 @@ function module.dropItem (Character,Tool)
 	DropParams.FilterDescendantsInstances = {Character}
 	local HRP = Character:WaitForChild("HumanoidRootPart")
 	local Humanoid = Character:WaitForChild("Humanoid")
+	if Tool:GetAttribute("Dropping") then return end
 	if Humanoid:GetAttribute("inAir") or Humanoid:GetAttribute("DisableEquip") then return end
+	Tool:SetAttribute("Dropping")
+	if ToolHandler then ToolHandler.DropTool(Tool) end -- fixes annoying drop tool bug
 	if Tool:GetAttribute("ToolName") and Tools:FindFirstChild(Tool:GetAttribute("ToolName")) then
 		local ToolObjects = Tools[Tool:GetAttribute("ToolName")]
 		require(script.Parent).playSound(ToolObjects.Sounds,"Drop",HRP,true,true) --/ the game explodes if i try to define CTF in the variables section

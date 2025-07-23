@@ -2,7 +2,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
-local LocalPlayer = game:GetService("Players").LocalPlayer
+local Player = game:GetService("Players").LocalPlayer
 
 local Modules = ReplicatedStorage.Modules
 local Events = ReplicatedStorage.Events
@@ -25,14 +25,14 @@ local Messager = require(Modules.UI.Messager)
 --local ExecuteVMAnim = Animator:LoadAnimation(OtherVMAnimations.Execute)
 
 return {
-	[0] = function(Player, InteractObject) -- Message from Deathnote
+	[0] = function(InteractObject) -- Message from Deathnote
 		local Profile = InteractObject.Profile
 		
-		local TextToMessage = Deathnotes.Messages(LocalPlayer, Player, Profile)
-		Messager.SendMessage(Player, TextToMessage)
+		local TextToMessage = Deathnotes.Messages(Player, Profile)
+		Messager.SendMessage(TextToMessage)
 	end,
 	
-	["Revive"] = function(Player, InteractObject)
+	["Revive"] = function(InteractObject)
 		task.defer(function()
 			local Character = Player.Character
 			local Animator = Character.Humanoid.Animator
