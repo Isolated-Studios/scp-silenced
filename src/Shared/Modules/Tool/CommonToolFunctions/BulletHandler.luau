@@ -149,7 +149,15 @@ BulletCaster.RayHit:Connect(function(cast, raycastResult,segmentVelocity,cosmeti
 		if HitHumanoid then
 			if not cast.Fake then
 				local Distance = math.round((cast.Origin-raycastResult.Position).Magnitude)
-				DamageEvent:FireServer(cast.Tool,nil,HitHumanoid,HitPart,cast.Direction,Distance)
+				DamageEvent:FireServer(
+					cast.Tool,
+					nil,
+					HitHumanoid,
+					HitPart,
+					1,
+					cast.Direction,
+					Distance
+				)
 			end
 			hitPerson = HitModel
 		end

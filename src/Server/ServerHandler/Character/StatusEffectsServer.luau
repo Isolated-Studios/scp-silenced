@@ -33,7 +33,14 @@ local EffectFunctions = {
 		local Player = game.Players:GetPlayerFromCharacter(Humanoid.Parent)
 		if Effects.DamageWait then
 			while Humanoid.Health > 0 and not effect:GetAttribute("Disabled") do
-				DamageHandler.Damage(Effects.Damage,Humanoid,nil,nil,60)
+				DamageHandler.Damage(
+					Effects.Damage, -- Damage, number
+					Humanoid, --HitHumanoid, Humanoid
+					nil, -- HitPart, Part
+					nil, -- Killer, Player
+					60, -- DowningTime, number
+					8 -- Deathnote, number
+				)
 				BloodEvent:FireAllClients(-UpperTorso.CFrame.UpVector,UpperTorso.Position,Humanoid.Parent,Humanoid.Parent,Effects.Damage)
 				if Player then
 					SoundEvent:FireClient(Player,StatusEffectFolder.Bleed.Sounds,"Splat",UpperTorso,false,true)
@@ -56,7 +63,14 @@ local EffectFunctions = {
 				if Player then
 					SoundEvent:FireClient(Player, StatusEffectFolder.Burning.Sounds.Burn, UpperTorso, true)
 				end
-				DamageHandler.Damage(Effects.Damage*effect.Value,Humanoid,nil,nil,60)
+				DamageHandler.Damage(
+					Effects.Damage*effect.Value, -- Damage, number
+					Humanoid, --HitHumanoid, Humanoid
+					nil, -- HitPart, Part
+					nil, -- Killer, Player
+					60, -- DowningTime, number
+					4 -- Deathnote, number
+				)
 				task.wait(Effects.DamageWait)
 			end
 		end

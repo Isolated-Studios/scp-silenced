@@ -42,7 +42,17 @@ local function isValidAttribute(Source,Name)
 end
 
 function module.Init()
-	DamageEvent.OnServerEvent:Connect(function(Player,Tool,Character,HitHumanoid,HitPart,Direction,Distance,noLimbDamageAdjust)
+	DamageEvent.OnServerEvent:Connect(function(
+		Player: Player,
+		Tool: Tool,
+		Character: Character,
+		HitHumanoid: Humanoid,
+		HitPart: Part,
+		Deathnote: number,
+		Direction: Vector3,
+		Distance: number,
+		noLimbDamageAdjust: boolean
+	)
 		if not HitHumanoid then return end
 		local HitCharacter = HitHumanoid.Parent
 		--if not isObstructed(Character.PrimaryPart,HitCharacter.PrimaryPart) then
@@ -57,20 +67,22 @@ function module.Init()
 				end
 			end
 		DamageHandler.Damage(
-			Settings.Damage,
-			HitHumanoid,
-			HitPart,
-			Player,
-			Settings.CanDown,
-			true,
-			Settings.HeadshotFactor or 0,
-			Settings.AP or 0,
-			true,
-			Direction,
-			Settings.GibChance,
-			Settings.Sever,
-			noLimbDamageAdjust,
-			Settings.LegMultiplier
+			Settings.Damage, -- Damage, number
+			HitHumanoid, --HitHumanoid, Humanoid
+			HitPart, -- HitPart, Part
+			Player, -- Killer, Player
+			Settings.CanDown, -- DowningTime, number
+			0, -- Deathnote, number
+			true, -- Twitch, boolean
+			Settings.HeadshotFactor or 0, -- HeadshotFactor, number
+			Settings.AP or 0, -- AP, number
+			true, -- Blood, boolean
+			Direction, -- Direction, Vector3
+			Settings.GibChance, -- Gibchance, number
+			Settings.Sever, -- Sever, boolean
+			noLimbDamageAdjust, -- noLimbDamageAdjust, boolean
+			Settings.LegMultiplier, -- LegMultiplier, number
+			nil -- AnnihilationRange, table
 		)
 		--end
 	end)

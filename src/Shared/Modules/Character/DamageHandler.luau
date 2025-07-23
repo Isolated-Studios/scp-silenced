@@ -1,22 +1,28 @@
 local module = {}
+-- Services
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
 local Debris = game:GetService("Debris")
 
+-- ReplicatedStorage Folders
 local Modules = ReplicatedStorage.Modules
 local Events = ReplicatedStorage.Events
 local CharacterEvents = Events.Character
 
+-- Events
 local BloodEvent = CharacterEvents.BloodEvent
 local GoreEvent = CharacterEvents.GoreEvent
 
+-- Modules
 local CTF = require(Modules.Tool.CommonToolFunctions)
 local BloodMod = require(Modules.Character.BloodHandler)
 local TeamHandler = require(Modules.Interaction.TeamHandler)
 
+-- Other
 local BloodHandler = BloodMod.create(8,20,3,3)
 local twitchAnimTable = {10215956796, 10215963096, 10215967452}
 
+-- Functions
 local function ArmorDamage (HitHumanoid, Health, Damage, Halve)
 	Damage = Damage/(Halve and 2 or 1)
 	HitHumanoid:SetAttribute(Health,HitHumanoid:GetAttribute(Health)-Damage)
@@ -63,12 +69,14 @@ local function pickRandomLimbsToGib (Character,Amount) --/ picks random "natural
 	return Limbs
 end
 
+-- Main Damage Function
 function module.Damage(
 	Damage: number,
 	HitHumanoid: Humanoid,
 	HitPart: Instance,
 	Killer: Player,
-	CanDown: number,
+	DowningTime: number,
+	Deathnote: number,
 	Twitch: boolean,
 	HeadshotFactor: number,
 	AP: number,
@@ -89,8 +97,13 @@ function module.Damage(
 	
    	local originalDamage = Damage
 	local HitLimb = "Torso"
-	if not LegMultiplier then LegMultiplier = 0.75 end
-	--if Killer and Killer.Character and Killer.Character == HitHumanoid.Parent then return end
+	local Absorption = HitHumanoid:GetAttribute("Absorption") or 0
+	
+	-- Sets default LegMultiplier if LegMultiplier is nil
+	if not LegMultiplier then 
+		LegMultiplier = 0.75 
+	end
+	
     if Killer and not HitHumanoid.Parent:GetAttribute("TestRig") then
 		HitHumanoid.Parent:SetAttribute("InCombat", true)
 		HitHumanoid:SetAttribute("InCombat", true)
@@ -99,8 +112,6 @@ function module.Damage(
 		local hitPlayer = game.Players:GetPlayerFromCharacter(HitHumanoid.Parent)
 		if Killer ~= hitPlayer and TeamHandler.Check(Killer,hitPlayer) == 0 then return end
 	end
-
-	local Absorption = HitHumanoid:GetAttribute("Absorption") or 0
 
     if HitPart then
         HitLimb = getLimb(HitPart)
@@ -114,7 +125,8 @@ function module.Damage(
 		elseif HitLimb == "Leg" and not noLimbDamageAdjust then
 			Damage = Damage * LegMultiplier
 		end
-    end
+	end
+	
   --  if VestHit and HitHumanoid:GetAttribute("VestHealth") > 0 and HitHumanoid:GetAttribute("VestType") > 0 then
    --     if HitHumanoid:GetAttribute("VestType") == 1 and HitLimb == "Torso" or
    --         HitHumanoid:GetAttribute("VestType") == 2 and (HitLimb == "Torso" or HitLimb == "Arm") or
@@ -122,16 +134,17 @@ function module.Damage(
    --         Damage = ArmorDamage(HitHumanoid, "VestHealth", Damage, true)
    --     end
    -- end
+   
 	if Blood and Direction and HitPart then
 		BloodEvent:FireAllClients(Direction, HitPart.Position, HitHumanoid.Parent, HitPart.Parent, Damage)
 	end -- CAUSES LAG
-
+	
+	-- Damage Absorption value if possible
 	if Absorption > Damage and Absorption > 0 then
 		HitHumanoid:SetAttribute("Absorption", math.abs(Damage - Absorption))
 	else
 		HitHumanoid:SetAttribute("Absorption", 0)
 	end
-
 	Damage = math.clamp(Damage - Absorption, 0, math.huge)
 	Damage = math.round(Damage)
 	
@@ -169,10 +182,11 @@ function module.Damage(
 		end
 	end
 	
+	-- Play a little twitch animation if Twitch is true
     if Twitch then
         local twitchAnim = Instance.new("Animation")
 		twitchAnim.AnimationId = "rbxassetid://" .. twitchAnimTable[Random.new():NextInteger(1, #twitchAnimTable)]
-		local twitch = HitHumanoid:LoadAnimation(twitchAnim)
+		local twitch = HitHumanoid.Animator:LoadAnimation(twitchAnim)
 		twitch.Priority = Enum.AnimationPriority.Action4
 	    twitch:Play(0, 0.3, 1)
 		twitchAnim:Destroy()

@@ -167,8 +167,31 @@ local function instantBlast (Settings,model)
 		local Direction = CFrame.new(grenadePosition, raycastPosition).LookVector
 		local Sever = false
 		local AnnihilationRange = {1,5} or Settings.AnnihilationRange
+		local GrenadeTypeToDeathnote = {
+			["Fragmentation"] =  2,
+			["HE"] =  3,
+			["Stun"] =  7,
+		}
 		
-		DamageHandler.Damage(Damage,Humanoid,HitPart,Player,false,Twitch,nil,nil,Blood,Direction,GibChance,Sever,nil,nil,AnnihilationRange)
+		
+		DamageHandler.Damage(
+			Damage, -- Damage, number
+			Humanoid, --HitHumanoid, Humanoid
+			HitPart, -- HitPart, Part
+			Player, -- Killer, Player
+			nil, -- DowningTime, number
+			GrenadeTypeToDeathnote[Settings.GrenadeType], -- Deathnote, number
+			Twitch, -- Twitch, boolean
+			nil, -- HeadshotFactor, number
+			nil, -- AP, number
+			Blood, -- Blood, boolean
+			Direction, -- Direction, Vector3
+			GibChance, -- Gibchance, number
+			Sever, -- Sever, boolean
+			nil, -- noLimbDamageAdjust, boolean
+			nil, -- LegMultiplier, number
+			AnnihilationRange -- AnnihilationRange, table
+		)
 		
 		if Humanoid.Health <= 0 then --/ Flings the player if they die to the blast
 			CTF.applyForce(HitPart,Direction*Damage*8,0.15)
