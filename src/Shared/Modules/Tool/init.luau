@@ -11,10 +11,12 @@ local LocalPlayer = Players.LocalPlayer
 local CharacterLoaded = false
 local Character: Model, Humanoid: Humanoid
 local ViewModel: Model, ViewModelAnimator: Animator
-local LoadedAnimations = setmetatable({}, {__mode = "v"}) -- Weak table. We don't like memory leaks :blackops:
+local LoadedAnimations = {} -- SEEMS like we WILL be using a lot of memory because the garbage collector breaks animations now
+-- at least till the next character loads and clears everything.
+-- setmetatable({}, {__mode = "v"}) -- Weak table. We don't like memory leaks :blackops:
 
 local function __load_character(character)
-	LoadedAnimations = setmetatable({}, {__mode = "v"})
+	LoadedAnimations = {} --setmetatable({}, {__mode = "v"})
 	Character = character
 	Humanoid = Character:WaitForChild("Humanoid")
 	Humanoid.Died:Connect(function()
@@ -51,21 +53,28 @@ local Tool = {}
 Tool.__index = Tool
 
 export type ClassType = typeof(setmetatable(
-	{} :: {Instance: Tool;
-		EquipSpeed: number;
-		EquipCancel: number;
-		UnequipSpeed: number;
-		
+	{} :: {
 		Instance: Tool;
 		Animations: {[string] : Animation};
 		
 		State: number; -- This is an Enum; Use Tool.State.VALUE to set.
-		Bindings: {[string] : (InputObject, boolean) -> nil}; -- Binding name to function(inputObject, gameProcessedEvent) map.
+		Bindings: {[string] : {
+			InputType: Enum.UserInputType;
+			InputState: Enum.UserInputState;
+			DebugBinding: Enum.KeyCode; -- useful for testing when you don't wanna create an entirely new keybind; should be nil otherwise.
+			Handler: (InputObject, boolean) -> nil};
+		}; -- Binding name to binding object map.
 		Connections: {[string] : RBXScriptConnection};
 		
-		Description: string;
-		InventorySize: Vector2;
-		InventoryImage: string;
+		Settings: {
+			EquipSpeed: number;
+			EquipCancel: number;
+			UnequipSpeed: number;
+			
+			Description: string;
+			InventorySize: Vector2;
+			InventoryImage: string;
+		};
 	},
 	Tool
 ))
@@ -105,13 +114,11 @@ function Tool.getHumanoid()
 	return Humanoid
 end
 
-function Tool.new(tool: Tool, data: ClassType): ClassType
+function Tool.new(tool: Tool, Settings: ClassType): ClassType
 	assert(tool and typeof(tool) == "Instance" and tool:IsA("Tool"), `You must provide a 'Tool' instance, got {tool}.`)
 	local self: Tool = setmetatable({}, Tool)
 	
-	self.EquipSpeed = data.EquipSpeed
-	self.EquipCancel = data.EquipCancel
-	self.UnequipSpeed = data.UnequipSpeed
+	self.Settings = Settings
 
 	self.Instance = tool
 	for _, Motor: Motor6D in self.Instance:GetDescendants() do
@@ -126,12 +133,8 @@ function Tool.new(tool: Tool, data: ClassType): ClassType
 	self.AnimationEvents = {}
 	self.Connections = {} -- All connections here are disconnected automatically on unequipping.
 	-- Animations
-	self.Animations = data.Animations or {}
+	self.Animations = Settings.Animations or {}
 	self.__loaded_animations = {} -- Don't use this, it's only used as a strong reference to loaded animations, as the global one is a weak table.
-	-- Inventory Stuff
-	self.Description = data.Description or ""
-	self.InventorySize = data.InventorySize or Vector2.new(1, 1)
-	self.InventoryImage = data.InventoryImage or ""
 	
 	return self
 end
@@ -165,19 +168,19 @@ function Tool:Equip()
 	self.State = Tool.State.Equipping
 	Humanoid:EquipTool(self.Instance)
 	self.Instance.Unequipped:Once(Utils.wrapMethod(self, self.Unequip))
-	self:PlayAnimationFor("Equip", self.EquipSpeed)
-	self.__task = task.delay(self.EquipSpeed, self.PlayAnimation, self, "Hold")
-	task.wait(self.EquipCancel)
+	self:PlayAnimationFor("Equip", self.Settings.EquipSpeed)
+	self.__task = task.delay(self.Settings.EquipSpeed, self.PlayAnimation, self, "Hold")
+	task.wait(self.Settings.EquipCancel)
 	self:__enable()
 end
 
 function Tool:Unequip()
 	if self.State ~= Tool.State.Equipped then return end
 	self.State = Tool.State.Unequipping
-	self:PlayAnimationFor("Unequip", self.UnequipSpeed)
+	self:PlayAnimationFor("Unequip", self.Settings.UnequipSpeed)
 	self:StopAnimation("Equip")
 	self:StopAnimation("Hold")
-	task.wait(self.UnequipSpeed)
+	task.wait(self.Settings.UnequipSpeed)
 	for _, PlayingAnimation in ViewModelAnimator:GetPlayingAnimationTracks() do
 		-- this down here looks stupid, but don't remove it. you have to PLAY the animation with the desired fadeTime and weight
 		-- if you want them to work, because fadeTime and weight parameters of both :Stop() and :AdjustWeight() DON'T EVEN WORK.
@@ -211,17 +214,21 @@ end
 	Plays the animation with the provided name.
 
 	If the animation is not already loaded, it loads and plays it.
-	This function may yield if the animation was not preloaded.
+	This function may yield if the animation was not preloaded, or
+	if "waitForEnd" is set to true, yielding till the animation ends.
 
 	Returns the AnimationTrack if it successfully gets it.
 ]=]
-function Tool:PlayAnimation(name: string, fadeTime: number?, weight: number?, speed: number?): AnimationTrack?
+function Tool:PlayAnimation(name: string, fadeTime: number?, weight: number?, speed: number?, waitForEnd: boolean?): AnimationTrack?
 	local Animation = self:GetAnimation(name, self.Animations[name])
 	if not Animation then return nil end
 	for event, callback in self.AnimationEvents do
 		self:__connect(name .. "Event" .. event, Animation:GetMarkerReachedSignal(event), callback)
 	end
 	Animation:Play(fadeTime, weight, speed)
+	if waitForEnd then
+		task.wait(Animation.Length)
+	end
 	
 	return Animation
 end
@@ -263,11 +270,15 @@ end
 
 function Tool:__enable()
 	self.State = Tool.State.Equipped
-	self:__connect("InputHandler", UserInputService.InputBegan, function(input, gameProcessedEvent)
-		for bindingName, bindingHandler in self.Bindings do
-			local keybind = KeybindHandler.Keybind(bindingName, LocalPlayer)
-			if keybind and input.KeyCode == keybind then
-				bindingHandler(input, gameProcessedEvent)
+	self:__connect("InputHandler", UserInputService.InputBegan, function(input: InputObject, gameProcessedEvent)
+		for bindingName, binding in self.Bindings do
+			local keybind = binding.DebugBinding or KeybindHandler.Keybind(bindingName, LocalPlayer)
+			if keybind
+			and input.UserInputType == binding.InputType
+			and input.UserInputState == binding.InputState
+			and (if input.UserInputType == Enum.UserInputType.Keyboard then (input.KeyCode == keybind) else true)
+			then
+				binding.Handler(input, gameProcessedEvent)
 			end
 		end
 	end)
