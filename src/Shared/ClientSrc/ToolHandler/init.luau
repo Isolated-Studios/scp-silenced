@@ -5,6 +5,7 @@ local ToolModule = ReplicatedStorage.Modules.Tool
 local ToolClass = require(ToolModule)
 local GunClass = require(ToolModule.Gun)
 local MeleeeClass = require(ToolModule.Melee)
+local LemonSignal = require(ReplicatedStorage.Packages.lemonsignal)
 -- local GrenadeClass = require(ToolModule.Grenade)
 
 local TOOL_SRC_TO_CLASS = {
@@ -12,9 +13,11 @@ local TOOL_SRC_TO_CLASS = {
 	Melee = MeleeeClass;
 }
 
-local module = {}
-
-local Tools = ReplicatedStorage.Tooling.Tools
+local module = {
+	ToolStateChanged = LemonSignal.new();
+	ToolEquipping = LemonSignal.new();
+	ToolUnequipping = LemonSignal.new();
+}
 
 local Character: Model? = nil
 local Backpack: Backpack? = nil
@@ -26,13 +29,7 @@ local function loadTool(Tool: Instance): ToolClass.ClassType?
 	if not ToolClass.isReady() then return end
 	if Tool == nil or not Tool:IsA("Tool") then return end
 	if LoadedTools[Tool] == nil then
-		local ToolObjects = Tools:FindFirstChild(Tool:GetAttribute("ToolName") or "undefined tool name") or error(`Failed to find ToolObjects for {Tool:GetFullName()}`)
-		local Settings = require(ToolObjects.Settings)
-		Settings.Animations = {}
-		for _, v in ToolObjects.VMAnimations:GetChildren() do
-			Settings.Animations[v.Name] = v
-		end
-		LoadedTools[Tool] = (TOOL_SRC_TO_CLASS[Tool:GetAttribute("ToolSource")] or ToolClass).new(Tool, Settings)
+		LoadedTools[Tool] = (TOOL_SRC_TO_CLASS[Tool:GetAttribute("ToolSource")] or ToolClass).new(Tool)
 	end
 	LoadedTools[Tool]:Init()
 	return LoadedTools[Tool]
@@ -85,13 +82,19 @@ function module.EquipTool(Tool: Tool)
 	local toolObject = loadTool(Tool)
 	if toolObject then
 		CurrentTool = toolObject
+		module.ToolEquipping:Fire(CurrentTool, CurrentTool.Settings.EquipCancel)
+		module.ToolStateChanged:Fire(CurrentTool, ToolClass.State.Equipping)
 		CurrentTool:Equip()
+		module.ToolStateChanged:Fire(CurrentTool, ToolClass.State.Equipped)
 	end
 end
 
 function module.UnequipTools()
 	if CurrentTool then
+		module.ToolUnequipping:Fire(CurrentTool, CurrentTool.Settings.UnequipSpeed)
+		module.ToolStateChanged:Fire(CurrentTool, ToolClass.State.Unequipping)
 		CurrentTool:Unequip()
+		module.ToolStateChanged:Fire(CurrentTool, ToolClass.State.Unequipped)
 		CurrentTool = nil
 	end
 end

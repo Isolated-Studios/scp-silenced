@@ -1,11 +1,81 @@
----@diagnostic disable: undefined-global
-local module = {}
+local Lighting = game:GetService("Lighting")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
-local UIS = game:GetService("UserInputService")
+local UserInputService = game:GetService("UserInputService")
+
+local Events = ReplicatedStorage.Events
+local Modules = ReplicatedStorage.Modules
+local Objects = ReplicatedStorage.Objects
+local UIModules = Modules.UI
+local DownedEvent = Events.Character.DownedEvent
+local DowningObjects = Objects.DowningObjects
+
+local CircleFramesModule = require(UIModules.CircleFrames)
+local KeybindHandler = require(UIModules.KeybindHandler)
+local CameraManipulator = require(UIModules.CameraManipulator)
+local TeamHandler = require(Modules.Interaction.TeamHandler)
+local ToolHandler = require(ReplicatedStorage.ClientSrc.ToolHandler)
+local ToolClass = require(Modules.Tool)
+
+local module = {}
+
 local Player = game:GetService("Players").LocalPlayer
+local Backpack = nil
+
+local HUD
+local HUDLoaded = false
+
+local Bars
+local RightFrame
+local DownedFrame
+local ReviveFrame
+local GunVignette
+local ListFrame
+local Consumables
+local ConsumablesFrame
+local MedicalFrame
+local ThrowableFrame
+local MedicalNumber
+local ThrowableNumber
+local Gradient
+local VignetteAmount
+local EarRinging
+
+-- // Gun frame stuff
+local InfoFrame
+local GunInfoFrame
+local PrimeMagBullet
+local InnerFrame
+local ReserveFrame
+local InnerScaleLayout
+local MagFrame
+local ReserveText
+local InfoFrame
+local NameText
+local ModeText
+
+local BloodScreen
+local StaminaFrame
+local StaminaL
+local StaminaR
+local HealthFrame
+local HealthL
+local HealthR
+local AbsorptionFrame
+local AbsorptionL
+local AbsorptionR
+local HealthNumber
+
+local DownedProgressFrame
+local MainDownedProgressFrame
+local DownedProgress
+local DownedMessage
+
+local ReviveProgressFrame
+local MainReviveProgressFrame
+local ReviveProgress
 
 function module.Init()
-	Backpack = Player.Backpack
 	HUD = Player.PlayerGui:WaitForChild("HUD")
 
 	Bars = HUD:WaitForChild("Bars")
@@ -14,7 +84,8 @@ function module.Init()
 	ReviveFrame = HUD:WaitForChild("ReviveFrame")
 	GunVignette = HUD:WaitForChild("GunVignette")
 	ListFrame = RightFrame:WaitForChild("ListFrame")
-	Consumables = ListFrame:WaitForChild("Consumables")
+	InfoFrame = ListFrame:WaitForChild("InfoFrame")
+	Consumables = InfoFrame:WaitForChild("Consumables")
 	ConsumablesFrame = Consumables:WaitForChild("Frame")
 	MedicalFrame = ConsumablesFrame:WaitForChild("4")
 	ThrowableFrame = ConsumablesFrame:WaitForChild("6")
@@ -24,10 +95,8 @@ function module.Init()
 	VignetteAmount = Gradient.VignetteAmount
 	EarRinging = GunVignette.EarRinging
 
-	-- // Gun frame stuff
-	GunFrame = ListFrame:WaitForChild("GunFrame")
-	GunInfoFrame = GunFrame:WaitForChild("GunInfo")
-	PrimeMagBullet = GunFrame:WaitForChild("MagBullet")
+	GunInfoFrame = InfoFrame:WaitForChild("GunInfo")
+	PrimeMagBullet = InfoFrame:WaitForChild("MagBullet")
 	InnerFrame = GunInfoFrame:WaitForChild("InnerFrame")
 	ReserveFrame = GunInfoFrame:WaitForChild("ReserveFrame")
 	InnerScaleLayout = InnerFrame:WaitForChild("InnerScale")
@@ -36,6 +105,28 @@ function module.Init()
 	InfoFrame = InnerFrame:WaitForChild("InfoFrame")
 	NameText = InfoFrame:WaitForChild("Name")
 	ModeText = InfoFrame:WaitForChild("Mode")
+	
+	BloodScreen = HUD:WaitForChild("BloodScreen")
+	StaminaFrame = Bars:WaitForChild("Stamina")
+	StaminaL = StaminaFrame:WaitForChild("L")
+	StaminaR = StaminaFrame:WaitForChild("R")
+	HealthFrame = Bars:WaitForChild("Health")
+	HealthL = HealthFrame:WaitForChild("L")
+	HealthR = HealthFrame:WaitForChild("R")
+	AbsorptionFrame = Bars:WaitForChild("Absorption")
+	AbsorptionL = AbsorptionFrame:WaitForChild("L")
+	AbsorptionR = AbsorptionFrame:WaitForChild("R")
+	HealthNumber = Bars:WaitForChild("HealthText")
+	
+	DownedProgressFrame = DownedFrame:WaitForChild("ProgressFrame")
+	MainDownedProgressFrame = DownedProgressFrame:WaitForChild("Progress")
+	DownedProgress = MainDownedProgressFrame:WaitForChild("Percentage")
+	DownedMessage = DownedFrame:WaitForChild("Message")
+	
+	ReviveProgressFrame = ReviveFrame:WaitForChild("ProgressFrame")
+	MainReviveProgressFrame = ReviveProgressFrame:WaitForChild("Progress")
+	ReviveProgress = MainReviveProgressFrame:WaitForChild("Percentage")
+	HUDLoaded = true
 end
 
 local editMagTable = {
@@ -47,8 +138,8 @@ local editMagTable = {
 	end,
 	["Cycle"] = function(tweenTime)
 		if not tweenTime then tweenTime = 0.1 end
-		if magBool.Value+1 <= Settings.MagSize and magBool.Value > 0 and MagFrame:FindFirstChild((magBool.Value+1)) then
-			local bullet = MagFrame[tostring(magBool.Value+1)]
+		if gun.Ammo+1 <= Settings.MagSize and gun.Ammo > 0 and MagFrame:FindFirstChild((gun.Ammo+1)) then
+			local bullet = MagFrame[tostring(gun.Ammo+1)]
 			local round = bullet.Round
 			TweenService:Create(round,TweenInfo.new(tweenTime,Enum.EasingStyle.Linear),{Size = UDim2.fromScale(1,0)}):Play()
 			local firstBullet = MagFrame["1"]
@@ -58,7 +149,7 @@ local editMagTable = {
 	end,
 	["Load"] = function(tweenTime)
 		if not tweenTime then tweenTime = 0.1 end
-		local bullet = MagFrame[tostring(magBool.Value)]
+		local bullet = MagFrame[tostring(gun.Ammo)]
 		local round = bullet.Round
 		if MagFrame["1"].Round.Size.Y.Scale < 1 then
 			bullet = MagFrame["1"]
@@ -68,7 +159,7 @@ local editMagTable = {
 	end,
 	["Mag"] = function(tweenTime)
 		if not tweenTime then tweenTime = 0.1 end
-		for i=1,magBool.Value,1 do
+		for i=1,gun.Ammo,1 do
 			local bullet = MagFrame[tostring(i)]
 			local round = bullet.Round
 			TweenService:Create(round,TweenInfo.new(tweenTime,Enum.EasingStyle.Linear),{Size = UDim2.fromScale(1,1)}):Play()
@@ -90,46 +181,73 @@ local function editBulletFrame (action,tweenTime)
 	editMagTable[action](tweenTime)
 end
 
-local function updateGunDisplay(gun: Tool, smoothly: boolean)
+local function updateGunDisplay(Gun: ToolClass.ClassType)
+	ReserveFrame.Visible = true
+	ReserveText.Text = Gun.Ammo
+	if Gun.Settings.Automatic then
+		ModeText.Text = "Auto"
+	else
+		ModeText.Text = "Semi"
+	end
+	
+	for _,oldBullet in pairs (MagFrame:GetChildren()) do
+		if oldBullet:IsA("Frame") then
+			oldBullet:Destroy()
+		end
+	end
+	
+	MagFrame.UIGridLayout.CellSize = UDim2.new(1/Gun.Settings.MagSize,-1,1,0)
+	if Gun.Settings.MagSize > 50 then
+		MagFrame.UIGridLayout.CellSize = UDim2.new((1/Gun.Settings.MagSize)*2,-1,1,0)
+		InnerScaleLayout.Padding = UDim.new(1.2,0)
+	else
+		InnerScaleLayout.Padding = UDim.new(0.2,0)
+	end
+	for i=1,Gun.Settings.MagSize,1 do
+		local bullet = PrimeMagBullet:Clone()
+		--bullet.Size = UDim2.new(1/Settings.MagSize,-1,1,0)
+		if i == 1 then
+			bullet.Round.BackgroundColor3 = Color3.fromRGB(255,255,255)
+		end
+		bullet.Name = tostring(i)
+		if tonumber(bullet.Name) > Gun.Ammo then
+			bullet.Round.Size = UDim2.fromScale(1,0)
+		end
+		bullet.Parent = MagFrame
+	end
+	if not Gun.Bolted and Gun.Settings.Bolted and Gun.Ammo < Gun.Settings.MagSize and Gun.Ammo > 0 then
+		local firstRound = MagFrame["1"].Round
+		firstRound.Size = UDim2.fromScale(1,0)
+	local otherRound = MagFrame[tostring(Gun.Ammo+1)].Round
+		otherRound.Size = UDim2.fromScale(1,1)
+	end
+end
 
+local function updateToolDisplay(equipping, Tool: ToolClass.ClassType, transitionTime)
+	if equipping == 1 then
+		NameText.Text = Tool.Instance.Name
+		TweenService:Create(GunInfoFrame, TweenInfo.new(transitionTime), {GroupTransparency = 0}):Play()
+		GunInfoFrame.Visible = true
+		
+		if Tool and Tool.ClassName == "Gun" then
+			updateGunDisplay(Tool)
+		end
+	else
+		local Tween = TweenService:Create(GunInfoFrame,TweenInfo.new(0.3),{GroupTransparency = 1})
+		Tween:Play()
+		Tween.Completed:Once(function(playbackState)
+			if playbackState == Enum.PlaybackState.Completed then
+				GunInfoFrame.Visible = false
+			end
+		end)
+	end
 end
 
 function module.LoadChar(Character)
-	local ReplicatedStorage = game:GetService("ReplicatedStorage")
-	local RunService = game:GetService("RunService")
-	local Lighting = game:GetService("Lighting")
-	local Events = ReplicatedStorage.Events
-	local Modules = ReplicatedStorage.Modules
-	local Objects = ReplicatedStorage.Objects
-	local UIModules = Modules.UI
-	local DownedEvent = Events.Character.DownedEvent
-	local DowningObjects = Objects.DowningObjects
-
-	local CircleFramesModule = require(UIModules.CircleFrames)
-	local KeybindHandler = require(UIModules.KeybindHandler)
-	local CameraManipulator = require(UIModules.CameraManipulator)
-	local TeamHandler = require(Modules.Interaction.TeamHandler)
-
-	local BloodScreen = HUD:WaitForChild("BloodScreen")
-	local StaminaFrame = Bars:WaitForChild("Stamina")
-	local StaminaL = StaminaFrame:WaitForChild("L")
-	local StaminaR = StaminaFrame:WaitForChild("R")
-	local HealthFrame = Bars:WaitForChild("Health")
-	local HealthL = HealthFrame:WaitForChild("L")
-	local HealthR = HealthFrame:WaitForChild("R")
-	local AbsorptionFrame = Bars:WaitForChild("Absorption")
-	local AbsorptionL = AbsorptionFrame:WaitForChild("L")
-	local AbsorptionR = AbsorptionFrame:WaitForChild("R")
-	local HealthNumber = Bars:WaitForChild("HealthText")
+	Backpack = Player:WaitForChild("Backpack")
 	
-	local DownedProgressFrame = DownedFrame:WaitForChild("ProgressFrame")
-	local MainDownedProgressFrame = DownedProgressFrame:WaitForChild("Progress")
-	local DownedProgress = MainDownedProgressFrame:WaitForChild("Percentage")
-	local DownedMessage = DownedFrame:WaitForChild("Message")
-	
-	local ReviveProgressFrame = ReviveFrame:WaitForChild("ProgressFrame")
-	local MainReviveProgressFrame = ReviveProgressFrame:WaitForChild("Progress")
-	local ReviveProgress = MainReviveProgressFrame:WaitForChild("Percentage")
+	ToolHandler.ToolEquipping:Connect(updateToolDisplay, 1)
+	ToolHandler.ToolUnequipping:Connect(updateToolDisplay, 0)
 	
 	local Humanoid = Character:WaitForChild("Humanoid")
 	local PlayerEffectsFolder = Player.PlayerScripts:WaitForChild("Effects")
@@ -360,7 +478,7 @@ function module.LoadChar(Character)
 				DownedCC.Brightness = ccBrightness+((DownedProgress.Value/100)*-ccBrightness)
 				DownedCC.Contrast = ccContrast+((DownedProgress.Value/100)*-ccContrast)
 				DownedCC.TintColor = Color3.fromHSV(0,1+((DownedProgress.Value/100)*-1),1)
-				if UIS:IsKeyDown(KeybindHandler.Keybind("Speed Up Downing",Player)) then
+				if UserInputService:IsKeyDown(KeybindHandler.Keybind("Speed Up Downing",Player)) then
 					waitTime = (Time/100)*Increment*0.02
 					DownedMessage.Text = '<font color="rgb(255,0,0)">Giving Up on Life</font>'
 				else

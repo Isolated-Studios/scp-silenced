@@ -8,6 +8,8 @@ local Utils = require(ReplicatedStorage.Modules.Utils)
 
 -- Preliminary important global variables.
 local LocalPlayer = Players.LocalPlayer
+local ToolDataFolder = ReplicatedStorage.Tooling.Tools
+
 local CharacterLoaded = false
 local Character: Model, Humanoid: Humanoid
 local ViewModel: Model, ViewModelAnimator: Animator
@@ -51,10 +53,14 @@ if LocalPlayer.Character then task.defer(__load_character, LocalPlayer.Character
 
 local Tool = {}
 Tool.__index = Tool
+Tool.ClassName = "Tool"
 
 export type ClassType = typeof(setmetatable(
 	{} :: {
+		ToolType: string;
 		Instance: Tool;
+		Handle: BasePart;
+		Sounds: Folder;
 		Animations: {[string] : Animation};
 		
 		State: number; -- This is an Enum; Use Tool.State.VALUE to set.
@@ -114,26 +120,33 @@ function Tool.getHumanoid()
 	return Humanoid
 end
 
-function Tool.new(tool: Tool, Settings: ClassType): ClassType
-	assert(tool and typeof(tool) == "Instance" and tool:IsA("Tool"), `You must provide a 'Tool' instance, got {tool}.`)
-	local self: Tool = setmetatable({}, Tool)
+function Tool.new(ToolInstance: Tool): ClassType
+	assert(ToolInstance and typeof(ToolInstance) == "Instance" and ToolInstance:IsA("Tool"), `You must provide a 'Tool' instance, got {ToolInstance}.`)
+	local self: ClassType = setmetatable({}, Tool)
 	
-	self.Settings = Settings
+	local ToolObjects = ToolDataFolder:FindFirstChild(ToolInstance:GetAttribute("ToolName") or "undefined tool name") or error(`Failed to find ToolObjects for {ToolInstance:GetFullName()}`)
+	self.Settings = require(ToolObjects.Settings)
 
-	self.Instance = tool
+	self.Instance = ToolInstance
+	self.Handle = ToolInstance:FindFirstChild("Handle")
+	self.Sounds = ToolObjects.Sounds
+	
+	self.Instance.Destroying:Once(Utils.wrapMethod(self, self.Destroy))
 	for _, Motor: Motor6D in self.Instance:GetDescendants() do
 		if Motor:IsA("Motor6D") then
 			Motor.MaxVelocity = math.huge
 		end
 	end
-	self.Instance.Destroying:Once(Utils.wrapMethod(self, self.Destroy))
 	
 	self.State = Tool.State.Unequipped
 	self.Bindings = {}
 	self.AnimationEvents = {}
 	self.Connections = {} -- All connections here are disconnected automatically on unequipping.
 	-- Animations
-	self.Animations = Settings.Animations or {}
+	self.Animations = {}
+	for _, v in ToolObjects.VMAnimations:GetChildren() do
+		self.Animations[v.Name] = v
+	end
 	self.__loaded_animations = {} -- Don't use this, it's only used as a strong reference to loaded animations, as the global one is a weak table.
 	
 	return self

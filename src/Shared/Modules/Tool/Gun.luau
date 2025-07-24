@@ -3,8 +3,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ToolClass = require(script.Parent)
 local Utils = require(ReplicatedStorage.Modules.Utils)
 
-local ToolDataFolder = ReplicatedStorage.Tooling.Tools
-
 --[[
 	====== TYPE DEFINITIONS ======
 	
@@ -14,9 +12,13 @@ local ToolDataFolder = ReplicatedStorage.Tooling.Tools
 
 local Gun = setmetatable({}, ToolClass)
 Gun.__index = Gun
+Gun.ClassName = "Gun"
 
 export type ClassType = ToolClass.ClassType & typeof(setmetatable(
 	{} :: {
+		Bolted: boolean;
+		Ammo: number;
+		
 		Settings: {
 			Damage: number,
 			RPM: number,
@@ -101,44 +103,68 @@ export type ClassType = ToolClass.ClassType & typeof(setmetatable(
 	other utilities.
 ]]
 
-function Gun.new(Tool: Tool, Settings): ClassType
-	local self: ClassType = setmetatable(ToolClass.new(Tool, Settings), Gun)
+function Gun.new(Tool: Tool): ClassType
+	local self: ClassType = setmetatable(ToolClass.new(Tool), Gun)
+	assert(self.Handle, `Gun {Tool:GetFullName()} is missing a Handle`)
 	
-	local Handle = Tool:FindFirstChild("Handle")
-	assert(Handle, `Tool {Tool:GetFullName()} is missing a Handle`)
+	self.Ammo = self.Settings.MagSize
 	
-	local ToolObjects = ToolDataFolder:FindFirstChild(Tool:GetAttribute("ToolName"))
-	local Sounds = ToolObjects.Sounds
+	self.Bindings = {
+		["Fire"] = {
+			InputType = Enum.UserInputType.MouseButton1;
+			InputState = Enum.UserInputState.Begin;
+			DebugBinding = true; -- so the KeybindHandler doesn't constantly get called and print warnings for no reason.
+			Handler = Utils.wrapMethod(self, self.Click);
+		};
+		["R1"] = {
+			InputType = Enum.UserInputType.Keyboard;
+			InputState = Enum.UserInputState.Begin;
+			DebugBinding = Enum.KeyCode.H;
+			Handler = Utils.wrapMethod(self, self.Reload);
+		};
+		["R2"] = {
+			InputType = Enum.UserInputType.Keyboard;
+			InputState = Enum.UserInputState.Begin;
+			DebugBinding = Enum.KeyCode.J;
+			Handler = Utils.wrapMethod(self, self.Reload);
+		};
+		["R3"] = {
+			InputType = Enum.UserInputType.Keyboard;
+			InputState = Enum.UserInputState.Begin;
+			DebugBinding = Enum.KeyCode.K;
+			Handler = Utils.wrapMethod(self, self.Reload);
+		};
+	}
 	
 	self.Bolted = false
 	self.AnimationEvents = {
 		-- DEPRECATED, PLEASE USE "Sound" EVENT FOR SOUNDS
 		["LoadGate"] = function()
-			Utils.SFX.playSound(Sounds,"GateOpen",Handle,true,true)
+			Utils.SFX.playSound(self.Sounds,"GateOpen",self.Handle,true,true)
 		end,
 		["LoadGateClose"] = function()
-			Utils.SFX.playSound(Sounds,"GateClose",Handle,true,true)
+			Utils.SFX.playSound(self.Sounds,"GateClose",self.Handle,true,true)
 		end,
 		["EjectShell"] = function()
 			-- dispenseCasing()
-			Utils.SFX.playSound(Sounds,"Eject",Handle,true,true)
+			Utils.SFX.playSound(self.Sounds,"Eject",self.Handle,true,true)
 		end,
 		["InsertShell"] = function()
-			Utils.SFX.playSound(Sounds,"Insert",Handle,true,true)
+			Utils.SFX.playSound(self.Sounds,"Insert",self.Handle,true,true)
 		end,
 		["MagOut"] = function()
-			Utils.SFX.playSound(Sounds,"MagOut",Handle,true,true)
+			Utils.SFX.playSound(self.Sounds,"MagOut",self.Handle,true,true)
 		end,
 		["MagIn"] = function()
-			Utils.SFX.playSound(Sounds,"MagIn",Handle,true,true)
+			Utils.SFX.playSound(self.Sounds,"MagIn",self.Handle,true,true)
 		end,
 		["BoltBack"] = function()
-			Utils.SFX.playSound(Sounds,"BoltBack",Handle,true,true)
+			Utils.SFX.playSound(self.Sounds,"BoltBack",self.Handle,true,true)
 		end,
 		--\
 		["Sound"] = function(SoundName)
-			if Sounds:FindFirstChild(SoundName) then
-				Utils.SFX.playSound(Sounds,SoundName,Handle,true,true)
+			if self.Sounds:FindFirstChild(SoundName) then
+				Utils.SFX.playSound(self.Sounds,SoundName,self.Handle,true,true)
 			else
 				warn("Sound animation event call error. Could not find sound named: ".. SoundName.." in folder.")
 			end
@@ -188,7 +214,7 @@ function Gun.new(Tool: Tool, Settings): ClassType
 		-- 	end
 		-- end,
 		["BoltForward"] = function()
-			Utils.SFX.playSound(Sounds,"BoltForward",Handle,true,true)
+			Utils.SFX.playSound(self.Sounds,"BoltForward",self.Handle,true,true)
 
 			-- if magBool.Value == 0 and Settings.BoltBackWhenEmpty and Handle:FindFirstChild("Bolt") then
 			-- 	local Bolt = Handle.Bolt
@@ -236,6 +262,32 @@ function Gun:Unequip()
 	if self.State ~= ToolClass.State.Equipped then return end
 	self:StopAnimation("FirstEquip", math.min(0.2, self.Settings.UnequipSpeed))
 	ToolClass.Unequip(self)
+end
+
+function Gun:Click()
+	local Handle = self.Handle
+	Utils.SFX.playSound(self.Sounds, "Fire", Handle, true, true)
+	local CommonToolFunctions = require(script.Parent.CommonToolFunctions)
+	CommonToolFunctions.flashGun(Handle.Flash,Handle.Flash.FlashLight,true) -- uses CTF to flash the gun for light and particles
+end
+
+function Gun:Reload(input: InputObject)
+	if input.KeyCode == Enum.KeyCode.H then
+		print("reload 1")
+		self:PlayAnimation("Reload1", nil, nil, nil, true)
+		self:PlayAnimation("Reload2", nil, nil, nil, true)
+	elseif input.KeyCode == Enum.KeyCode.J then
+		print("reload 2")
+		self:PlayAnimation("Reload1", nil, nil, nil, true)
+		self:PlayAnimation("Reload2", nil, nil, nil, true)
+		self:PlayAnimation("Reload2Last", nil, nil, nil, true)
+	else
+		print("reload 2")
+		self:PlayAnimation("EmptyReload", nil, nil, nil, true)
+		self:PlayAnimation("Reload2", nil, nil, nil, true)
+		self:PlayAnimation("Reload2Last", nil, nil, nil, true)
+	end
+	self:PlayAnimation("Reload3", nil, nil, nil, true)
 end
 
 return Gun
