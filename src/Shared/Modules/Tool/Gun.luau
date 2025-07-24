@@ -12,81 +12,86 @@ local ToolDataFolder = ReplicatedStorage.Tooling.Tools
 	useful definitions such as the custom Enum 'Tool.State'.
 ]]
 
-export type ClassType = ToolClass.ClassType & {
-	Damage: number,
-	RPM: number,
-	AP: number,
-	MagSize: number,
-	ReloadStyle: number,
-	BulletsPerShot: number,
-	BurstAmount: number,
-	--BurstDelay: number,
-	HeadshotFactor: number,
-	LegMultiplier: number,
-	CanDown: number,
-	AmmoType: string,
-	Acceleration: Vector3,
-	GibChance: number,
-	PitchLastBullets: number,
-	Weight: number,
-
-	AimFOV: number,
-	TravelSpeed: number,
-	Casing: string,
-	BulletTemplate: string,
-	RunType: number,
-
-	Automatic: boolean,
-	Bolted: boolean,
-	AutomaticBolt: boolean,
-	HeldWhenSqueezed: boolean,
-	--PlayHammerClick: boolean,
-	RunAndGun: boolean,
-	RunAndReload: boolean,
-	EmptyReload: boolean,
-	BoltBackWhenEmpty: boolean,
-	ScrollAffectsAim: boolean,
-
-	AimInSpeed: number,
-	AimOutSpeed: number,
-	--SqueezeTrigger: number,
-	--FireDelay: number,
-	Reload1Speed: number,
-	--Reload2Speed: number,
-	--Reload3Speed: number,
-	ReloadEmptySpeed: number,
-
-	MinSpread: number,
-	MaxSpread: number,
-	SpreadCost: number,
-	SpreadRegenWait: number,
-	ReductionIncrement: number,
-	ReductionWait: number,
-	XRecoilDampFactor: number,
-	YRecoilDampFactor: number,
-	XRecoilDampExponent: number,
-	YRecoilDampExponent: number,
-
-	MaxDistance: number,
-	MidFallOffDist: number,
-	LongFallOffDist: number,
-	MidFallOffMult: number,
-	LongFallOffMult: number,
-
-	CameraShove: Vector3,
-	LinearShove: Vector3,
-	AngularShove: Vector3,
-	AimLinearShove: Vector3,
-	AimAngularShove: Vector3,
-	Stability: number?,
-	AimStability: number?,
-
-	RunPosition: {number}?,
-	CrouchPosition: {number}?,
-}
-
 local Gun = setmetatable({}, ToolClass)
 Gun.__index = Gun
+
+export type ClassType = ToolClass.ClassType & typeof(setmetatable(
+	{} :: {
+		Settings: {
+			Damage: number,
+			RPM: number,
+			AP: number,
+			MagSize: number,
+			ReloadStyle: number,
+			BulletsPerShot: number,
+			BurstAmount: number,
+			--BurstDelay: number,
+			HeadshotFactor: number,
+			LegMultiplier: number,
+			CanDown: number,
+			AmmoType: string,
+			Acceleration: Vector3,
+			GibChance: number,
+			PitchLastBullets: number,
+			Weight: number,
+
+			AimFOV: number,
+			TravelSpeed: number,
+			Casing: string,
+			BulletTemplate: string,
+			RunType: number,
+
+			Automatic: boolean,
+			Bolted: boolean,
+			AutomaticBolt: boolean,
+			HeldWhenSqueezed: boolean,
+			--PlayHammerClick: boolean,
+			RunAndGun: boolean,
+			RunAndReload: boolean,
+			EmptyReload: boolean,
+			BoltBackWhenEmpty: boolean,
+			ScrollAffectsAim: boolean,
+
+			AimInSpeed: number,
+			AimOutSpeed: number,
+			--SqueezeTrigger: number,
+			--FireDelay: number,
+			Reload1Speed: number,
+			--Reload2Speed: number,
+			--Reload3Speed: number,
+			ReloadEmptySpeed: number,
+
+			MinSpread: number,
+			MaxSpread: number,
+			SpreadCost: number,
+			SpreadRegenWait: number,
+			ReductionIncrement: number,
+			ReductionWait: number,
+			XRecoilDampFactor: number,
+			YRecoilDampFactor: number,
+			XRecoilDampExponent: number,
+			YRecoilDampExponent: number,
+
+			MaxDistance: number,
+			MidFallOffDist: number,
+			LongFallOffDist: number,
+			MidFallOffMult: number,
+			LongFallOffMult: number,
+
+			CameraShove: Vector3,
+			LinearShove: Vector3,
+			AngularShove: Vector3,
+			AimLinearShove: Vector3,
+			AimAngularShove: Vector3,
+			Stability: number?,
+			AimStability: number?,
+
+			RunPosition: {number}?,
+			CrouchPosition: {number}?,
+		};
+	},
+	Gun
+))
 
 --[[
 	====== FUNCTION DEFINITIONS ======
@@ -96,8 +101,8 @@ Gun.__index = Gun
 	other utilities.
 ]]
 
-function Gun.new(Tool: Tool, data: ClassType): ClassType
-	local self: ClassType = setmetatable(ToolClass.new(Tool, data), Gun)
+function Gun.new(Tool: Tool, Settings): ClassType
+	local self: ClassType = setmetatable(ToolClass.new(Tool, Settings), Gun)
 	
 	local Handle = Tool:FindFirstChild("Handle")
 	assert(Handle, `Tool {Tool:GetFullName()} is missing a Handle`)
@@ -182,15 +187,15 @@ function Gun.new(Tool: Tool, data: ClassType): ClassType
 		-- 		MotorModel["Bullet"].Transparency = transparency
 		-- 	end
 		-- end,
-		-- ["BoltForward"] = function()
-		-- 	Utils.SFX.playSound(Sounds,"BoltForward",Handle,true,true)
+		["BoltForward"] = function()
+			Utils.SFX.playSound(Sounds,"BoltForward",Handle,true,true)
 
-		-- 	if magBool.Value == 0 and Settings.BoltBackWhenEmpty and Handle:FindFirstChild("Bolt") then
-		-- 		local Bolt = Handle.Bolt
-		-- 		TweenService:Create(Bolt,TweenInfo.new(0.1,Enum.EasingStyle.Linear),{C1 = DefaultBoltC1}):Play()
-		-- 		Tool:SetAttribute("BoltSet",nil)
-		-- 	end
-		-- end,
+			-- if magBool.Value == 0 and Settings.BoltBackWhenEmpty and Handle:FindFirstChild("Bolt") then
+			-- 	local Bolt = Handle.Bolt
+			-- 	TweenService:Create(Bolt,TweenInfo.new(0.1,Enum.EasingStyle.Linear),{C1 = DefaultBoltC1}):Play()
+			-- 	Tool:SetAttribute("BoltSet",nil)
+			-- end
+		end,
 
 		-- ["BoltRound"] = function()
 		-- 	assert(Settings.BoltRoundEvent ~= nil,"BoltRound animation event called, but BoltRoundEvent in settings is nil.")
@@ -221,15 +226,15 @@ function Gun:Equip()
 	else
 		self:PlayAnimation("FirstEquip")
 	end
-	self.__task = task.delay(self.EquipSpeed, self.PlayAnimation, self, "Hold")
-	task.wait(self.EquipCancel)
+	self.__task = task.delay(self.Settings.EquipSpeed, self.PlayAnimation, self, "Hold")
+	task.wait(self.Settings.EquipCancel)
 	self.Bolted = true -- !!TODO: Link this to an animation event instead maybe? So bolting matches with the animation
 	self:__enable()
 end
 
 function Gun:Unequip()
 	if self.State ~= ToolClass.State.Equipped then return end
-	self:StopAnimation("FirstEquip", math.min(0.2, self.UnequipSpeed))
+	self:StopAnimation("FirstEquip", math.min(0.2, self.Settings.UnequipSpeed))
 	ToolClass.Unequip(self)
 end
 
