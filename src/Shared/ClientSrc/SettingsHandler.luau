@@ -66,6 +66,14 @@ function module.Init()
 	
 	local KeyToSet = nil
 	
+	-- Shift the TextLabel color3 and UIStroke to the Color instantly, and then revert back to white.
+	local function ColorShift (TextLabel,Color)
+		TextLabel.TextColor3 = Color
+		TextLabel.UIStroke.Color = Color
+		TweenService:Create(TextLabel, TweenInfo.new(0.7), {TextColor3 = Color3.fromRGB(255,255,255)}):Play()
+		TweenService:Create(TextLabel.UIStroke, TweenInfo.new(0.7), {Color = Color3.fromRGB(255,255,255)}):Play()
+	end
+	
 	local typeCreation = { -- Creation functions of each button type
 		-- Keybind buttons
 		["Assign"] = function(Setting, SettingCategory, SettingButton)
@@ -87,9 +95,10 @@ function module.Init()
 				KeyToSet = Key
 			end)
 			
-			-- Reset keybind to default.
+			-- Reset keybind to default and fire an orange colorshift for key text.
 			Reset.MouseButton1Click:Connect(function()
 				Setting.Value = Setting:GetAttribute("Default")
+				ColorShift(Key,Color3.fromRGB(255, 118, 20))
 				Key.Text = string.upper(Setting.Value)
 				KeyToSet = nil
 			end)
@@ -163,6 +172,7 @@ function module.Init()
 		end
 	end
 	
+	-- Check if key is already assigned in a keybind.
 	local function isKeyAlreadyAssigned (KeyName)
 		for _,OtherKeys in pairs(Settings.Keybinds:GetChildren()) do
 			if OtherKeys.Value == KeyName then
@@ -202,17 +212,11 @@ function module.Init()
 				then
 					-- Key is forbidden, notify with red text and error message.
 					KeyToSet.Text = string.upper(Key.KeyCode.Name).." IS ALREADY BOUND"
-					KeyToSet.TextColor3 = Color3.fromRGB(255,0,0)
-					KeyToSet.UIStroke.Color = Color3.fromRGB(255,0,0)
-					TweenService:Create(KeyToSet, TweenInfo.new(0.7), {TextColor3 = Color3.fromRGB(255,255,255)}):Play()
-					TweenService:Create(KeyToSet.UIStroke, TweenInfo.new(0.7), {Color = Color3.fromRGB(255,255,255)}):Play()
+					ColorShift(KeyToSet,Color3.fromRGB(255, 20, 20))
 				else
 					-- Bind new key and change text, and give a cool green text for added coolness.
 					KeyToSet.Text = string.upper(Key.KeyCode.Name)
-					KeyToSet.TextColor3 = Color3.fromRGB(0,255,0)
-					KeyToSet.UIStroke.Color = Color3.fromRGB(0,255,0)
-					TweenService:Create(KeyToSet, TweenInfo.new(0.7), {TextColor3 = Color3.fromRGB(255,255,255)}):Play()
-					TweenService:Create(KeyToSet.UIStroke, TweenInfo.new(0.7), {Color = Color3.fromRGB(255,255,255)}):Play()
+					ColorShift(KeyToSet,Color3.fromRGB(20, 255, 20))
 					KeyToSet.Parent.Parent.Setting.Value.Value = Key.KeyCode.Name
 					KeyToSet = nil
 				end
