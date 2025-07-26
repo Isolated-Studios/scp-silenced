@@ -28,6 +28,7 @@ local springModule = require(ToolModules.spring)
 local spring2Module = require(ToolModules.spring2)
 local CommonToolFunctions = require(ToolModules.CommonToolFunctions)
 local KeybindHandler = require(UIModules.KeybindHandler)
+local CommonFuncs = require(Modules.CommonFuncs)
 local ToolHandler = nil -- will be set later to avoid memory leaks
 
 local RunType = nil
@@ -528,7 +529,7 @@ function module.LoadChar(Character)
 		local updatedHandleSpring = HandleSpring:update(dt,stabilityToUse)
 		ViewModel:PivotTo(Camera.CFrame:ToWorldSpace(Offset))
 
-		if Character and Character:FindFirstChildOfClass("Tool") then
+		if Character and Character:FindFirstChildOfClass("Tool") and not CommonFuncs.AreInputUIsActive() then
 			ShowArms = false
 			if Character:FindFirstChildOfClass("Tool"):GetAttribute("ToolSource") == "Gun" then
 				if Player.PlayerGui and Player.PlayerGui:FindFirstChild("MouseUI") and Player.PlayerGui.MouseUI:FindFirstChild("Dot") then

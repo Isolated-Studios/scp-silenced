@@ -213,7 +213,7 @@ function module.LoadChar(Character)
 	
 	
 	local inputBegan = UIS.InputBegan:Connect(function(Input)
-		if CommonFuncs.AreInputUIsActive() then return end
+		if CommonFuncs.AreInputUIsActive("Inventory") then return end
 		if Input.KeyCode == KeybindHandler.Keybind("Crouch",Player) then
 			startCrouching()
 		end
@@ -258,7 +258,7 @@ function module.LoadChar(Character)
 			(UIS:IsKeyDown(Enum.KeyCode.S) and 1 or 0) - (UIS:IsKeyDown(Enum.KeyCode.W) and 1 or 0)
 		)
 		
-		if CommonFuncs.AreInputUIsActive() then 
+		if CommonFuncs.AreInputUIsActive("Inventory") then 
 			TargetDirection = Vector3.new(0,0,0) 
 		end
 

@@ -172,7 +172,12 @@ function module.LoadChar(Character)
 
 	characterTrove:Connect(UserInputService.InputBegan, function(Input, gameProcessedEvent)
 		if gameProcessedEvent then return end
-		if AcceptedKeys[Input.KeyCode.Name] and Inventory[AcceptedKeys[Input.KeyCode.Name]] and ToolHandler.getCurrentToolState ~= ToolClass.State.Equipping and ToolHandler.getCurrentToolState ~= ToolClass.State.Unequipping then
+		if AcceptedKeys[Input.KeyCode.Name] 
+			and Inventory[AcceptedKeys[Input.KeyCode.Name]] 
+			and ToolHandler.getCurrentToolState ~= ToolClass.State.Equipping 
+			and ToolHandler.getCurrentToolState ~= ToolClass.State.Unequipping 
+			and not CommonFuncs.AreInputUIsActive()
+		then
 			local pickedTool = Inventory[AcceptedKeys[Input.KeyCode.Name]]
 			actOnTool(pickedTool)
 		end
