@@ -26,7 +26,9 @@ function module.Init(Character)
 	healthChanged = Humanoid.HealthChanged:Connect(function(health)
 		if roundNumber(health,3) == 0.001 then --/ Player gets downed
 			task.defer(function()
-				if Humanoid:GetAttribute("Downed") or Humanoid:GetAttribute("DownedOnceAlready") then Humanoid.Health = 0 return end
+				if Humanoid:GetAttribute("Downed") or Humanoid:GetAttribute("DownedOnceAlready") then Humanoid.Health = 0 
+					return 
+				end
 				Humanoid:UnequipTools()
 				Humanoid:SetAttribute("Downed",true)
 				Humanoid:SetAttribute("DownedRagdolling",true)

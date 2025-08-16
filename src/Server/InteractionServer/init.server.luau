@@ -10,6 +10,8 @@ local Physical = Tooling.Physical
 local Events = ReplicatedStorage.Events
 local DoorConfigs = ReplicatedStorage.Configs.Doors
 
+local TweenModule = require(ReplicatedStorage.Modules.Interaction.TweenModule)
+
 function getDistance(point1 : Vector3, point2 : Vector3)
 	local distance
 	if point1 and point2 then
@@ -26,21 +28,21 @@ local MedicalAmountCap = 2
 local insecureIds = {4,5}
 
 local InteractFunctions = {
-    -- change this below, each new event needs a new id, make sure you add the , too
-    -- template:
-    -- change the '1' to a number that isnt already taken
-    --[1] = function(interactObject, player) -- you should add a lable here so people can know what it does
-    --    // code goes here
+	-- change this below, each new event needs a new id, make sure you add the , too
+	-- template:
+	-- change the '1' to a number that isnt already taken
+	--[1] = function(interactObject, player) -- you should add a lable here so people can know what it does
+	--    // code goes here
 	--end, -- dontforget the comma
-	
+
 	[0] = function(interactObject, player) -- message (nothing on server)
-		
-	end,
-    
-    [1] = function(interactObject, player) -- cargo box
 
 	end,
-	
+
+	[1] = function(interactObject, player) -- cargo box
+
+	end,
+
 	[2] = function(interactObject, player) -- basic button door
 		if not interactObject:GetAttribute("interactable") then return end -- Might fix door spam bug?
 		local function changeLightParts (LightModel,colorPicked)
@@ -52,17 +54,17 @@ local InteractFunctions = {
 				end
 			end
 		end
-		
+
 		local Allowed = true
 		local Opened = interactObject.DoorConfigs.Opened
 		local DoorSettings = require(DoorConfigs:FindFirstChild(interactObject:GetAttribute("DoorType")))
 		local TweenObjectEvent = game:GetService("ReplicatedStorage").Events.Interaction.TweenObjectEvent
-		
+
 		local LeftDoor = interactObject["Door.L"]
 		local RightDoor = interactObject["Door.R"]
 		local LightParts = interactObject["LightParts"]
 		local SoundPart = interactObject["SoundPart"]
-		
+
 		if player.Character and player.Character:FindFirstChild("Humanoid") then
 			if DoorSettings.RequireKeycard then
 				Allowed = false
@@ -74,7 +76,7 @@ local InteractFunctions = {
 						end
 					end
 				end
-				
+
 				if player.Character:FindFirstChildOfClass("Tool") and player.Character:FindFirstChildOfClass("Tool"):GetAttribute("ToolType") == 5 then
 					local keycard = player.Character:FindFirstChildOfClass("Tool")
 					if DoorSettings.Cards and keycard:GetAttribute("SpecificID") and table.find(DoorSettings.Cards,keycard:GetAttribute("SpecificID")) or 
@@ -83,32 +85,72 @@ local InteractFunctions = {
 					end
 				end
 			end
-			
+
 			if SoundPart.button then SoundPart.button:Play() end
-			
+
 			if Allowed then
 				--Playing = true
 				interactObject:SetAttribute("interactable",false)
 				if Opened.Value then
 					Opened.Value = false
 					interactObject:SetAttribute("interactText","open")
-					TweenObjectEvent:FireAllClients(LeftDoor,LeftDoor.PrimaryPart.CFrame*CFrame.Angles(math.rad(-DoorSettings.LeftDoorOpen[3].X),math.rad(-DoorSettings.LeftDoorOpen[3].Y),math.rad(-DoorSettings.LeftDoorOpen[3].Z))+LeftDoor.PrimaryPart.CFrame[DoorSettings.LeftDoorOpen[1]]*-DoorSettings.LeftDoorOpen[2],DoorSettings.CloseSpeed,100,DoorSettings.CloseEasingStyle or Enum.EasingStyle.Linear,DoorSettings.CloseEasingDirection or Enum.EasingDirection.Out,"close")
-					TweenObjectEvent:FireAllClients(RightDoor,RightDoor.PrimaryPart.CFrame*CFrame.Angles(math.rad(-DoorSettings.RightDoorOpen[3].X),math.rad(-DoorSettings.RightDoorOpen[3].Y),math.rad(-DoorSettings.RightDoorOpen[3].Z))+RightDoor.PrimaryPart.CFrame[DoorSettings.RightDoorOpen[1]]*-DoorSettings.RightDoorOpen[2],DoorSettings.CloseSpeed,100,DoorSettings.CloseEasingStyle or Enum.EasingStyle.Linear,DoorSettings.CloseEasingDirection or Enum.EasingDirection.Out,"close")
 					changeLightParts(LightParts,DoorSettings.LightColors[2])
 					SoundPart.door_close:Play()
+					local LeftDoorFinal = LeftDoor.PrimaryPart.CFrame * CFrame.Angles(math.rad(-DoorSettings.LeftDoorOpen[3].X),math.rad(-DoorSettings.LeftDoorOpen[3].Y),math.rad(-DoorSettings.LeftDoorOpen[3].Z))+LeftDoor.PrimaryPart.CFrame[DoorSettings.LeftDoorOpen[1]]*-DoorSettings.LeftDoorOpen[2]
+					local RightDoorFinal = RightDoor.PrimaryPart.CFrame*CFrame.Angles(math.rad(-DoorSettings.RightDoorOpen[3].X),math.rad(-DoorSettings.RightDoorOpen[3].Y),math.rad(-DoorSettings.RightDoorOpen[3].Z))+RightDoor.PrimaryPart.CFrame[DoorSettings.RightDoorOpen[1]]*-DoorSettings.RightDoorOpen[2]
+					TweenModule.Tween(
+						LeftDoor,
+						LeftDoorFinal,
+						DoorSettings.CloseSpeed,
+						false,
+						100,
+						DoorSettings.CloseEasingStyle or Enum.EasingStyle.Linear,
+						DoorSettings.CloseEasingDirection or Enum.EasingDirection.Out,
+						"close"
+					)
+					TweenModule.Tween(
+						RightDoor,
+						RightDoorFinal,
+						DoorSettings.CloseSpeed,
+						false,
+						100,
+						DoorSettings.CloseEasingStyle or Enum.EasingStyle.Linear,
+						DoorSettings.CloseEasingDirection or Enum.EasingDirection.Out,
+						"close"
+					)
 					task.wait(DoorSettings.CloseSpeed)
-					LeftDoor:PivotTo(LeftDoor.PrimaryPart.CFrame*CFrame.Angles(math.rad(-DoorSettings.LeftDoorOpen[3].X),math.rad(-DoorSettings.LeftDoorOpen[3].Y),math.rad(-DoorSettings.LeftDoorOpen[3].Z))+LeftDoor.PrimaryPart.CFrame[DoorSettings.LeftDoorOpen[1]]*-DoorSettings.LeftDoorOpen[2])
-					RightDoor:PivotTo(RightDoor.PrimaryPart.CFrame*CFrame.Angles(math.rad(-DoorSettings.RightDoorOpen[3].X),math.rad(-DoorSettings.RightDoorOpen[3].Y),math.rad(-DoorSettings.RightDoorOpen[3].Z))+RightDoor.PrimaryPart.CFrame[DoorSettings.RightDoorOpen[1]]*-DoorSettings.RightDoorOpen[2])
+					LeftDoor:PivotTo(LeftDoorFinal)
+					RightDoor:PivotTo(RightDoorFinal)
 				else
 					Opened.Value = true
 					interactObject:SetAttribute("interactText","close")
-					TweenObjectEvent:FireAllClients(LeftDoor,LeftDoor.PrimaryPart.CFrame* CFrame.Angles(math.rad(DoorSettings.LeftDoorOpen[3].X),math.rad(DoorSettings.LeftDoorOpen[3].Y),math.rad(DoorSettings.LeftDoorOpen[3].Z))+LeftDoor.PrimaryPart.CFrame[DoorSettings.LeftDoorOpen[1]]*DoorSettings.LeftDoorOpen[2],DoorSettings.OpenSpeed,100,DoorSettings.OpenEasingStyle or Enum.EasingStyle.Linear,DoorSettings.OpenEasingDirection or Enum.EasingDirection.Out,"open")
-					TweenObjectEvent:FireAllClients(RightDoor,RightDoor.PrimaryPart.CFrame* CFrame.Angles(math.rad(DoorSettings.RightDoorOpen[3].X),math.rad(DoorSettings.RightDoorOpen[3].Y),math.rad(DoorSettings.RightDoorOpen[3].Z))+RightDoor.PrimaryPart.CFrame[DoorSettings.RightDoorOpen[1]]*DoorSettings.RightDoorOpen[2],DoorSettings.OpenSpeed,100,DoorSettings.OpenEasingStyle or Enum.EasingStyle.Linear,DoorSettings.OpenEasingDirection or Enum.EasingDirection.Out,"open")
 					changeLightParts(LightParts,DoorSettings.LightColors[1])
 					SoundPart.door_open:Play()
-					task.wait(DoorSettings.OpenSpeed)
-					LeftDoor:PivotTo(LeftDoor.PrimaryPart.CFrame * CFrame.Angles(math.rad(DoorSettings.LeftDoorOpen[3].X),math.rad(DoorSettings.LeftDoorOpen[3].Y),math.rad(DoorSettings.LeftDoorOpen[3].Z)) + LeftDoor.PrimaryPart.CFrame[DoorSettings.LeftDoorOpen[1]] * DoorSettings.LeftDoorOpen[2])
-					RightDoor:PivotTo(RightDoor.PrimaryPart.CFrame  * CFrame.Angles(math.rad(DoorSettings.RightDoorOpen[3].X),math.rad(DoorSettings.RightDoorOpen[3].Y),math.rad(DoorSettings.RightDoorOpen[3].Z)) + RightDoor.PrimaryPart.CFrame[DoorSettings.RightDoorOpen[1]] * DoorSettings.RightDoorOpen[2])
+					local LeftDoorFinal = LeftDoor.PrimaryPart.CFrame * CFrame.Angles(math.rad(DoorSettings.LeftDoorOpen[3].X),math.rad(DoorSettings.LeftDoorOpen[3].Y),math.rad(DoorSettings.LeftDoorOpen[3].Z))+LeftDoor.PrimaryPart.CFrame[DoorSettings.LeftDoorOpen[1]]*DoorSettings.LeftDoorOpen[2]
+					local RightDoorFinal = RightDoor.PrimaryPart.CFrame * CFrame.Angles(math.rad(DoorSettings.RightDoorOpen[3].X),math.rad(DoorSettings.RightDoorOpen[3].Y),math.rad(DoorSettings.RightDoorOpen[3].Z))+RightDoor.PrimaryPart.CFrame[DoorSettings.RightDoorOpen[1]]*DoorSettings.RightDoorOpen[2]
+					TweenModule.Tween(
+						LeftDoor,
+						LeftDoorFinal,
+						DoorSettings.OpenSpeed,
+						false,
+						100,
+						DoorSettings.OpenEasingStyle or Enum.EasingStyle.Linear,
+						DoorSettings.OpenEasingDirection or Enum.EasingDirection.Out,
+						"open"
+					)
+					TweenModule.Tween(
+						RightDoor,
+						RightDoorFinal,
+						DoorSettings.OpenSpeed,
+						false,
+						100,
+						DoorSettings.OpenEasingStyle or Enum.EasingStyle.Linear,
+						DoorSettings.OpenEasingDirection or Enum.EasingDirection.Out,
+						"open"
+					)
+					task.wait(DoorSettings.CloseSpeed)
+					LeftDoor:PivotTo(LeftDoorFinal)
+					RightDoor:PivotTo(RightDoorFinal)
 				end
 				if DoorSettings.Cooldown and DoorSettings.Cooldown > 0 then
 					task.wait(DoorSettings.Cooldown)
@@ -128,7 +170,7 @@ local InteractFunctions = {
 			end
 		end
 	end,
-	
+
 	[3] = function(interactObject, player) -- pick up
 		if Physical:FindFirstChild(interactObject.Name) then
 			interactObject:SetAttribute("interactable",false)
@@ -142,7 +184,7 @@ local InteractFunctions = {
 			interactObject:Destroy()
 		end
 	end,
-	
+
 	[4] = function(interactObject, player) -- revive
 		interactObject:SetAttribute("freezePlayer",nil)
 		interactObject:SetAttribute("interactable",nil)
@@ -154,12 +196,12 @@ local InteractFunctions = {
 		interactObject:SetAttribute("NoHighlight",nil)
 		local reviveTime = 5
 		local character = player.Character
-		
+
 		if player.Character:FindFirstChildOfClass("Tool") and player.Character:FindFirstChildOfClass("Tool"):GetAttribute("ToolName") then
 			local Settings = require(ToolingTools[player.Character:FindFirstChildOfClass("Tool"):GetAttribute("ToolName")].Settings)
 			reviveTime = Settings.ReviveTime or reviveTime
 		end
-		
+
 		local revivePlayer = game.Players:GetPlayerFromCharacter(interactObject)
 		local humanoid = character.Humanoid
 		local reviveHumanoid = interactObject.Humanoid
@@ -167,7 +209,7 @@ local InteractFunctions = {
 		reviveHumanoid:SetAttribute("FreezeWalkSpeed",true)
 		reviveHumanoid:SetAttribute("Reviving",reviveTime)
 	end,
-	
+
 	[5] = function(interactObject, player)  -- execute
 		local character = player.Character
 		local humanoid = character.Humanoid
@@ -179,19 +221,19 @@ local InteractFunctions = {
 
 
 function onfinishInteraction(player, current,insecureId)
-    if (current and (typeof(current) == "Instance")) then
-        if ((player.Character) and (player.Character.PrimaryPart) and (getDistance(player.Character.PrimaryPart.Position, current.PrimaryPart.Position) <= current:GetAttribute("maxRange") * 1.5 )) then
+	if (current and (typeof(current) == "Instance")) then
+		if ((player.Character) and (player.Character.PrimaryPart) and (getDistance(player.Character.PrimaryPart.Position, current.PrimaryPart.Position) <= current:GetAttribute("maxRange") * 1.5 )) then
 			if current and InteractFunctions[current:GetAttribute("interactFinishEventId")] then
 				if insecureId and table.find(insecureIds,insecureId) then
 					InteractFunctions[insecureId](current, player)
 				else
 					InteractFunctions[current:GetAttribute("interactFinishEventId")](current, player)
 				end
-            end
-        elseif current and (getDistance(player.Character.PrimaryPart.Position, current.PrimaryPart.Position) > current:GetAttribute("maxRange") * 3) then
-            player:Kick("Impossible interaction at range.")
-        end       
-    end
+			end
+		elseif current and (getDistance(player.Character.PrimaryPart.Position, current.PrimaryPart.Position) > current:GetAttribute("maxRange") * 3) then
+			player:Kick("Impossible interaction at range.")
+		end       
+	end
 end
 
 finishInteraction.OnServerEvent:Connect(onfinishInteraction)

@@ -42,10 +42,10 @@ function module.Init()
 		--	CollisionBox.CanCollide = true
 		--end)
 	end)
-	LookEvent.OnServerEvent:Connect(function(player,CameraDirection,LeftShoulder,RightShoulder,Neck,HeldType)
+	LookEvent.OnServerEvent:Connect(function(player, CameraDirection, LeftShoulder, RightShoulder, Neck, Waist, HeldType)
 		for _,otherPlayer in pairs(Players:GetPlayers()) do
 			if otherPlayer ~= player then
-				LookEvent:FireClient(otherPlayer,CameraDirection,LeftShoulder,RightShoulder,Neck,HeldType)
+				LookEvent:FireClient(otherPlayer, CameraDirection, LeftShoulder, RightShoulder, Neck, Waist, HeldType)
 			end
 		end
 	end)

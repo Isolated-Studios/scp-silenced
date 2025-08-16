@@ -71,8 +71,8 @@ end
 function CommonFuncs.AreInputUIsActive(exception: string)
 	local Player = Players.LocalPlayer
 	if (TextChatService.ChatInputBarConfiguration.IsFocused and exception ~= "Chat")
-		or (Player.PlayerGui.Inventory.Main.GroupTransparency < 1 and exception ~= "Inventory")
-		or (Player.PlayerGui.Settings.Main.GroupTransparency < 1 and exception ~= "Settings")
+		or (Player.PlayerGui:WaitForChild("Inventory").Main.GroupTransparency < 1 and exception ~= "Inventory")
+		or (Player.PlayerGui:WaitForChild("Settings").Main.GroupTransparency < 1 and exception ~= "Settings")
 	then
 		return true
 	end

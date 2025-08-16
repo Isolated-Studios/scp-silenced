@@ -74,8 +74,17 @@ function module.Init()
 		Debris:AddItem(CFrameObject02,Time)
 	end)
 
-
-	local TweenObject = TweenObjectEvent.OnClientEvent:Connect(function(Object,newCFrame,Time,Distance,EasingStyle,EasingDirection,animationName)
+	-- Used for tweening models but can work with BasePart.
+	local TweenObject = TweenObjectEvent.OnClientEvent:Connect(function(
+		Object: Model,
+		newCFrame: CFrame,
+		Time: number,
+		Distance: number,
+		EasingStyle: EasingStyle,
+		EasingDirection: EasingDirection,
+		animationName: string,
+		newSize: Vector3
+	)
 		local CFrameValue = Instance.new("CFrameValue")
 		CFrameValue.Parent = Object
 
@@ -93,16 +102,22 @@ function module.Init()
 			CFrameValue.Changed:Connect(function()
 				Object.CFrame = CFrameValue.Value
 			end)
+			if newSize then
+				TweenService:Create(Object, TweenInfo.new(Time,EasingStyle,EasingDirection), {Size = newSize}):Play()
+			end
 		end
+
 		Debris:AddItem(CFrameValue,Time+0.1)
 		local objPos = nil
-		
+
 		if Object:IsA("Model") then
 			objPos = Object:GetPivot().Position
 		else
 			objPos = Object.Position
 		end
+
 		Debris:AddItem(CFrameValue,Time+0.1)
+
 		if Character and Character.Parent and Distance > 0 and math.round((Character.PrimaryPart.Position-objPos).Magnitude) <= Distance or Distance <= 0 or not Distance then
 			TweenService:Create(CFrameValue,TweenInfo.new(Time,EasingStyle,EasingDirection),{Value = newCFrame}):Play()
 		else
@@ -111,6 +126,7 @@ function module.Init()
 				CFrameValue.Value = newCFrame
 			end)
 		end
+
 	end)
 end
 return module
