@@ -88,6 +88,19 @@ local charPartToViewmodelPart = {
 	["LeftLowerArm"] = 	"LowerArmAttachment",
 	["LeftHand"] = 		"HandAttachment",
 }
+local TorsoPartsToHide = {
+	"uppertorso",
+	"shirt",
+	"tag",
+	"logo",
+	"uppertorsocloth",
+	"uppertorso1",
+	"uppertorso2",
+	"uppertorso3",
+	"lowertorso1",
+	"lowertorso2",
+	"lowertorso3",
+}
 
 function module.getViewModel(): Model?
 	return ViewModel
@@ -511,7 +524,11 @@ function module.LoadChar(Character)
 
 		for _, part in ipairs(Character:GetDescendants()) do
 			if not part:IsA("BasePart") then continue end
-			if part.Name ~= "Head" and (ShowArms or table.find(ArmParts, part.Name) == nil) then
+			if part.Name ~= "Head" 
+				-- Torso is hidden to prevent seeing it when rocking character's waist back and forth in Movement.
+				and not table.find(TorsoPartsToHide,string.lower(part.Name))
+				and (ShowArms or table.find(ArmParts, part.Name) == nil) 
+			then
 				part.LocalTransparencyModifier = LocalTransparency
 			else
 				part.LocalTransparencyModifier = 1
@@ -528,24 +545,30 @@ function module.LoadChar(Character)
 		local updatedSwaySpring = SwaySpring:update(dt)
 		local updatedHandleSpring = HandleSpring:update(dt,stabilityToUse)
 		ViewModel:PivotTo(Camera.CFrame:ToWorldSpace(Offset))
+		ShowArms = 
+			if Character and Character:FindFirstChildOfClass("Tool") then false
+			else true
 
 		if Character and Character:FindFirstChildOfClass("Tool") and not CommonFuncs.AreInputUIsActive() then
-			ShowArms = false
-			if Character:FindFirstChildOfClass("Tool"):GetAttribute("ToolSource") == "Gun" then
-				if Player.PlayerGui and Player.PlayerGui:FindFirstChild("MouseUI") and Player.PlayerGui.MouseUI:FindFirstChild("Dot") then
-					Player.PlayerGui.MouseUI["Dot"]["Crosshair"].GroupTransparency = AimSpring.Position
-					Player.PlayerGui.MouseUI["Dot"].BackgroundTransparency = 1
-					Player.PlayerGui.MouseUI["Dot"]["UIStroke"].Transparency = 1
-				end
+			if Character:FindFirstChildOfClass("Tool"):GetAttribute("ToolSource") == "Gun"
+				and Player.PlayerGui 
+				and Player.PlayerGui:FindFirstChild("MouseUI")
+				and Player.PlayerGui.MouseUI:FindFirstChild("Dot")
+			then
+				Player.PlayerGui.MouseUI["Dot"]["Crosshair"].GroupTransparency = AimSpring.Position
+				Player.PlayerGui.MouseUI["Dot"].BackgroundTransparency = 1
+				Player.PlayerGui.MouseUI["Dot"]["UIStroke"].Transparency = 1
 			end
 		else
-			if Player.PlayerGui and Player.PlayerGui:FindFirstChild("MouseUI") and Player.PlayerGui.MouseUI:FindFirstChild("Dot") then
+			if Player.PlayerGui 
+				and Player.PlayerGui:FindFirstChild("MouseUI") 
+				and Player.PlayerGui.MouseUI:FindFirstChild("Dot") 
+			then
 				Player.PlayerGui.MouseUI["Dot"]["Crosshair"].GroupTransparency = AimSpring.Position
 				Player.PlayerGui.MouseUI["Crosshair"].Value = 0
 				Player.PlayerGui.MouseUI["Dot"].BackgroundTransparency = 0
 				Player.PlayerGui.MouseUI["Dot"]["UIStroke"].Transparency = 0.8
 			end
-			ShowArms = true
 		end
 
 		if ShowArms then
