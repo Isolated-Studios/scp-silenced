@@ -4,6 +4,7 @@ local UIS = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CollectionService = game:GetService("CollectionService")
 
 local Events = ReplicatedStorage.Events
 local Modules = ReplicatedStorage.Modules
@@ -49,14 +50,64 @@ function module.LoadChar(Character)
 	local standingStill = false
 	local CrouchWalking = false
 	local DownedWalking = false
+	local NewSprintInput = false
+
 	local Humanoid: Humanoid = Character:WaitForChild('Humanoid')
 	local ViewmodelCrouch = Humanoid:WaitForChild("ViewmodelCrouch")
 	local ViewmodelRun = Humanoid:WaitForChild("ViewmodelRun")
 	local Animator = Humanoid:WaitForChild("Animator")
 	local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+	local Head = Character:WaitForChild("Head")
+	local UpperTorso = Character:WaitForChild("UpperTorso")
+
 	local LeftShoulder = Character:WaitForChild("LeftUpperArm"):WaitForChild("LeftShoulder")
 	local RightShoulder = Character:WaitForChild("RightUpperArm"):WaitForChild("RightShoulder")
-	local Neck = Character:WaitForChild("Head"):WaitForChild("Neck")
+	local Waist = UpperTorso:WaitForChild("Waist")
+	local Neck = Head:WaitForChild("Neck")
+
+	local AllowedLimbs = {
+		"Head",
+		"UpperTorso",
+		"LowerTorso",
+		"LeftUpperArm",
+		"LeftLowerArm",
+		"LeftHand",
+		"RightUpperArm",
+		"RightLowerArm",
+		"RightHand",
+		"LeftUpperLeg",
+		"LeftLowerLeg",
+		"LeftFoot",
+		"RightUpperLeg",
+		"RightLowerLeg",
+		"RightFoot",
+	}
+	-- Create ShadowLimbs that will be used to display a shadow of the character
+	local ShadowLimbs = Instance.new("Model")
+	ShadowLimbs.Name = "ShadowLimbs"
+	ShadowLimbs.Parent = Camera
+	for _,ActualLimb in pairs(Character:GetChildren()) do
+		if ActualLimb:IsA("BasePart") and table.find(AllowedLimbs,ActualLimb.Name) then
+			local ShadowLimb = Instance.new("Part")
+			ShadowLimb.Name = "Shadow"..ActualLimb.Name
+			ShadowLimb.CanCollide = false
+			ShadowLimb.Anchored = true
+			CollectionService:AddTag(ShadowLimb, "CharPart")
+			ShadowLimb.CollisionGroup = "Character"
+			ShadowLimb.Material = Enum.Material.ForceField
+			ShadowLimb.Transparency = -math.huge
+			ShadowLimb.Size = ActualLimb.Size
+			ShadowLimb.Parent = ShadowLimbs
+
+			local Actual = Instance.new("ObjectValue")
+			Actual.Name = "ActualLimb"
+			Actual.Value = ActualLimb
+			Actual.Parent = ShadowLimb
+
+			ShadowLimb:PivotTo(ActualLimb:GetPivot()) 
+		end
+	end
+
 	local CharRun = Animator:LoadAnimation(PlayerAnimations:WaitForChild("Run"))
 	local CharCrouchIdle = Animator:LoadAnimation(PlayerAnimations:WaitForChild("CrouchIdle"))
 	local CharCrouchWalk = Animator:LoadAnimation(PlayerAnimations:WaitForChild("CrouchWalk"))
@@ -146,7 +197,16 @@ function module.LoadChar(Character)
 	end
 
 	local function startRunning ()
-		if not Humanoid:GetAttribute("Running") and not standingStill and not Humanoid:GetAttribute("Crouching") and not walkingBackwards and UIS:IsKeyDown(KeybindHandler.Keybind("Sprint",Player)) and not Humanoid:GetAttribute("Downed") then
+		if not Humanoid:GetAttribute("Running") 
+			and not standingStill 
+			and not Humanoid:GetAttribute("Crouching") 
+			and not Character:GetAttribute("Loaded") 
+			and not walkingBackwards 
+			and UIS:IsKeyDown(KeybindHandler.Keybind("Sprint",Player))
+			and not Humanoid:GetAttribute("Downed") 
+			-- prevents the weird "sprint dashes" you can do if you held down sprint with zero stamina and it returned to one and consumed it.
+			and NewSprintInput 
+		then
 			Humanoid:SetAttribute("Running",true)
 			TweenService:Create(ViewmodelRun,TweenInfo.new(0.2),{Value = 1}):Play()
 		end
@@ -176,49 +236,96 @@ function module.LoadChar(Character)
 			task.wait(0.15)
 		end
 		if Humanoid:GetAttribute("Stamina") <= 0 then
+			NewSprintInput = false
 			stopRunning()
 		end
 	end
-	
+
 	local attributeFunctions = {
 		["Stamina"] = function()
-			if not staminaGrowthStarted then
+			if not staminaGrowthStarted and not Character:GetAttribute("Loaded") then
 				beginStaminaGrowth()
 			end
 		end,
-		
+
 		["Running"] = function()
-			if Humanoid:GetAttribute("Running") then
+			if Humanoid:GetAttribute("Running") and not Character:GetAttribute("Loaded") then
 				beginStaminaDrain()
 			end
 		end,
-		
+
 		["Crouching"] = function()
 			if Humanoid:GetAttribute("Crouching") and CharCrouchIdle then
 				TweenService:Create(ViewmodelCrouch,TweenInfo.new(0.2),{Value = 1}):Play()
-				CharCrouchIdle:Play()
+				CharCrouchIdle:Play(0.3)
 				if currentSpeed > 0 and CharCrouchWalk and not CrouchWalking then
 					CrouchWalking = true
-					CharCrouchWalk:Play(.3)
+					if not CharCrouchIdle.IsPlaying then
+						CharCrouchIdle:Play(0.3)
+					end
+					CharCrouchWalk:Play(0.3)
 				end
 			elseif Humanoid:GetAttribute("Crouching") == false and CharCrouchIdle then	
 				TweenService:Create(ViewmodelCrouch,TweenInfo.new(0.2),{Value = 0}):Play()
 				CrouchWalking = false
-				CharCrouchIdle:Stop(.2)
-				CharCrouchWalk:Stop(.2)
+				CharCrouchIdle:Stop(0.2)
+				CharCrouchWalk:Stop(0.2)
 			end
 		end,
 	}
-	
-	
-	
+
+	-- Moves the neck, waist, and shoulders and bases it off of the camera direction.
+	local function LimbMove (
+		CameraDirection: Vector3, 
+		LeftShoulder: Motor6D, 
+		RightShoulder: Motor6D,
+		Neck: Motor6D,
+		Waist: Motor6D,
+		HeldType: number)
+
+		-- Make sure we have everything
+		if not LeftShoulder 
+			or not RightShoulder 
+			or not Neck 
+			or not Waist 
+		then 
+			return 
+		end
+
+		local LimbTweenInfo = TweenInfo.new(0.1,Enum.EasingStyle.Linear,Enum.EasingDirection.Out)
+
+		local NeckWaistYDirection = if math.asin(CameraDirection.y) > 0 then
+			math.asin(CameraDirection.y)/6    
+			else math.asin(CameraDirection.y)/2
+		local NeckC0 = CFrame.new(Neck.C0.Position) * CFrame.Angles(0, -math.asin(CameraDirection.x), 0) * CFrame.Angles(math.asin(CameraDirection.y)/1.5, 0, 0)
+		local LeftShoulderC0 = CFrame.new(LeftShoulder.C0.Position)
+		local RightShoulderC0 = CFrame.new(RightShoulder.C0.Position)
+		local WaistC0 = CFrame.new(Waist.C0.Position)
+
+		WaistC0 = CFrame.new(Waist.C0.Position) * CFrame.Angles(NeckWaistYDirection, 0, 0)
+		if HeldType == 0 then
+			LeftShoulderC0 = CFrame.new(LeftShoulder.C0.Position) * CFrame.Angles(math.asin(CameraDirection.y),0,0)
+			RightShoulderC0 = CFrame.new(RightShoulder.C0.Position) * CFrame.Angles(math.asin(CameraDirection.y),0,0)
+		elseif HeldType == 1 then
+			RightShoulderC0 = CFrame.new(RightShoulder.C0.Position) * CFrame.Angles(math.asin(CameraDirection.y),0,0)
+		end
+
+		TweenService:Create(Neck, 			LimbTweenInfo, {C0 = NeckC0})			:Play()
+		TweenService:Create(LeftShoulder,	LimbTweenInfo, {C0 = LeftShoulderC0})	:Play()
+		TweenService:Create(RightShoulder,	LimbTweenInfo, {C0 = RightShoulderC0})	:Play()
+		TweenService:Create(Waist,	LimbTweenInfo, {C0 = WaistC0})	:Play()
+	end
+
 	local inputBegan = UIS.InputBegan:Connect(function(Input)
 		if CommonFuncs.AreInputUIsActive("Inventory") then return end
 		if Input.KeyCode == KeybindHandler.Keybind("Crouch",Player) then
 			startCrouching()
 		end
+		if Input.KeyCode == KeybindHandler.Keybind("Sprint",Player) then
+			NewSprintInput = true
+		end
 	end)
-	
+
 	local inputEnded = UIS.InputEnded:Connect(function(Input)
 		if Input.KeyCode == KeybindHandler.Keybind("Sprint",Player) then
 			stopRunning()
@@ -227,11 +334,11 @@ function module.LoadChar(Character)
 			stopRunning()
 		end
 	end)
-	
+
 	local humanoidRunning = Humanoid.Running:Connect(function(cS) --/ Get currentSpeed to tell if player is moving or not.
 		currentSpeed = cS
 	end)
-	
+
 	local attributeChanged = Humanoid.AttributeChanged:Connect(function(atr)
 		if attributeFunctions[atr] then --/ play attribute function from attribute if it exists
 			attributeFunctions[atr]()
@@ -257,7 +364,7 @@ function module.LoadChar(Character)
 			0,
 			(UIS:IsKeyDown(Enum.KeyCode.S) and 1 or 0) - (UIS:IsKeyDown(Enum.KeyCode.W) and 1 or 0)
 		)
-		
+
 		if CommonFuncs.AreInputUIsActive("Inventory") then 
 			TargetDirection = Vector3.new(0,0,0) 
 		end
@@ -321,12 +428,25 @@ function module.LoadChar(Character)
 				HeldType = 1
 			end
 		end
-		LookEvent:FireServer(CameraDirection,LeftShoulder,RightShoulder,Neck,HeldType)
 
+		-- Move limbs and send limb movements to server for other players.
+		LimbMove(CameraDirection, LeftShoulder, RightShoulder, Neck, Waist, HeldType)
+		LookEvent:FireServer(
+			CameraDirection,
+			LeftShoulder,
+			RightShoulder,
+			Neck,
+			Waist,
+			HeldType
+		)
+		-- Pivot shadow limbs and set torso/head to collide.
 		if Character then
-			Character.LowerTorso.CanCollide = false
-			Character.UpperTorso.CanCollide = false
-			Character.Head.CanCollide = false
+			for _,ShadowLimb in pairs(ShadowLimbs:GetChildren()) do
+				ShadowLimb:PivotTo(ShadowLimb.ActualLimb.Value:GetPivot())
+			end
+			Character.LowerTorso.CanCollide = true
+			Character.UpperTorso.CanCollide = true
+			Character.Head.CanCollide = true
 		end
 	end)
 
@@ -359,24 +479,36 @@ function module.LoadChar(Character)
 		end
 	end)
 
-	local LookEventFunction = LookEvent.OnClientEvent:Connect(function(CameraDirection,LeftShoulder,RightShoulder,Neck,HeldType)
-		if not LeftShoulder or not RightShoulder or not Neck then return end
-		local LimbTweenInfo = TweenInfo.new(0.1,Enum.EasingStyle.Linear,Enum.EasingDirection.Out)
-		local NeckC0 = CFrame.new(Neck.C0.Position) * CFrame.Angles(0, -math.asin(CameraDirection.x), 0) * CFrame.Angles(math.asin(CameraDirection.y), 0, 0)
-		local LeftShoulderC0 = CFrame.new(LeftShoulder.C0.Position)
-		local RightShoulderC0 = CFrame.new(RightShoulder.C0.Position)
-		if HeldType == 0 then
-			LeftShoulderC0 = CFrame.new(LeftShoulder.C0.Position) * CFrame.Angles(math.asin(CameraDirection.y),0,0)
-			RightShoulderC0 = CFrame.new(RightShoulder.C0.Position) * CFrame.Angles(math.asin(CameraDirection.y),0,0)
-		elseif HeldType == 1 then
-			RightShoulderC0 = CFrame.new(RightShoulder.C0.Position) * CFrame.Angles(math.asin(CameraDirection.y),0,0)
-		end
-		TweenService:Create(Neck, 			LimbTweenInfo, {C0 = NeckC0})			:Play()
-		TweenService:Create(LeftShoulder,	LimbTweenInfo, {C0 = LeftShoulderC0})	:Play()
-		TweenService:Create(RightShoulder,	LimbTweenInfo, {C0 = RightShoulderC0})	:Play()
+
+
+	local LookEventFunction = LookEvent.OnClientEvent:Connect(function(
+		CameraDirection: Vector3, 
+		LeftShoulder: Motor6D, 
+		RightShoulder: Motor6D,
+		Neck: Motor6D,
+		Waist: Motor6D,
+		HeldType: number
+	)
+		LimbMove(CameraDirection, LeftShoulder, RightShoulder, Neck, Waist, HeldType)
 	end)
 
 	Humanoid.Died:Once(function()
+		if ShadowLimbs then
+			ShadowLimbs:Destroy()
+		end
+		inputBegan:Disconnect()
+		inputEnded:Disconnect()
+		heartBeat:Disconnect()
+		runChange:Disconnect()
+		attributeChanged:Disconnect()
+		humanoidRunning:Disconnect()
+	end)
+	Character.AncestryChanged:Once(function()
+		Humanoid:SetAttribute("Running", false)
+		Humanoid:SetAttribute("Stamina", Humanoid:GetAttribute("MaxStamina"))
+		if ShadowLimbs then
+			ShadowLimbs:Destroy()
+		end
 		inputBegan:Disconnect()
 		inputEnded:Disconnect()
 		heartBeat:Disconnect()
