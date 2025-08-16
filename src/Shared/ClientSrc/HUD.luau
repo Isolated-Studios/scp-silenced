@@ -224,7 +224,7 @@ local function updateGunDisplay(Gun: ToolClass.ClassType)
 end
 
 local function updateToolDisplay(equipping, Tool: ToolClass.ClassType, transitionTime)
-	if equipping == 1 then
+	if equipping then
 		NameText.Text = Tool.Instance.Name
 		TweenService:Create(GunInfoFrame, TweenInfo.new(transitionTime), {GroupTransparency = 0}):Play()
 		GunInfoFrame.Visible = true
@@ -246,8 +246,8 @@ end
 function module.LoadChar(Character)
 	Backpack = Player:WaitForChild("Backpack")
 	
-	ToolHandler.ToolEquipping:Connect(updateToolDisplay, 1)
-	ToolHandler.ToolUnequipping:Connect(updateToolDisplay, 0)
+	ToolHandler.ToolEquipping:Connect(updateToolDisplay, true)
+	ToolHandler.ToolUnequipping:Connect(updateToolDisplay, false)
 	
 	local Humanoid = Character:WaitForChild("Humanoid")
 	local PlayerEffectsFolder = Player.PlayerScripts:WaitForChild("Effects")
