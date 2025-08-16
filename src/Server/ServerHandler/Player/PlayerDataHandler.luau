@@ -12,20 +12,32 @@ local Players = game:GetService("Players")
 local ProfileStore = require(ServerScriptStorage.ServerStoredModules.ProfileStore)
 
 -- Events
-local SaveSettingChange = ReplicatedStorage.Events.Interaction.SaveSettingChange
+local DataEvents = ReplicatedStorage.Events.Data
+
+local SaveSettingChange = DataEvents.SaveSettingChange
+local StatChange = DataEvents.StatChange
 
 -- ProfileStore setup
 local TemplateSettings = ServerStorage.PlayerDataTemplate.Settings
-local GatheredDefaults = {}
+local TemplateStats = ServerStorage.PlayerDataTemplate.Stats
+local GatheredSettingDefaults = {}
+local GatheredStatDefaults = {}
 
 for _,Setting in pairs(TemplateSettings:GetDescendants()) do
 	if not Setting:IsA("Folder") then
-		GatheredDefaults[Setting.Name] = Setting:GetAttribute("Default")
+		GatheredSettingDefaults[Setting.Name] = Setting:GetAttribute("Default")
+	end
+end
+
+for _,Stat in pairs(TemplateStats:GetDescendants()) do
+	if not Stat:IsA("Folder") then
+		GatheredStatDefaults[Stat.Name] = Stat:GetAttribute("Default")
 	end
 end
 
 local ProfileTemplate = {
-	Settings = GatheredDefaults
+	Settings = GatheredSettingDefaults,
+	Stats = GatheredStatDefaults,
 }
 local PlayerStore = ProfileStore.New("PlayerStore", ProfileTemplate)
 
@@ -46,7 +58,7 @@ function PlayerDataHandler.Init (Player)
 	if Profile then
 		Profile:AddUserId(Player.UserId)
 		Profile:Reconcile() -- This fills any missing variables in from our ProfileTemplate
-		
+
 		-- Kick the player out because the session has ended
 		Profile.OnSessionEnd:Connect(function()
 			Profiles[Player] = nil
@@ -60,13 +72,19 @@ function PlayerDataHandler.Init (Player)
 			-- Player left before profile session was started.
 			Profile:EndSession()
 		end
-		
+
 		for _,Setting in pairs(ReplicatedStorage.Players[tostring(Player.UserId)].Settings:GetDescendants()) do
 			if not Setting:IsA("Folder") then
 				Setting.Value = Profile.Data.Settings[Setting.Name]
 			end
 		end
-		
+
+		for _,Stat in pairs(ReplicatedStorage.Players[tostring(Player.UserId)].Stats:GetDescendants()) do
+			if not Stat:IsA("Folder") then
+				Stat.Value = Profile.Data.Stats[Stat.Name]
+			end
+		end
+
 	else
 		-- This should really only happen if the Roblox server shuts down.
 		Player:Kick("Server shutdown. Please rejoin.")
@@ -89,6 +107,14 @@ SaveSettingChange.OnServerEvent:Connect(function(Player, Setting, NewValue)
 		local Profile = Profiles[Player]
 		Setting.Value = NewValue
 		Profile.Data.Settings[Setting.Name] = NewValue
+	end
+end)
+
+StatChange.Event:Connect(function(Player, Stat, NewValue)
+	if Stat and NewValue then
+		local Profile = Profiles[Player]
+		Stat.Value = NewValue
+		Profile.Data.Stats[Stat.Name] = NewValue
 	end
 end)
 
