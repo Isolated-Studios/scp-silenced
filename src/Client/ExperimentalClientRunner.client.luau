@@ -49,6 +49,7 @@ loadModule(ClientSrc.Inventory)
 loadModule(ClientSrc.CustomChat)
 loadModule(ClientSrc.SettingsHandler)
 loadModule(ClientSrc.PlayerHover)
+loadModule(ClientSrc.SoundsSystem)
 
 -- // Character-specific modules
 --loadModule(ClientSrc.Vaulting)   [[ ON HALT ]]
