@@ -107,36 +107,34 @@ function Gun.new(Tool: Tool): ClassType
 	local self: ClassType = setmetatable(ToolClass.new(Tool), Gun)
 	assert(self.Handle, `Gun {Tool:GetFullName()} is missing a Handle`)
 	
+	self.Bolted = false
 	self.Ammo = self.Settings.MagSize
 	
-	self.Bindings = {
-		["Fire"] = {
-			InputType = Enum.UserInputType.MouseButton1;
-			InputState = Enum.UserInputState.Begin;
-			DebugBinding = true; -- so the KeybindHandler doesn't constantly get called and print warnings for no reason.
-			Handler = Utils.wrapMethod(self, self.Click);
-		};
-		["R1"] = {
-			InputType = Enum.UserInputType.Keyboard;
-			InputState = Enum.UserInputState.Begin;
-			DebugBinding = Enum.KeyCode.H;
-			Handler = Utils.wrapMethod(self, self.Reload);
-		};
-		["R2"] = {
-			InputType = Enum.UserInputType.Keyboard;
-			InputState = Enum.UserInputState.Begin;
-			DebugBinding = Enum.KeyCode.J;
-			Handler = Utils.wrapMethod(self, self.Reload);
-		};
-		["R3"] = {
-			InputType = Enum.UserInputType.Keyboard;
-			InputState = Enum.UserInputState.Begin;
-			DebugBinding = Enum.KeyCode.K;
-			Handler = Utils.wrapMethod(self, self.Reload);
-		};
+	self.Bindings["Fire"] = {
+		InputType = Enum.UserInputType.MouseButton1;
+		InputState = Enum.UserInputState.Begin;
+		DebugBinding = true; -- so the KeybindHandler doesn't constantly get called and print warnings for no reason.
+		Handler = Utils.wrapMethod(self, self.Click);
+	}
+	self.Bindings["R1"] = {
+		InputType = Enum.UserInputType.Keyboard;
+		InputState = Enum.UserInputState.Begin;
+		DebugBinding = Enum.KeyCode.H;
+		Handler = Utils.wrapMethod(self, self.Reload);
+	}
+	self.Bindings["R2"] = {
+		InputType = Enum.UserInputType.Keyboard;
+		InputState = Enum.UserInputState.Begin;
+		DebugBinding = Enum.KeyCode.J;
+		Handler = Utils.wrapMethod(self, self.Reload);
+	}
+	self.Bindings["R3"] = {
+		InputType = Enum.UserInputType.Keyboard;
+		InputState = Enum.UserInputState.Begin;
+		DebugBinding = Enum.KeyCode.K;
+		Handler = Utils.wrapMethod(self, self.Reload);
 	}
 	
-	self.Bolted = false
 	self.AnimationEvents = {
 		-- DEPRECATED, PLEASE USE "Sound" EVENT FOR SOUNDS
 		["LoadGate"] = function()

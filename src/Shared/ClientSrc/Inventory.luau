@@ -567,7 +567,7 @@ local function loadCharacter(Character)
 			end
 		end
 
-		if input.KeyCode == KeybindHandler.Keybind("Drop",game.Players.LocalPlayer) then
+		if input.KeyCode == KeybindHandler.Keybind("Drop",game.Players.LocalPlayer) and Main.Interactable then
 			local HoveredTool = Main.HoveredTool
 			if HoveredTool.Value then
 				CTF.dropItem(Character,HoveredTool.Value)

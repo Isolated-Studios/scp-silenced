@@ -1,4 +1,4 @@
-local Tool = require(script.Parent)
+local ToolClass = require(script.Parent)
 
 --[[
 	====== TYPE DEFINITIONS ======
@@ -7,12 +7,13 @@ local Tool = require(script.Parent)
 	useful definitions such as the custom Enum 'Tool.State'.
 ]]
 
-export type ClassType = Tool.ClassType & {
+export type ClassType = ToolClass.ClassType & {
 	
 }
 
-local Melee: ClassType = {}
+local Melee = setmetatable({}, ToolClass)
 Melee.__index = Melee
+Melee.ClassName = "Melee"
 
 --[[
 	====== FUNCTION DEFINITIONS ======
@@ -22,8 +23,8 @@ Melee.__index = Melee
 	other utilities.
 ]]
 
-function Melee.new(data: ClassType): ClassType
-	local self: ClassType = setmetatable(Tool.new(data), Melee)
+function Melee.new(Tool: Tool): ClassType
+	local self: ClassType = setmetatable(ToolClass.new(Tool), Melee)
 
 	return self
 end

@@ -5,6 +5,7 @@ local UserInputService = game:GetService("UserInputService")
 local KeybindHandler = require(ReplicatedStorage.Modules.UI.KeybindHandler)
 local ViewModelHandler = nil -- STUPID recursive requires() 💔
 local Utils = require(ReplicatedStorage.Modules.Utils)
+local CTF = nil
 
 -- Preliminary important global variables.
 local LocalPlayer = Players.LocalPlayer
@@ -149,6 +150,15 @@ function Tool.new(ToolInstance: Tool): ClassType
 	end
 	self.__loaded_animations = {} -- Don't use this, it's only used as a strong reference to loaded animations, as the global one is a weak table.
 	
+	self.Bindings = {
+		["Drop"] = {
+			InputType = Enum.UserInputType.Keyboard;
+			InputState = Enum.UserInputState.Begin;
+			DebugBinding = nil;
+			Handler = Utils.wrapMethod(self, self.Drop);
+		}
+	}
+	
 	return self
 end
 
@@ -257,7 +267,7 @@ end
 function Tool:PlayAnimationFor(name: string, playTime: number, fadeTime: number?, weight: number?): AnimationTrack?
 	local Animation = self:GetAnimation(name, self.Animations[name])
 	if not Animation then return nil end
-	Animation:Play(fadeTime, weight, Animation.Length / playTime)
+	Animation:Play(fadeTime, weight, Animation.Length / (playTime or 1))
 	return Animation
 end
 
@@ -271,6 +281,13 @@ function Tool:StopAnimation(name: string, fadeTime: number?): AnimationTrack?
 	if not Animation then return nil end
 	Animation:Stop(fadeTime)
 	return Animation
+end
+
+function Tool:Drop()
+	if self.State ~= Tool.State.Equipped then return end
+	if not CTF then CTF = require(ReplicatedStorage.Modules.Tool.CommonToolFunctions) end
+	self:Unequip()
+	CTF.dropItem(Character, self.Instance)
 end
 
 function Tool:__connect(name: string, signal: RBXScriptSignal, handler: (...any) -> (any...)): RBXScriptConnection

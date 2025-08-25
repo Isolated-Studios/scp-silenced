@@ -112,7 +112,6 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 	end
 
 	--//Animation Priming
-	local animationEventsList = {}
 	local animationFunctionsList = {}
 	local Animator = Humanoid:WaitForChild("Animator")
 	local VMAnimator = Viewmodel.Humanoid.Animator

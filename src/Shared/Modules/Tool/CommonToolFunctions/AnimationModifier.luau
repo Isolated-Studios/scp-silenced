@@ -13,7 +13,6 @@ local ViewmodelEvents = Events:WaitForChild("Viewmodel")
 local ToolEvents = Events:WaitForChild("Tool")
 
 --//Events
-local ResetIcons = ViewmodelEvents:WaitForChild("ResetIcons")
 local SetItemHolder = ToolEvents:WaitForChild("SetItemHolder")
 local Itemize = ToolEvents:WaitForChild("Itemize")
 
@@ -32,7 +31,6 @@ function module.dropItem (Character,Tool)
 	if Character:FindFirstChildOfClass("Tool") and Character:FindFirstChildOfClass("Tool") == Tool then
 		Humanoid:UnequipTools()
 	end
-	ResetIcons:Fire(Tool)
 
 	if Tool:GetAttribute("ToolType") == 12 then
 		SetItemHolder:FireServer(Tool,"Capacity",Tool.Holder.Capacity.Value)

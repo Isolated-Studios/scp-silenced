@@ -226,7 +226,7 @@ end
 local function updateToolDisplay(equipping, Tool: ToolClass.ClassType, transitionTime)
 	if equipping then
 		NameText.Text = Tool.Instance.Name
-		TweenService:Create(GunInfoFrame, TweenInfo.new(transitionTime), {GroupTransparency = 0}):Play()
+		TweenService:Create(GunInfoFrame, TweenInfo.new(transitionTime or 0.3), {GroupTransparency = 0}):Play()
 		GunInfoFrame.Visible = true
 		
 		if Tool and Tool.ClassName == "Gun" then
