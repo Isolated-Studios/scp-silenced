@@ -1,11 +1,16 @@
 local module = {}
+-- Services
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Teams = game:GetService("Teams")
 
+-- Modules
+local CodeNameHandler = require(script.CodeNameHandler)
 local HairColorsList = require(script.HairColors)
 local SkinColorsList = require(script.SkinColors)
 local NamesList = require(script.Names)
 
-local PlayerAssets  = ReplicatedStorage.PlayerAssets
+-- Other
+local PlayerAssets = ReplicatedStorage.PlayerAssets
 local Looks = PlayerAssets.Looks
 local PrimeChatBubble = PlayerAssets.Chat.ChatBubble
 local HumanLooks = Looks.Humans
@@ -52,7 +57,7 @@ local function Clothingify(Character: Model, Article: Model | BasePart, isClone:
 	if Article:IsA("Model") then
 		assert(Article.PrimaryPart, "Provided clothing piece is a Model that has no PrimaryPart set")
 		PrimaryPart = Article.PrimaryPart
-		
+
 		if color then -- Set color of article, particularly for the hair
 			for _,part in pairs(Article:GetChildren()) do
 				if part:IsA("BasePart") then
@@ -60,7 +65,7 @@ local function Clothingify(Character: Model, Article: Model | BasePart, isClone:
 				end
 			end
 		end
-		
+
 	else
 		PrimaryPart = Article
 		if color then  -- Set color of article, particularly for the hair
@@ -99,26 +104,26 @@ function module.Init(Character)
 	ChatBubble.Parent = Character:WaitForChild("UpperTorso")
 	ChatBubble.Adornee = Character.UpperTorso
 	ChatBubble.PlayerToHideFrom = Player
-	
+
 	local Profile = Character:WaitForChild("Profile")
-	
+
 	-- Role and RoleColor will just be set as the Team and TeamColor for now
 	Profile:SetAttribute("Role", Player.Team.Name)
 	Profile:SetAttribute("RoleColor", Player.TeamColor.Color)
-	
+
 	local ChosenSkinColor = math.random(0,1)
 	local AlienChance = math.random(1,100)
-	
+
 	if AlienChance == 1 then -- Alien chance overrides skin color
 		ChosenSkinColor = 2
 	end
-	
+
 	local raceTable = {
 		[0] = {WhiteSkinColors,WhiteHairColors}, -- group white
 		[1] = {BlackSkinColors,BlackHairColors}, -- group black
 		[2] = {AlienSkinColors,AlienSkinColors} -- group alien
 	}
-	
+
 	local SkinColor = raceTable[ChosenSkinColor][1][math.random(1,#raceTable[ChosenSkinColor][1])] -- get skin color
 	local HairColor = raceTable[ChosenSkinColor][2][math.random(1,#raceTable[ChosenSkinColor][2])] -- get hair color
 
@@ -128,7 +133,7 @@ function module.Init(Character)
 	Character.BodyColor.RightArmColor3 = SkinColor
 	Character.BodyColor.RightLegColor3 = SkinColor
 	Character.BodyColor.TorsoColor3 = SkinColor
-	
+
 	local Gender = math.random(0,1)
 	local genderTable = {
 		[0] = "Male",
@@ -136,7 +141,7 @@ function module.Init(Character)
 	}
 	Profile:SetAttribute("Gender",Gender)
 	Profile:SetAttribute("LastName",LastNames[math.random(1,#LastNames)])
-	
+
 	if Gender == 1 then
 		-- Changes torso to be "woman" and gives a female first name.
 		Character.UpperTorso.Mesh.MeshId = Character.UpperTorso.Mesh:GetAttribute("MeshId")
@@ -146,32 +151,38 @@ function module.Init(Character)
 		Profile:SetAttribute("FirstName",MaleNames[math.random(1,#MaleNames)])
 	end
 	
+	-- Set code name.
+	CodeNameHandler.SetCodeName(Player, Profile)
+
 	local optionVoices = {}
-	for _,voice in pairs(Voices:GetChildren()) do -- gather potential voices
+	-- gather potential voices
+	for _,voice in pairs(Voices:GetChildren()) do
 		if voice:GetAttribute("Type") == Gender then
 			table.insert(optionVoices,voice.Name)
 		end
 	end
 	Profile:SetAttribute("Voice",optionVoices[math.random(1,#optionVoices)]) -- assign a voice
-	
-	local PickedFolder = TeamLooks.Scientist[genderTable[Profile:GetAttribute("Gender")]].Standard
+
+	local PickedFolder = if Player.Team == Teams["Facility Personnel"] then 
+		TeamLooks.Scientist[genderTable[Profile:GetAttribute("Gender")]].Standard
+		else TeamLooks["Class-D"][genderTable[Profile:GetAttribute("Gender")]].Standard
 
 	for _, primeArticle in pairs(PickedFolder:GetChildren()) do
 		Clothingify(Character, primeArticle)
 	end
-	
+
 	local HairFolder = HairLooks[genderTable[Profile:GetAttribute("Gender")]]
-	
+
 	if AlienChance == 1 then -- Pick alien "hair"
 		HairFolder = HairLooks["Alien"]
 		HairColor = SkinColor
-		
+
 		Profile:SetAttribute("FirstName",AlienNames[math.random(1,#AlienNames)])
 		Profile:SetAttribute("LastName",AlienNames[math.random(1,#AlienNames)])
 	end
-	
+
 	local pickedHair = HairFolder:GetChildren()[math.random(1,#HairFolder:GetChildren())]
-	
+
 	Clothingify(Character, pickedHair, nil, "Hair",HairColor)
 
 	Character.ChildAdded:Connect(function(Child)

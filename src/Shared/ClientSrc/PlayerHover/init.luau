@@ -14,6 +14,7 @@ local CommonToolFunctions = require(Modules.Tool.CommonToolFunctions)
 local CommonFunctions = require(Modules.CommonFuncs)
 local KeybindHandler = require(Modules.UI.KeybindHandler)
 local TeamHandler = require(Modules.Interaction.TeamHandler)
+local CodeNameBehaviorHandler = require(script.CodeNameBehavior)
 
 local module = {}
 
@@ -40,7 +41,6 @@ local CurrentAnimTrack
 local Current = nil
 local BeginningInput = nil
 
-
 function module.LoadChar(Char)
 	Character = Char
 	Mouse.TargetFilter = Character
@@ -64,9 +64,9 @@ local function getStatusWithHealth (CurrentHealth,MaxHealth)
 end
 
 function module.Init()
-	
+
 	local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
-	
+
 	local MouseUI = PlayerGui:WaitForChild("MouseUI")
 	local Dot: Frame = MouseUI:WaitForChild("Dot")
 	local Texts: Frame = Dot:WaitForChild("Texts")
@@ -81,18 +81,33 @@ function module.Init()
 		if Current 
 			and Current:FindFirstChild("Profile")
 			and Current:FindFirstChild("Humanoid") 
+			and Players:GetPlayerFromCharacter(Current)
 		then
 			local CurrentPlayer = Players:GetPlayerFromCharacter(Current)
+			local LocalTeam = LocalPlayer.Team
 			local Profile = Current.Profile
 			local Humanoid = Current.Humanoid
-			
-			PlayerName.Text = Profile:GetAttribute("FirstName").." "..Profile:GetAttribute("LastName") .." ("..CurrentPlayer.Name..")"
+			local FirstName = Profile:GetAttribute("FirstName")
+			local LastName = Profile:GetAttribute("LastName")
+			local AssembledName = FirstName.." "..LastName
+
+			-- Code names are names that are shown that are not your actual name.
+			-- These code names are shown through certain behaviors involving the LocalPlayer and the player being checked teams.
+			if Profile:GetAttribute("CodeName") then
+				local CodeNameBehavior = LocalPlayer.Team:GetAttribute("CodeNameBehavior") or 0
+				local UseCodeNames = CodeNameBehaviorHandler.UseCodeNames[CodeNameBehavior](LocalPlayer, CurrentPlayer)
+				if UseCodeNames then
+					AssembledName = Profile:GetAttribute("CodeName") 
+				end
+			end
+
+			PlayerName.Text = AssembledName .." ("..CurrentPlayer.Name..")"
 			PlayerRole.Text = Profile:GetAttribute("Role")
 			PlayerRole.TextColor3 = Profile:GetAttribute("RoleColor")
-			
+
 			PlayerName.Visible = true
 			PlayerRole.Visible = true
-			
+
 			if TeamHandler.Check(Players.LocalPlayer,CurrentPlayer) ~= 1 then
 				local StatusText, TextColor, Ratio = getStatusWithHealth(Humanoid.Health,Humanoid.MaxHealth) 
 				PlayerHealthStatus.Text = StatusText
