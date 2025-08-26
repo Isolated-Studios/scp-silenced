@@ -22,6 +22,7 @@ local RoleToDialogue = {
 [6] = Bludgeoned
 [7] = lol this guy died from a stun grenade
 [8] = Bled out
+[9] = Fall damage
 ]]
 
 function Deathnotes.Messages (Observer: Player, Profile: Configuration, AddedWords: table)
@@ -48,7 +49,8 @@ function Deathnotes.Messages (Observer: Player, Profile: Configuration, AddedWor
 			[5] = "Deep lacerations cover " ..ChosenPronouns[2].. " body.",
 			[6] = "Large bruises cover " ..ChosenPronouns[2].. " body.",
 			[7] = ChosenPronouns[2]:gsub("^%l", string.upper).. " eyes are pale white.",
-			[8] = "Lacerations cover " ..ChosenPronouns[2].. " body. " ..ChosenPronouns[1]:gsub("^%l", string.upper).. " must have bled to death."
+			[8] = "Lacerations cover " ..ChosenPronouns[2].. " body. " ..ChosenPronouns[1]:gsub("^%l", string.upper).. " must have bled to death.",
+			[9] = ChosenPronouns[2]:gsub("^%l", string.upper).. " body is a mess of broken bones and blood."
 		},
 	}
 	

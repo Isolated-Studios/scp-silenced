@@ -5,6 +5,7 @@ local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
+local Debris = game:GetService("Debris")
 
 local Events = ReplicatedStorage.Events
 local Modules = ReplicatedStorage.Modules
@@ -17,7 +18,11 @@ local Player = game.Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
 local LookEvent = Events.Character.LookEvent
+local DamageEvent = Events.Tool.Damage
+local SoundEvent = Events.Tool.SoundEvent
+
 local PlayerAnimations = ReplicatedStorage.PlayerAssets.Animations.Character.Movement
+local FallDamageSounds = ReplicatedStorage.Sounds.FallDamage
 
 local CrouchTweenInfo = TweenInfo.new(.2,Enum.EasingStyle.Linear,Enum.EasingDirection.InOut)
 
@@ -26,6 +31,14 @@ local DefaultRunSpeed = 28
 local DefaultCrouchSpeed = 10
 local DefaultDownedSpeed = 5
 local regenWaitNumber = 1
+local MajorFallSoundDamage = 40 -- How much damage needs to at least happen for Major fall damage sound to play. 
+
+-- Fall damage values
+local MaxVelocity = 150 -- Maximum velocity for player to take the max damage.
+local MinVelocity = 70 -- Minimum velocity to start taking fall damage.
+local MaxFallDamage = 100
+local FallDamageTeams = {"Class-D", "Facility Personnel"} -- Teams that can take fall damage.
+
 local stillCrouchOffset = Vector3.new(0,-1.75,0)
 local movingCrouchOffset = Vector3.new(0,-1.3,0)
 local downedOffset = Vector3.new(0,-3.5,0)
@@ -64,6 +77,9 @@ function module.LoadChar(Character)
 	local RightShoulder = Character:WaitForChild("RightUpperArm"):WaitForChild("RightShoulder")
 	local Waist = UpperTorso:WaitForChild("Waist")
 	local Neck = Head:WaitForChild("Neck")
+
+	local InteractUI = Player.PlayerGui:WaitForChild("InteractUI")
+	local SittingUI = InteractUI.SittingUI
 
 	local AllowedLimbs = {
 		"Head",
@@ -272,6 +288,17 @@ function module.LoadChar(Character)
 				CharCrouchWalk:Stop(0.2)
 			end
 		end,
+
+		["Sitting"] = function()
+			if Humanoid:GetAttribute("Sitting") then
+				SittingUI.Text = "Press '".. KeybindHandler.Keybind("Get Out of Seat", Player).Name .."' to get up."
+				SittingUI.Visible = true
+			else
+				SittingUI.Visible = false
+				Humanoid.Seat.Value = nil
+				Humanoid.Sit = false
+			end
+		end,
 	}
 
 	-- Moves the neck, waist, and shoulders and bases it off of the camera direction.
@@ -318,18 +345,23 @@ function module.LoadChar(Character)
 
 	local inputBegan = UIS.InputBegan:Connect(function(Input)
 		if CommonFuncs.AreInputUIsActive("Inventory") then return end
-		if Input.KeyCode == KeybindHandler.Keybind("Crouch",Player) then
+		if Input.KeyCode == KeybindHandler.Keybind("Crouch", Player) then
 			startCrouching()
 		end
-		if Input.KeyCode == KeybindHandler.Keybind("Sprint",Player) then
+		if Input.KeyCode == KeybindHandler.Keybind("Sprint", Player) then
 			NewSprintInput = true
+		end
+		if Input.KeyCode == KeybindHandler.Keybind("Get Out of Seat", Player) then
+			if Humanoid:GetAttribute("Sitting") then
+				Humanoid:SetAttribute("Sitting", nil)
+			end
 		end
 	end)
 
 	local inputEnded = UIS.InputEnded:Connect(function(Input)
-		if Input.KeyCode == KeybindHandler.Keybind("Sprint",Player) then
+		if Input.KeyCode == KeybindHandler.Keybind("Sprint", Player) then
 			stopRunning()
-		elseif Input.KeyCode == KeybindHandler.Keybind("Crouch",Player) then
+		elseif Input.KeyCode == KeybindHandler.Keybind("Crouch", Player) then
 			stopCrouching()
 			stopRunning()
 		end
@@ -479,7 +511,47 @@ function module.LoadChar(Character)
 		end
 	end)
 
+	-- Determines fall damage.
+	local StateChanged = Humanoid.StateChanged:Connect(function(OldState, NewState)
+		if OldState == Enum.HumanoidStateType.Freefall 
+			and NewState == Enum.HumanoidStateType.Landed
+			and table.find(FallDamageTeams, Player.Team.Name) -- Player is a playing team, so they can take fall damage
+		then
+			local Velocity = HumanoidRootPart.Velocity.Y
+			local FallDamageSound = FallDamageSounds.Minor
+			local Damage = 0
+			Velocity *= -1
 
+			if Velocity > MaxVelocity then
+				Damage = MaxFallDamage
+			elseif Velocity > MinVelocity then
+				Damage = math.clamp(Velocity / 2, 0, MaxFallDamage)
+			end
+
+			if Damage <= 0 then -- If damage is nothing, return.
+				return 
+			elseif Damage >= MajorFallSoundDamage then
+				FallDamageSound = FallDamageSounds.Major
+			end
+
+			local Tool = {
+				["Damage"] = Damage,
+				["CanDown"] = false,
+				["GibChance"] = 0.5,
+				["AnnihilationRange"] = {1,5}
+			}
+			DamageEvent:FireServer(
+				Tool,
+				Character,
+				Humanoid,
+				Character.UpperTorso, -- HitPart
+				9, -- Deathnote
+				-HumanoidRootPart.CFrame.UpVector -- Direction
+			)
+			SoundEvent:FireServer(FallDamageSound, HumanoidRootPart, true, true)
+
+		end
+	end)
 
 	local LookEventFunction = LookEvent.OnClientEvent:Connect(function(
 		CameraDirection: Vector3, 
@@ -493,6 +565,8 @@ function module.LoadChar(Character)
 	end)
 
 	Humanoid.Died:Once(function()
+		Humanoid:SetAttribute("Sitting", nil)
+		SittingUI.Visible = false
 		if ShadowLimbs then
 			ShadowLimbs:Destroy()
 		end
@@ -506,6 +580,8 @@ function module.LoadChar(Character)
 	Character.AncestryChanged:Once(function()
 		Humanoid:SetAttribute("Running", false)
 		Humanoid:SetAttribute("Stamina", Humanoid:GetAttribute("MaxStamina"))
+		Humanoid:SetAttribute("Sitting", nil)
+		SittingUI.Visible = false
 		if ShadowLimbs then
 			ShadowLimbs:Destroy()
 		end

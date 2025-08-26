@@ -1,4 +1,5 @@
 local module = {}
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Events = ReplicatedStorage.Events
 local Modules = ReplicatedStorage.Modules
@@ -44,7 +45,7 @@ end
 function module.Init()
 	DamageEvent.OnServerEvent:Connect(function(
 		Player: Player,
-		Tool: Tool,
+		Tool: Tool, -- or table
 		Character: Character,
 		HitHumanoid: Humanoid,
 		HitPart: Part,
@@ -53,12 +54,42 @@ function module.Init()
 		Distance: number,
 		noLimbDamageAdjust: boolean
 	)
+		local Damage = nil
+		local CanDown = nil
+		local HeadshotFactor = 0
+		local AP = 0
+		local GibChance = nil
+		local Sever = nil
+		local LegMultiplier = nil
+		local AnnihilationRange = nil
+		
 		if not HitHumanoid then return end
 		local HitCharacter = HitHumanoid.Parent
+		if not HitCharacter then return end
 		--if not isObstructed(Character.PrimaryPart,HitCharacter.PrimaryPart) then
+		if typeof(Tool) == "table" then
+			if Player ~= Players:GetPlayerFromCharacter(HitCharacter) then return end
+			Damage = Tool["Damage"] or nil
+			CanDown = Tool["CanDown"] or false
+			HeadshotFactor = Tool["HeadshotFactor"] or 0
+			AP = Tool["AP"] or 0
+			GibChance = Tool["GibChance"] or 0
+			Sever = Tool["Sever"] or nil
+			LegMultiplier = Tool["LegMultiplier"] or nil
+			AnnihilationRange = Tool["AnnihilationRange"] or nil
+			
+		else
 			local ToolObjects = Tools[Tool:GetAttribute("ToolName")]
 			local Settings = require(ToolObjects.Settings)
-			local Damage = Settings.Damage
+			Damage = Settings.Damage
+			CanDown = Settings.CanDown or false
+			HeadshotFactor = Settings.HeadshotFactor or 0
+			AP = Settings.AP or 0
+			GibChance = Settings.GibChance
+			Sever = Settings.Sever
+			LegMultiplier = Settings.LegMultiplier
+			AnnihilationRange = Settings.AnnihilationRange
+			
 			if Distance and Settings.MidFallOffDist and Settings.LongFallOffDist and Settings.MidFallOffMult and Settings.LongFallOffMult then
 				if Distance >= Settings.MidFallOffDist and Distance < Settings.LongFallOffDist then
 					Damage = Damage*Settings.MidFallOffMult
@@ -66,23 +97,25 @@ function module.Init()
 					Damage = Damage*Settings.LongFallOffMult
 				end
 			end
+		end
+			
 		DamageHandler.Damage(
-			Settings.Damage, -- Damage, number
+			Damage, -- Damage, number
 			HitHumanoid, --HitHumanoid, Humanoid
 			HitPart, -- HitPart, Part
 			Player, -- Killer, Player
-			Settings.CanDown, -- DowningTime, number
-			0, -- Deathnote, number
+			CanDown, -- DowningTime, number
+			Deathnote, -- Deathnote, number
 			true, -- Twitch, boolean
-			Settings.HeadshotFactor or 0, -- HeadshotFactor, number
-			Settings.AP or 0, -- AP, number
+			HeadshotFactor or 0, -- HeadshotFactor, number
+			AP, -- AP, number
 			true, -- Blood, boolean
 			Direction, -- Direction, Vector3
-			Settings.GibChance, -- Gibchance, number
-			Settings.Sever, -- Sever, boolean
+			GibChance, -- Gibchance, number
+			Sever, -- Sever, boolean
 			noLimbDamageAdjust, -- noLimbDamageAdjust, boolean
-			Settings.LegMultiplier, -- LegMultiplier, number
-			nil -- AnnihilationRange, table
+			LegMultiplier, -- LegMultiplier, number
+			AnnihilationRange -- AnnihilationRange, table
 		)
 		--end
 	end)
