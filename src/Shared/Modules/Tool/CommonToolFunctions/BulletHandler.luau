@@ -167,7 +167,7 @@ BulletCaster.RayHit:Connect(function(cast, raycastResult,segmentVelocity,cosmeti
 	end
 end)
 
-function module.breakGlass (HitPosition,HitPart,CasterCFrame,noevent)
+function module.breakGlass (HitPosition: Vector3, HitPart: BasePart, CasterCFrame: CFrame, noevent: boolean)
 	if HitPart:GetAttribute("Shatter") and not HitPart:GetAttribute("Shattered") then
 		local RespawnTime = HitPart:GetAttribute("RespawnTime") or 60
 		local Glass = HitPart:Clone()
@@ -189,6 +189,10 @@ function module.breakGlass (HitPosition,HitPart,CasterCFrame,noevent)
 			HitPart.CanCollide = true
 		end)
 	end
+end
+
+function module.explode ()
+	
 end
 
 function module.createBulletHole (raycastResult,hitPerson,isPellet,randomValue)

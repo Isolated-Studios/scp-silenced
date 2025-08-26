@@ -1,39 +1,45 @@
 local module = {}
+-- Services
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 local CollectionService = game:GetService("CollectionService")
 local Debris = game:GetService("Debris")
 local Players = game:GetService("Players")
 
+-- Replicated Storage Objects
 local TemporaryParts = workspace:WaitForChild("TemporaryParts")
-local Objects = ReplicatedStorage:WaitForChild("Objects")
-local Events = ReplicatedStorage:WaitForChild("Events")
-local Modules = ReplicatedStorage:WaitForChild("Modules")
-local GrenadeObjects = Objects:WaitForChild("GrenadeObjects")
-local ExplosionEffects = GrenadeObjects:WaitForChild("ExplosionEffects")
-local SpreadTemples = GrenadeObjects:WaitForChild("SpreadTemplates")
+local Objects = ReplicatedStorage.Objects
+local Events = ReplicatedStorage.Events
+local Modules = ReplicatedStorage.Modules
+local GrenadeObjects = Objects.GrenadeObjects
+local ExplosionEffects = GrenadeObjects.ExplosionEffects
+local SpreadTemples = GrenadeObjects.SpreadTemplates
 
-local ToolModules = Modules:WaitForChild("Tool")
-local CharacterModules = Modules:WaitForChild("Character")
-local InteractionModules = Modules:WaitForChild("Interaction")
+local ToolModules = Modules.Tool
+local CharacterModules = Modules.Character
+local InteractionModules = Modules.Interaction
 
-local ToolEvents = Events:WaitForChild("Tool")
-local CharacterEvents = Events:WaitForChild("Character")
+local ToolEvents = Events.Tool
+local CharacterEvents = Events.Character
 
-local SoundEvent = ToolEvents:WaitForChild("SoundEvent")
-local ParticleEvent = ToolEvents:WaitForChild("ParticleEvent")
-local FlashGunEvent = ToolEvents:WaitForChild("FlashGun")
-local FlashedEffectFunction = CharacterEvents:WaitForChild("FlashedEffectFunction")
+-- Events
+local SoundEvent = ToolEvents.SoundEvent
+local ParticleEvent = ToolEvents.ParticleEvent
+local FlashGunEvent = ToolEvents.FlashGun
+local FlashedEffectFunction = CharacterEvents.FlashedEffectFunction
 
-local Configs = ReplicatedStorage:WaitForChild("Configs")
-local GrenadeConfigs = Configs:WaitForChild("Grenade")
+-- Configs
+local Configs = ReplicatedStorage.Configs
+local GrenadeConfigs = Configs.Grenade
 
-local CTF = require(ToolModules:WaitForChild("CommonToolFunctions"))
-local StatusEffects = require(CharacterModules:WaitForChild("StatusEffects"))
-local DamageHandler = require(CharacterModules:WaitForChild("DamageHandler"))
-local ZoneModule = require(InteractionModules:WaitForChild("Zone"))
-local TeamHandler = require(InteractionModules:WaitForChild("TeamHandler"))
+-- Modules
+local CTF = require(ToolModules.CommonToolFunctions)
+local StatusEffects = require(CharacterModules.StatusEffects)
+local DamageHandler = require(CharacterModules.DamageHandler)
+local ZoneModule = require(InteractionModules.Zone)
+local TeamHandler = require(InteractionModules.TeamHandler)
 
+-- Grenade Raycast
 local grenadeParams = RaycastParams.new()
 grenadeParams.FilterType = Enum.RaycastFilterType.Exclude
 

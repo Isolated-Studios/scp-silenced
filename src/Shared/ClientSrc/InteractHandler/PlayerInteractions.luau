@@ -7,6 +7,7 @@ local Player = game:GetService("Players").LocalPlayer
 local Modules = ReplicatedStorage.Modules
 local Events = ReplicatedStorage.Events
 local Tooling = ReplicatedStorage.Tooling
+local Sounds = ReplicatedStorage.Sounds
 
 local ToolingTools = Tooling.Tools
 local ReviveEvent = Events.Character.ReviveEvent
@@ -15,10 +16,12 @@ local DefaultPlayerAnimations = ReplicatedStorage.PlayerAssets.Animations
 local OtherCharacterAnimations = DefaultPlayerAnimations.Character.Other
 local OtherVMAnimations = DefaultPlayerAnimations.Viewmodel.Other
 
+local Utils = require(Modules.Utils)
 local ViewModelHandler = require(ReplicatedStorage.ClientSrc.ViewModelHandler)
 local KeybindHandler = require(Modules.UI.KeybindHandler)
 local Deathnotes = require(script.Parent.Deathnotes)
 local Messager = require(Modules.UI.Messager)
+local CommonFuncs = require(Modules.CommonFuncs)
 
 --local ExecuteAnim = Animator:LoadAnimation(OtherCharacterAnimations.Execute)
 --local ExecuteTargetAnim = Animator:LoadAnimation(OtherCharacterAnimations.Execute)
@@ -30,6 +33,57 @@ return {
 		
 		local TextToMessage = Deathnotes.Messages(Player, Profile)
 		Messager.SendMessage(TextToMessage)
+	end,
+	
+	[6] = function(InteractObject) -- Chair
+		local Camera = workspace.CurrentCamera
+		local Character = Player.Character
+		local Humanoid = Player.Character:FindFirstChild("Humanoid")
+		local HumanoidSeat = Humanoid:WaitForChild("Seat")
+		local Seat = nil
+		local InputBegan = nil
+		local NoSeatFound = true
+		
+		if Humanoid:GetAttribute("Sitting") then
+			Messager.SendMessage("Already Seated.")
+			return
+		end
+		
+		if InteractObject:GetAttribute("Seats") then
+			for i=1,InteractObject:GetAttribute("Seats"),1 do
+				local Seat = InteractObject:FindFirstChild("Seat"..i)
+				if not Seat.Occupant then
+					Camera.CFrame = Seat.CFrame
+					HumanoidSeat.Value = Seat
+					Humanoid:SetAttribute("Sitting", true)
+					Seat:Sit(Humanoid)
+					HumanoidSeat.Value = Seat
+					NoSeatFound = false
+					break
+				end
+			end
+		else
+			local Seat = InteractObject:FindFirstChild("Seat") or InteractObject:FindFirstChild("Seat1")
+			if not Seat.Occupant then
+				Camera.CFrame = Seat.CFrame
+				HumanoidSeat.Value = Seat
+				Humanoid:SetAttribute("Sitting", true)
+				Seat:Sit(Humanoid)
+				NoSeatFound = false
+			end
+		end
+		
+		if NoSeatFound then
+			Messager.SendMessage("Seat is Occupied.")
+		end
+	end,
+	
+	[7] = function(InteractObject) -- Vending Machine
+
+	end,
+	
+	[8] = function(InteractObject) -- the cat.
+		Utils.SFX.playSound(Sounds.Miscellaneous.Cat.Meow, nil, InteractObject, true, true)
 	end,
 	
 	["Revive"] = function(InteractObject)

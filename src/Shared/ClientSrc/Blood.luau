@@ -27,41 +27,41 @@ local function transparencyPartFunction (model)
 	end
 end
 local gibTable =
-		{
-			["Head"] = 			{"UpperTorso",		"HeadBloodAttachment",	"Head",			"Neck",			"Head",			"Hair"},
+	{
+		["Head"] = 			{"UpperTorso",		"HeadBloodAttachment",	"Head",			"Neck",			"Head",			"Hair"},
 
-			["LeftUpperArm"] = 	{"UpperTorso",		"LeftBloodAttachment",	"LeftUpperArm",	"LeftShoulder",	"LeftUpperArm",	"LeftLowerArm",	"LeftHand"},
-			["RightUpperArm"] = {"UpperTorso",		"RightBloodAttachment",	"RightUpperArm","RightShoulder","RightUpperArm","RightLowerArm","RightHand"},
-			["RightLowerArm"] = {"RightUpperArm",	"BloodAttachment",		"RightUpperArm","RightLowerArm","RightLowerArm","RightHand"},
-			["LeftLowerArm"] = 	{"LeftUpperArm",	"BloodAttachment",		"LeftUpperArm",	"LeftLowerArm",	"LeftLowerArm",	"LeftHand"},
-			["RightHand"] = 	{"RightUpperArm",	"BloodAttachment",		"RightUpperArm","RightLowerArm","RightLowerArm","RightHand"},
-			["LeftHand"] = 		{"LeftUpperArm",	"BloodAttachment",		"LeftUpperArm",	"LeftLowerArm",	"LeftLowerArm",	"LeftHand"},
+		["LeftUpperArm"] = 	{"UpperTorso",		"LeftBloodAttachment",	"LeftUpperArm",	"LeftShoulder",	"LeftUpperArm",	"LeftLowerArm",	"LeftHand"},
+		["RightUpperArm"] = {"UpperTorso",		"RightBloodAttachment",	"RightUpperArm","RightShoulder","RightUpperArm","RightLowerArm","RightHand"},
+		["RightLowerArm"] = {"RightUpperArm",	"BloodAttachment",		"RightUpperArm","RightLowerArm","RightLowerArm","RightHand"},
+		["LeftLowerArm"] = 	{"LeftUpperArm",	"BloodAttachment",		"LeftUpperArm",	"LeftLowerArm",	"LeftLowerArm",	"LeftHand"},
+		["RightHand"] = 	{"RightUpperArm",	"BloodAttachment",		"RightUpperArm","RightLowerArm","RightLowerArm","RightHand"},
+		["LeftHand"] = 		{"LeftUpperArm",	"BloodAttachment",		"LeftUpperArm",	"LeftLowerArm",	"LeftLowerArm",	"LeftHand"},
 
-			["LeftUpperLeg"] = 	{"LowerTorso",		"LeftBloodAttachment",	"LowerTorso",	"LeftUpperLeg",	"LeftUpperLeg",	"LeftLowerLeg",	"LeftFoot"},
-			["RightUpperLeg"] = {"LowerTorso",		"RightBloodAttachment",	"LowerTorso",	"RightUpperLeg","RightUpperLeg","RightLowerLeg","RightFoot"},
-			["RightLowerLeg"] = {"RightUpperLeg",	"BloodAttachment",		"RightUpperLeg","RightLowerLeg","RightLowerLeg","RightFoot"},
-			["LeftLowerLeg"] = 	{"LeftUpperLeg",	"BloodAttachment",		"LeftUpperLeg",	"LeftLowerLeg",	"LeftLowerLeg",	"LeftFoot"},
-			["RightFoot"] = 	{"RightUpperLeg",	"BloodAttachment",		"RightUpperLeg","RightLowerLeg","RightLowerLeg","RightFoot"},
-			["LeftFoot"] = 		{"LeftUpperLeg",	"BloodAttachment",		"LeftUpperLeg",	"LeftLowerLeg",	"LeftLowerLeg",	"LeftFoot"},
-		}
+		["LeftUpperLeg"] = 	{"LowerTorso",		"LeftBloodAttachment",	"LowerTorso",	"LeftUpperLeg",	"LeftUpperLeg",	"LeftLowerLeg",	"LeftFoot"},
+		["RightUpperLeg"] = {"LowerTorso",		"RightBloodAttachment",	"LowerTorso",	"RightUpperLeg","RightUpperLeg","RightLowerLeg","RightFoot"},
+		["RightLowerLeg"] = {"RightUpperLeg",	"BloodAttachment",		"RightUpperLeg","RightLowerLeg","RightLowerLeg","RightFoot"},
+		["LeftLowerLeg"] = 	{"LeftUpperLeg",	"BloodAttachment",		"LeftUpperLeg",	"LeftLowerLeg",	"LeftLowerLeg",	"LeftFoot"},
+		["RightFoot"] = 	{"RightUpperLeg",	"BloodAttachment",		"RightUpperLeg","RightLowerLeg","RightLowerLeg","RightFoot"},
+		["LeftFoot"] = 		{"LeftUpperLeg",	"BloodAttachment",		"LeftUpperLeg",	"LeftLowerLeg",	"LeftLowerLeg",	"LeftFoot"},
+	}
 
 local partGibTable =
-		{
-			["Head"] = 			{"UpperTorso",		"TopGibPoint", 	  "GibEndNeck", "Head", 			"GibPoint", 	"NeckRagdoll"},
-			["LeftUpperArm"] = 	{"UpperTorso",		"LeftGibPoint",   "GibEnd", 	"LeftUpperArm", 	"TopGibPoint", 	"LeftShoulderRagdoll"},
-			["RightUpperArm"] = {"UpperTorso",		"RightGibPoint",  "GibEnd", 	"RightUpperArm",	"TopGibPoint", 	"RightShoulderRagdoll"},
-			["RightLowerArm"] = {"RightUpperArm",	"BottomGibPoint", "GibEnd", 	"RightLowerArm", 	"GibPoint", 	"RightElbowRagdoll"},
-			["LeftLowerArm"] = 	{"LeftUpperArm",	"BottomGibPoint", "GibEnd", 	"LeftLowerArm", 	"GibPoint", 	"LeftElbowRagdoll"},
-			["RightHand"] = 	{"RightUpperArm",	"BottomGibPoint", "GibEnd", 	"RightLowerArm", 	"GibPoint", 	"RightElbowRagdoll"},
-			["LeftHand"] = 		{"LeftUpperArm",	"BottomGibPoint", "GibEnd", 	"LeftLowerArm", 	"GibPoint", 	"LeftElbowRagdoll"},
+	{
+		["Head"] = 			{"UpperTorso",		"TopGibPoint", 	  "GibEndNeck", "Head", 			"GibPoint", 	"NeckRagdoll"},
+		["LeftUpperArm"] = 	{"UpperTorso",		"LeftGibPoint",   "GibEnd", 	"LeftUpperArm", 	"TopGibPoint", 	"LeftShoulderRagdoll"},
+		["RightUpperArm"] = {"UpperTorso",		"RightGibPoint",  "GibEnd", 	"RightUpperArm",	"TopGibPoint", 	"RightShoulderRagdoll"},
+		["RightLowerArm"] = {"RightUpperArm",	"BottomGibPoint", "GibEnd", 	"RightLowerArm", 	"GibPoint", 	"RightElbowRagdoll"},
+		["LeftLowerArm"] = 	{"LeftUpperArm",	"BottomGibPoint", "GibEnd", 	"LeftLowerArm", 	"GibPoint", 	"LeftElbowRagdoll"},
+		["RightHand"] = 	{"RightUpperArm",	"BottomGibPoint", "GibEnd", 	"RightLowerArm", 	"GibPoint", 	"RightElbowRagdoll"},
+		["LeftHand"] = 		{"LeftUpperArm",	"BottomGibPoint", "GibEnd", 	"LeftLowerArm", 	"GibPoint", 	"LeftElbowRagdoll"},
 
-			["LeftUpperLeg"] = 	{"LowerTorso",		"LeftGibPoint",	  "GibEnd", 	"LeftUpperLeg", 	"TopGibPoint", 	"LeftHipRagdoll"},
-			["RightUpperLeg"] = {"LowerTorso",		"RightGibPoint",  "GibEnd", 	"RightUpperLeg",	"TopGibPoint", 	"RightHipRagdoll"},
-			["RightLowerLeg"] = {"RightUpperLeg",	"BottomGibPoint", "GibEnd", 	"RightLowerLeg", 	"GibPoint", 	"RightKneeRagdoll"},
-			["LeftLowerLeg"] = 	{"LeftUpperLeg",	"BottomGibPoint", "GibEnd", 	"LeftLowerLeg", 	"GibPoint", 	"LeftKneeRagdoll"},
-			["RightFoot"] = 	{"RightUpperLeg",	"BottomGibPoint", "GibEnd", 	"RightLowerLeg", 	"GibPoint", 	"RightKneeRagdoll"},
-			["LeftFoot"] = 		{"LeftUpperLeg",	"BottomGibPoint", "GibEnd", 	"LeftLowerLeg", 	"GibPoint", 	"LeftKneeRagdoll"},
-		}
+		["LeftUpperLeg"] = 	{"LowerTorso",		"LeftGibPoint",	  "GibEnd", 	"LeftUpperLeg", 	"TopGibPoint", 	"LeftHipRagdoll"},
+		["RightUpperLeg"] = {"LowerTorso",		"RightGibPoint",  "GibEnd", 	"RightUpperLeg",	"TopGibPoint", 	"RightHipRagdoll"},
+		["RightLowerLeg"] = {"RightUpperLeg",	"BottomGibPoint", "GibEnd", 	"RightLowerLeg", 	"GibPoint", 	"RightKneeRagdoll"},
+		["LeftLowerLeg"] = 	{"LeftUpperLeg",	"BottomGibPoint", "GibEnd", 	"LeftLowerLeg", 	"GibPoint", 	"LeftKneeRagdoll"},
+		["RightFoot"] = 	{"RightUpperLeg",	"BottomGibPoint", "GibEnd", 	"RightLowerLeg", 	"GibPoint", 	"RightKneeRagdoll"},
+		["LeftFoot"] = 		{"LeftUpperLeg",	"BottomGibPoint", "GibEnd", 	"LeftLowerLeg", 	"GibPoint", 	"LeftKneeRagdoll"},
+	}
 local function playRandomSound (Pool,newParent)
 	local newSound = Pool:GetChildren()[math.random(1,#Pool:GetChildren())]:Clone()
 	newSound.Parent = newParent
@@ -117,54 +117,61 @@ end
 
 function module.Init()
 	local GoreEventFunction = GoreEvent.OnClientEvent:Connect(function(HitPart,HitCharacter,Sever,Direction)
+		if not HitPart or HitCharacter then
+			return
+		end
 		
 		local Ragdoll = HitCharacter
 		if not HitCharacter:GetAttribute("Ragdoll") then
 			Ragdoll = getRagdoll(HitCharacter)
 		end
-		
-		if HitPart:GetAttribute("TargetPart") and Ragdoll:FindFirstChild(HitPart:GetAttribute("TargetPart")) or 
-			CommonFuncs.GetAncestorFromAttribute(HitPart, "TargetPart") and Ragdoll:FindFirstChild(CommonFuncs.GetAncestorFromAttribute(HitPart, "TargetPart"):GetAttribute("TargetPart")) then
+
+		if HitPart:GetAttribute("TargetPart") 
+			and Ragdoll:FindFirstChild(HitPart:GetAttribute("TargetPart")) 
+
+			or CommonFuncs.GetAncestorFromAttribute(HitPart, "TargetPart") 
+			and Ragdoll:FindFirstChild(CommonFuncs.GetAncestorFromAttribute(HitPart, "TargetPart"):GetAttribute("TargetPart")) 
+		then
 			HitPart = Ragdoll[HitPart:GetAttribute("TargetPart") or CommonFuncs.GetAncestorFromAttribute(HitPart, "TargetPart"):GetAttribute("TargetPart")]
 		end
-		
+
 		if HitPart:GetAttribute("Gibbed") then return end
-		
+
 		if HitPart and Ragdoll and gibTable[HitPart.Name] then
 			HitPart:SetAttribute("Gibbed",true)
 			local PrimaryGibPoint = Ragdoll[partGibTable[HitPart.Name][1]][partGibTable[HitPart.Name][2]]
 			local primeGib = Gibs[partGibTable[HitPart.Name][3]]
-			
+
 			if HitPart.Name == "Head" then
 				PrimaryGibPoint = Ragdoll[partGibTable[HitPart.Name][4]][partGibTable[HitPart.Name][5]]
 			end
-			
+
 			if Sever and primeGib.Name == "GibEndNeck" then -- Severing gib part for the head
 				primeGib = Gibs["GibEndNeck2"]
 			end
-			
+
 			if Ragdoll[partGibTable[HitPart.Name][1]].Transparency ~= 1 then
 				local Gib = primeGib:Clone()
-				
+
 				Gib.Name = partGibTable[HitPart.Name][4].."GibEnd"
 				Gib:PivotTo(PrimaryGibPoint.WorldCFrame)
 				Gib.Parent = Ragdoll
 				Gib.PrimaryPart:WaitForChild("PrimaryWeld").Part1 = Ragdoll[partGibTable[HitPart.Name][1]]
-				
+
 				if HitPart.Name == "Head" and not Sever then
 					Gib.PrimaryPart:WaitForChild("PrimaryWeld").Part1 = Ragdoll[partGibTable[HitPart.Name][4]]
 				end
 
 			end
-			
+
 			if Sever then -- This will sever the other part of the limb and make a gib part for it
 				local PrimaryGibPoint = Ragdoll[partGibTable[HitPart.Name][4]][partGibTable[HitPart.Name][5]]
 				local primeGib = Gibs[partGibTable[HitPart.Name][3]]
-				
+
 				if primeGib.Name == "GibEndNeck" then
 					primeGib = Gibs["GibEndNeck2"]
 				end
-				
+
 				local Gib = primeGib:Clone()
 				Gib.Name = partGibTable[HitPart.Name][4].."GibEnd"
 				Gib:PivotTo(PrimaryGibPoint.WorldCFrame)
@@ -183,11 +190,11 @@ function module.Init()
 				playBloodDestruction(PrimaryGibPoint)
 			end
 		end
-		
+
 		if HitPart.Name == "UpperTorso" and not HitCharacter:GetAttribute("Ragdoll") and Ragdoll and Ragdoll:FindFirstChild("Humanoid") then
 			coughBlood(Ragdoll.Humanoid,Ragdoll.Head.MouthGibPoint) --/ Torso gib, causes person to cough blood
 		end
-		
+
 		if HitPart and Ragdoll and gibTable[HitPart.Name] and Ragdoll[HitPart.Name].Transparency == 0 then
 			local bloodattachmentparent = Ragdoll[gibTable[HitPart.Name][1]][gibTable[HitPart.Name][2]]
 			for _,obj in pairs(BloodObjects.BloodParticles:GetChildren()) do
@@ -206,7 +213,7 @@ function module.Init()
 						if gibTable[HitPart.Name][5] and string.find(charparts.Name,gibTable[HitPart.Name][5])
 							or gibTable[HitPart.Name][6] and string.find(charparts.Name,gibTable[HitPart.Name][6])
 							or gibTable[HitPart.Name][7] and string.find(charparts.Name,gibTable[HitPart.Name][7]) then
-								charparts.Transparency = 1
+							charparts.Transparency = 1
 							if charparts.Name == "Head" then 
 								charparts.Mesh.MeshId = charparts.Mesh:GetAttribute("MeshId")
 								charparts.Mesh.Offset = charparts.Mesh:GetAttribute("Offset")

@@ -1,29 +1,26 @@
 local module = {}
-
+local Player = game.Players.LocalPlayer
 --//Services
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Debris = game:GetService("Debris")
 
 --//Service Objects
-local Events = ReplicatedStorage:WaitForChild("Events")
-local Tooling = ReplicatedStorage:WaitForChild("Tooling")
-local Tools = Tooling:WaitForChild("Tools")
+local Events = ReplicatedStorage.Events
+local Tooling = ReplicatedStorage.Tooling
+local Tools = Tooling.Tools
 
 --// Event Folders
-local ViewmodelEvents = Events:WaitForChild("Viewmodel")
-local ToolEvents = Events:WaitForChild("Tool")
-local InteractionEvents = Events:WaitForChild("Interaction")
+local ViewmodelEvents = Events.Viewmodel
+local ToolEvents = Events.Tool
 
 --//Events
-local SoundEvent = ToolEvents:WaitForChild("SoundEvent")
-local FlashGunEvent = ToolEvents:WaitForChild("FlashGun")
+local SoundEvent = ToolEvents.SoundEvent
+local FlashGunEvent = ToolEvents.FlashGun
 
 --//Tables
 local TransparencyIgnoreIndex = {
 	"Handle","FlashlightF","LaserF","SightF","ScopeF","Hitbox","Flash","AimPart","EjectPart"
 }
-
-
 
 function module.playSound (Sounds: Sound | Instance, SoundName: string?, parent: Instance, replicate: boolean, ApplyRandomPitch: boolean | table, Properties: table?)
 	assert(Sounds ~= nil, "Sound is nil.")
@@ -47,7 +44,7 @@ function module.playSound (Sounds: Sound | Instance, SoundName: string?, parent:
 		else
 			warn("Property parameter of sound '"..Sound.Name.."' is not a table")
 		end
-		
+
 	end
 
 	if ApplyRandomPitch then
