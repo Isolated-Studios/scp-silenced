@@ -239,25 +239,23 @@ local InteractFunctions = {
 	end,
 	
 	[8] = function(interactObject, player) -- the cat.
-		task.defer(function()
-			interactObject:SetAttribute("interactable", false)
+		interactObject:SetAttribute("interactable", false)
 			
-			local CatObject = interactObject.PrimaryPart
-			local InitialCFrame = CatObject.CFrame
-			local InitialSize = CatObject.Size
-			local FinalSize = Vector3.new(InitialSize.X, InitialSize.Y/1.2, InitialSize.Z)
-			local FinalCFrame = InitialCFrame + InitialCFrame.UpVector * -(InitialSize.Y-FinalSize.Y)/2
-			local CatTweenInfo = {
-				["Time"] = 0.2,
-				["EasingStyle"] = Enum.EasingStyle.Cubic
-			}
+		local CatObject = interactObject.PrimaryPart
+		local InitialCFrame = CatObject.CFrame
+		local InitialSize = CatObject.Size
+		local FinalSize = Vector3.new(InitialSize.X, InitialSize.Y/1.2, InitialSize.Z)
+		local FinalCFrame = InitialCFrame + InitialCFrame.UpVector * -(InitialSize.Y-FinalSize.Y)/2
+		local CatTweenInfo = {
+			["Time"] = 0.2,
+			["EasingStyle"] = Enum.EasingStyle.Cubic
+		}
 			
-			TweenModule.Tween(CatObject, FinalCFrame, CatTweenInfo, true, 100, nil, FinalSize)
-			task.wait(0.2)
-			TweenModule.Tween(CatObject, InitialCFrame, CatTweenInfo, true, 100, nil, InitialSize)
-			task.wait(0.2)
-			interactObject:SetAttribute("interactable", true)
-		end)
+		TweenModule.Tween(CatObject, FinalCFrame, CatTweenInfo, true, 100, nil, FinalSize)
+		task.wait(0.2)
+		TweenModule.Tween(CatObject, InitialCFrame, CatTweenInfo, true, 100, nil, InitialSize)
+		task.wait(0.2)
+		interactObject:SetAttribute("interactable", true)
 	end,
 }
 
