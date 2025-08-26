@@ -69,7 +69,7 @@ local function dropItem (Tool,Position,yRotation,noTween)
 	
 	Model:PivotTo(CFrame.new(Position) * CFrame.Angles(0, math.rad(yRotation), 0))
 	if not noTween then
-		TweenObjectEvent:FireAllClients(Model, CFrame.new(Position) * CFrame.Angles(0, math.rad(yRotation), 0),  0.2, 50, Enum.EasingStyle.Quint,Enum.EasingDirection.Out)
+		TweenObjectEvent:FireAllClients(Model, CFrame.new(Position) * CFrame.Angles(0, math.rad(yRotation), 0), {0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out}, 50)
 	end
 end
 

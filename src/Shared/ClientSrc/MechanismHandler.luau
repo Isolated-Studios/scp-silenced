@@ -78,16 +78,24 @@ function module.Init()
 	local TweenObject = TweenObjectEvent.OnClientEvent:Connect(function(
 		Object: Model,
 		newCFrame: CFrame,
-		Time: number,
+		GivenTweenInfo: table,
 		Distance: number,
-		EasingStyle: EasingStyle,
-		EasingDirection: EasingDirection,
 		animationName: string,
 		newSize: Vector3
 	)
 		local CFrameValue = Instance.new("CFrameValue")
 		CFrameValue.Parent = Object
-
+		
+		-- Assemble GivenTweenInfo into an actual TweenInfo.
+		local CreatedTweenInfo = TweenInfo.new(
+			GivenTweenInfo["Time"] or 1,
+			GivenTweenInfo["EasingStyle"] or Enum.EasingStyle.Linear,
+			GivenTweenInfo["EasingDirection"] or Enum.EasingDirection.Out,
+			GivenTweenInfo["RepeatCount"] or 0,
+			GivenTweenInfo["Reverses"] or false,
+			GivenTweenInfo["DelayTime"] or 0
+		)
+		
 		if Object:IsA("Model") and Object.PrimaryPart then
 			CFrameValue.Value = Object:GetPivot()
 			CFrameValue.Changed:Connect(function()
@@ -103,11 +111,11 @@ function module.Init()
 				Object.CFrame = CFrameValue.Value
 			end)
 			if newSize then
-				TweenService:Create(Object, TweenInfo.new(Time,EasingStyle,EasingDirection), {Size = newSize}):Play()
+				TweenService:Create(Object, CreatedTweenInfo, {Size = newSize}):Play()
 			end
 		end
 
-		Debris:AddItem(CFrameValue,Time+0.1)
+		Debris:AddItem(CFrameValue, CreatedTweenInfo.Time+0.1)
 		local objPos = nil
 
 		if Object:IsA("Model") then
@@ -116,13 +124,13 @@ function module.Init()
 			objPos = Object.Position
 		end
 
-		Debris:AddItem(CFrameValue,Time+0.1)
+		Debris:AddItem(CFrameValue, CreatedTweenInfo.Time+0.1)
 
 		if Character and Character.Parent and Distance > 0 and math.round((Character.PrimaryPart.Position-objPos).Magnitude) <= Distance or Distance <= 0 or not Distance then
-			TweenService:Create(CFrameValue,TweenInfo.new(Time,EasingStyle,EasingDirection),{Value = newCFrame}):Play()
+			TweenService:Create(CFrameValue,CreatedTweenInfo,{Value = newCFrame}):Play()
 		else
 			task.defer(function()
-				task.wait(Time)
+				task.wait(CreatedTweenInfo.Time)
 				CFrameValue.Value = newCFrame
 			end)
 		end

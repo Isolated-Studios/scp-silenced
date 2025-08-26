@@ -8,18 +8,16 @@ local TweenObjectEvent = ReplicatedStorage.Events.Interaction.TweenObjectEvent
 function TweenModule.Tween (
 	Object:Model,
 	newCFrame:CFrame,
-	Time:number,
+	GivenTweenInfo:table,
 	moveOnServer:bool,
 	Distance:number,
-	EasingStyle:EasingStyle,
-	EasingDirection:EasingDirection,
 	animationName:string,
 	newSize:Vector3
 	
 )
-	TweenObjectEvent:FireAllClients(Object, newCFrame, Time, Distance, EasingStyle, EasingDirection, animationName, newSize)
+	TweenObjectEvent:FireAllClients(Object, newCFrame, GivenTweenInfo, Distance, animationName, newSize)
 	if moveOnServer then
-		task.wait(Time)
+		task.wait(GivenTweenInfo["Time"])
 		Object:PivotTo(newCFrame)
 	end
 end

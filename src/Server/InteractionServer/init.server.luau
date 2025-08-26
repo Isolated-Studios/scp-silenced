@@ -46,11 +46,13 @@ local InteractFunctions = {
 	[2] = function(interactObject, player) -- basic button door
 		if not interactObject:GetAttribute("interactable") then return end -- Might fix door spam bug?
 		local function changeLightParts (LightModel,colorPicked)
-			for _,light in pairs(LightModel:GetDescendants()) do
-				if light:IsA("BasePart") or light:IsA("SurfaceLight") or light:IsA("PointLight") or light:IsA("SpotLight") then
-					light.Color = colorPicked
-				elseif light:IsA("ImageLabel") then
-					light.ImageColor3 = colorPicked
+			if LightModel then
+				for _,light in pairs(LightModel:GetDescendants()) do
+					if light:IsA("BasePart") or light:IsA("SurfaceLight") or light:IsA("PointLight") or light:IsA("SpotLight") then
+						light.Color = colorPicked
+					elseif light:IsA("ImageLabel") then
+						light.ImageColor3 = colorPicked
+					end
 				end
 			end
 		end
@@ -60,9 +62,9 @@ local InteractFunctions = {
 		local DoorSettings = require(DoorConfigs:FindFirstChild(interactObject:GetAttribute("DoorType")))
 		local TweenObjectEvent = game:GetService("ReplicatedStorage").Events.Interaction.TweenObjectEvent
 
-		local LeftDoor = interactObject["Door.L"]
-		local RightDoor = interactObject["Door.R"]
-		local LightParts = interactObject["LightParts"]
+		local LeftDoor = interactObject:FindFirstChild("Door.L") or interactObject:FindFirstChild("Door")
+		local RightDoor = interactObject:FindFirstChild("Door.R") or nil
+		local LightParts = interactObject:FindFirstChild("LightParts") or nil
 		local SoundPart = interactObject["SoundPart"]
 
 		if player.Character and player.Character:FindFirstChild("Humanoid") then
@@ -89,68 +91,79 @@ local InteractFunctions = {
 			if SoundPart.button then SoundPart.button:Play() end
 
 			if Allowed then
-				--Playing = true
 				interactObject:SetAttribute("interactable",false)
 				if Opened.Value then
 					Opened.Value = false
 					interactObject:SetAttribute("interactText","open")
 					changeLightParts(LightParts,DoorSettings.LightColors[2])
 					SoundPart.door_close:Play()
+					local DoorTweenInfo = {
+						["Time"] = DoorSettings.CloseSpeed, 
+						["EasingStyle"] = DoorSettings.CloseEasingStyle,
+						["EasingDirection"] = DoorSettings.CloseEasingDirection
+					}
 					local LeftDoorFinal = LeftDoor.PrimaryPart.CFrame * CFrame.Angles(math.rad(-DoorSettings.LeftDoorOpen[3].X),math.rad(-DoorSettings.LeftDoorOpen[3].Y),math.rad(-DoorSettings.LeftDoorOpen[3].Z))+LeftDoor.PrimaryPart.CFrame[DoorSettings.LeftDoorOpen[1]]*-DoorSettings.LeftDoorOpen[2]
-					local RightDoorFinal = RightDoor.PrimaryPart.CFrame*CFrame.Angles(math.rad(-DoorSettings.RightDoorOpen[3].X),math.rad(-DoorSettings.RightDoorOpen[3].Y),math.rad(-DoorSettings.RightDoorOpen[3].Z))+RightDoor.PrimaryPart.CFrame[DoorSettings.RightDoorOpen[1]]*-DoorSettings.RightDoorOpen[2]
 					TweenModule.Tween(
 						LeftDoor,
 						LeftDoorFinal,
-						DoorSettings.CloseSpeed,
+						DoorTweenInfo,
 						false,
 						100,
-						DoorSettings.CloseEasingStyle or Enum.EasingStyle.Linear,
-						DoorSettings.CloseEasingDirection or Enum.EasingDirection.Out,
 						"close"
 					)
-					TweenModule.Tween(
-						RightDoor,
-						RightDoorFinal,
-						DoorSettings.CloseSpeed,
-						false,
-						100,
-						DoorSettings.CloseEasingStyle or Enum.EasingStyle.Linear,
-						DoorSettings.CloseEasingDirection or Enum.EasingDirection.Out,
-						"close"
-					)
+					local RightDoorFinal = nil
+					if RightDoor then
+					 	RightDoorFinal = RightDoor.PrimaryPart.CFrame*CFrame.Angles(math.rad(-DoorSettings.RightDoorOpen[3].X),math.rad(-DoorSettings.RightDoorOpen[3].Y),math.rad(-DoorSettings.RightDoorOpen[3].Z))+RightDoor.PrimaryPart.CFrame[DoorSettings.RightDoorOpen[1]]*-DoorSettings.RightDoorOpen[2]
+						TweenModule.Tween(
+							RightDoor,
+							RightDoorFinal,
+							DoorTweenInfo,
+							false,
+							100,
+							"close"
+						)
+					end
 					task.wait(DoorSettings.CloseSpeed)
 					LeftDoor:PivotTo(LeftDoorFinal)
-					RightDoor:PivotTo(RightDoorFinal)
+					if RightDoor then
+						RightDoor:PivotTo(RightDoorFinal)
+					end
 				else
 					Opened.Value = true
 					interactObject:SetAttribute("interactText","close")
 					changeLightParts(LightParts,DoorSettings.LightColors[1])
 					SoundPart.door_open:Play()
+					local DoorTweenInfo = {
+						["Time"] = DoorSettings.OpenSpeed, 
+						["EasingStyle"] = DoorSettings.OpenEasingStyle,
+						["EasingDirection"] = DoorSettings.OpenEasingDirection
+					}
 					local LeftDoorFinal = LeftDoor.PrimaryPart.CFrame * CFrame.Angles(math.rad(DoorSettings.LeftDoorOpen[3].X),math.rad(DoorSettings.LeftDoorOpen[3].Y),math.rad(DoorSettings.LeftDoorOpen[3].Z))+LeftDoor.PrimaryPart.CFrame[DoorSettings.LeftDoorOpen[1]]*DoorSettings.LeftDoorOpen[2]
-					local RightDoorFinal = RightDoor.PrimaryPart.CFrame * CFrame.Angles(math.rad(DoorSettings.RightDoorOpen[3].X),math.rad(DoorSettings.RightDoorOpen[3].Y),math.rad(DoorSettings.RightDoorOpen[3].Z))+RightDoor.PrimaryPart.CFrame[DoorSettings.RightDoorOpen[1]]*DoorSettings.RightDoorOpen[2]
 					TweenModule.Tween(
 						LeftDoor,
 						LeftDoorFinal,
-						DoorSettings.OpenSpeed,
+						DoorTweenInfo,
 						false,
 						100,
-						DoorSettings.OpenEasingStyle or Enum.EasingStyle.Linear,
-						DoorSettings.OpenEasingDirection or Enum.EasingDirection.Out,
 						"open"
 					)
-					TweenModule.Tween(
-						RightDoor,
-						RightDoorFinal,
-						DoorSettings.OpenSpeed,
-						false,
-						100,
-						DoorSettings.OpenEasingStyle or Enum.EasingStyle.Linear,
-						DoorSettings.OpenEasingDirection or Enum.EasingDirection.Out,
-						"open"
-					)
+					local RightDoorFinal = nil
+					if RightDoor then
+						RightDoorFinal = RightDoor.PrimaryPart.CFrame * CFrame.Angles(math.rad(DoorSettings.RightDoorOpen[3].X),math.rad(DoorSettings.RightDoorOpen[3].Y),math.rad(DoorSettings.RightDoorOpen[3].Z))+RightDoor.PrimaryPart.CFrame[DoorSettings.RightDoorOpen[1]]*DoorSettings.RightDoorOpen[2]
+						TweenModule.Tween(
+							RightDoor,
+							RightDoorFinal,
+							DoorTweenInfo,
+							false,
+							100,
+							"open"
+						)
+					end
 					task.wait(DoorSettings.CloseSpeed)
 					LeftDoor:PivotTo(LeftDoorFinal)
-					RightDoor:PivotTo(RightDoorFinal)
+					if RightDoor then
+						RightDoor:PivotTo(RightDoorFinal)
+					end
 				end
 				if DoorSettings.Cooldown and DoorSettings.Cooldown > 0 then
 					task.wait(DoorSettings.Cooldown)
@@ -216,6 +229,35 @@ local InteractFunctions = {
 		local reviveHumanoid = interactObject.Humanoid
 		humanoid:SetAttribute("FreezeWalkSpeed",true)
 		reviveHumanoid:SetAttribute("FreezeWalkSpeed",true)
+	end,
+	
+	[6] = function(interactObject, player) -- Chair
+	end,
+	
+	[7] = function(interactObject, player) -- Vending Machine
+		
+	end,
+	
+	[8] = function(interactObject, player) -- the cat.
+		task.defer(function()
+			interactObject:SetAttribute("interactable", false)
+			
+			local CatObject = interactObject.PrimaryPart
+			local InitialCFrame = CatObject.CFrame
+			local InitialSize = CatObject.Size
+			local FinalSize = Vector3.new(InitialSize.X, InitialSize.Y/1.2, InitialSize.Z)
+			local FinalCFrame = InitialCFrame + InitialCFrame.UpVector * -(InitialSize.Y-FinalSize.Y)/2
+			local CatTweenInfo = {
+				["Time"] = 0.2,
+				["EasingStyle"] = Enum.EasingStyle.Cubic
+			}
+			
+			TweenModule.Tween(CatObject, FinalCFrame, CatTweenInfo, true, 100, nil, FinalSize)
+			task.wait(0.2)
+			TweenModule.Tween(CatObject, InitialCFrame, CatTweenInfo, true, 100, nil, InitialSize)
+			task.wait(0.2)
+			interactObject:SetAttribute("interactable", true)
+		end)
 	end,
 }
 
