@@ -1,8 +1,12 @@
+local module = {}
+-- Services
 local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local SoundService = game:GetService("SoundService")
 
+-- Replicated Storage References
 local Events = ReplicatedStorage.Events
 local Modules = ReplicatedStorage.Modules
 local Objects = ReplicatedStorage.Objects
@@ -10,6 +14,7 @@ local UIModules = Modules.UI
 local DownedEvent = Events.Character.DownedEvent
 local DowningObjects = Objects.DowningObjects
 
+-- Modules
 local CircleFramesModule = require(UIModules.CircleFrames)
 local KeybindHandler = require(UIModules.KeybindHandler)
 local CameraManipulator = require(UIModules.CameraManipulator)
@@ -17,11 +22,18 @@ local TeamHandler = require(Modules.Interaction.TeamHandler)
 local ToolHandler = require(ReplicatedStorage.ClientSrc.ToolHandler)
 local ToolClass = require(Modules.Tool)
 
-local module = {}
-
+-- Player
 local Player = game:GetService("Players").LocalPlayer
 local Backpack = nil
+local PlayerSettings = ReplicatedStorage.Players:WaitForChild(tostring(Player.UserId)).Settings
+local SoundSettings = PlayerSettings.Sound
+local LowHealthMuffleSetting = SoundSettings["Low Health Muffle"]
 
+-- Numbers
+local BloodScreenRegainRatio = 1.5
+local PreviousHealthRatio = 1
+
+-- UI
 local HUD
 local HUDLoaded = false
 
@@ -76,56 +88,57 @@ local MainReviveProgressFrame
 local ReviveProgress
 
 function module.Init()
+	game.StarterGui:SetCoreGuiEnabled("Health", false)
 	HUD = Player.PlayerGui:WaitForChild("HUD")
 
-	Bars = HUD:WaitForChild("Bars")
-	RightFrame = HUD:WaitForChild("RightFrame")
-	DownedFrame = HUD:WaitForChild("DownedFrame")
-	ReviveFrame = HUD:WaitForChild("ReviveFrame")
-	GunVignette = HUD:WaitForChild("GunVignette")
-	ListFrame = RightFrame:WaitForChild("ListFrame")
-	InfoFrame = ListFrame:WaitForChild("InfoFrame")
-	Consumables = InfoFrame:WaitForChild("Consumables")
-	ConsumablesFrame = Consumables:WaitForChild("Frame")
-	MedicalFrame = ConsumablesFrame:WaitForChild("4")
-	ThrowableFrame = ConsumablesFrame:WaitForChild("6")
-	MedicalNumber = MedicalFrame:WaitForChild("Number")
-	ThrowableNumber = ThrowableFrame:WaitForChild("Number")
+	Bars = HUD.Bars
+	RightFrame = HUD.RightFrame
+	DownedFrame = HUD.DownedFrame
+	ReviveFrame = HUD.ReviveFrame
+	GunVignette = HUD.GunVignette
+	ListFrame = RightFrame.ListFrame
+	InfoFrame = ListFrame.InfoFrame
+	Consumables = InfoFrame.Consumables
+	ConsumablesFrame = Consumables.Frame
+	MedicalFrame = ConsumablesFrame["4"]
+	ThrowableFrame = ConsumablesFrame["6"]
+	MedicalNumber = MedicalFrame.Number
+	ThrowableNumber = ThrowableFrame.Number
 	Gradient = GunVignette.Gradient
 	VignetteAmount = Gradient.VignetteAmount
 	EarRinging = GunVignette.EarRinging
 
-	GunInfoFrame = InfoFrame:WaitForChild("GunInfo")
-	PrimeMagBullet = InfoFrame:WaitForChild("MagBullet")
-	InnerFrame = GunInfoFrame:WaitForChild("InnerFrame")
-	ReserveFrame = GunInfoFrame:WaitForChild("ReserveFrame")
-	InnerScaleLayout = InnerFrame:WaitForChild("InnerScale")
-	MagFrame = InnerFrame:WaitForChild("MagFrame")
-	ReserveText = ReserveFrame:WaitForChild("Reserve")
-	InfoFrame = InnerFrame:WaitForChild("InfoFrame")
-	NameText = InfoFrame:WaitForChild("Name")
-	ModeText = InfoFrame:WaitForChild("Mode")
-	
-	BloodScreen = HUD:WaitForChild("BloodScreen")
-	StaminaFrame = Bars:WaitForChild("Stamina")
-	StaminaL = StaminaFrame:WaitForChild("L")
-	StaminaR = StaminaFrame:WaitForChild("R")
-	HealthFrame = Bars:WaitForChild("Health")
-	HealthL = HealthFrame:WaitForChild("L")
-	HealthR = HealthFrame:WaitForChild("R")
-	AbsorptionFrame = Bars:WaitForChild("Absorption")
-	AbsorptionL = AbsorptionFrame:WaitForChild("L")
-	AbsorptionR = AbsorptionFrame:WaitForChild("R")
-	HealthNumber = Bars:WaitForChild("HealthText")
-	
-	DownedProgressFrame = DownedFrame:WaitForChild("ProgressFrame")
-	MainDownedProgressFrame = DownedProgressFrame:WaitForChild("Progress")
-	DownedProgress = MainDownedProgressFrame:WaitForChild("Percentage")
-	DownedMessage = DownedFrame:WaitForChild("Message")
-	
-	ReviveProgressFrame = ReviveFrame:WaitForChild("ProgressFrame")
-	MainReviveProgressFrame = ReviveProgressFrame:WaitForChild("Progress")
-	ReviveProgress = MainReviveProgressFrame:WaitForChild("Percentage")
+	GunInfoFrame = InfoFrame.GunInfo
+	PrimeMagBullet = InfoFrame.MagBullet
+	InnerFrame = GunInfoFrame.InnerFrame
+	ReserveFrame = GunInfoFrame.ReserveFrame
+	InnerScaleLayout = InnerFrame.InnerScale
+	MagFrame = InnerFrame.MagFrame
+	ReserveText = ReserveFrame.Reserve
+	InfoFrame = InnerFrame.InfoFrame
+	NameText = InfoFrame.ToolName
+	ModeText = InfoFrame.Mode
+
+	BloodScreen = HUD.BloodScreen
+	StaminaFrame = Bars.Stamina
+	StaminaL = StaminaFrame.L
+	StaminaR = StaminaFrame.R
+	HealthFrame = Bars.Health
+	HealthL = HealthFrame.L
+	HealthR = HealthFrame.R
+	AbsorptionFrame = Bars.Absorption
+	AbsorptionL = AbsorptionFrame.L
+	AbsorptionR = AbsorptionFrame.R
+	HealthNumber = Bars.HealthText
+
+	DownedProgressFrame = DownedFrame.ProgressFrame
+	MainDownedProgressFrame = DownedProgressFrame.Progress
+	DownedProgress = MainDownedProgressFrame.Percentage
+	DownedMessage = DownedFrame.Message
+
+	ReviveProgressFrame = ReviveFrame.ProgressFrame
+	MainReviveProgressFrame = ReviveProgressFrame.Progress
+	ReviveProgress = MainReviveProgressFrame.Percentage
 	HUDLoaded = true
 end
 
@@ -189,13 +202,13 @@ local function updateGunDisplay(Gun: ToolClass.ClassType)
 	else
 		ModeText.Text = "Semi"
 	end
-	
+
 	for _,oldBullet in pairs (MagFrame:GetChildren()) do
 		if oldBullet:IsA("Frame") then
 			oldBullet:Destroy()
 		end
 	end
-	
+
 	MagFrame.UIGridLayout.CellSize = UDim2.new(1/Gun.Settings.MagSize,-1,1,0)
 	if Gun.Settings.MagSize > 50 then
 		MagFrame.UIGridLayout.CellSize = UDim2.new((1/Gun.Settings.MagSize)*2,-1,1,0)
@@ -218,7 +231,7 @@ local function updateGunDisplay(Gun: ToolClass.ClassType)
 	if not Gun.Bolted and Gun.Settings.Bolted and Gun.Ammo < Gun.Settings.MagSize and Gun.Ammo > 0 then
 		local firstRound = MagFrame["1"].Round
 		firstRound.Size = UDim2.fromScale(1,0)
-	local otherRound = MagFrame[tostring(Gun.Ammo+1)].Round
+		local otherRound = MagFrame[tostring(Gun.Ammo+1)].Round
 		otherRound.Size = UDim2.fromScale(1,1)
 	end
 end
@@ -228,7 +241,7 @@ local function updateToolDisplay(equipping, Tool: ToolClass.ClassType, transitio
 		NameText.Text = Tool.Instance.Name
 		TweenService:Create(GunInfoFrame, TweenInfo.new(transitionTime or 0.3), {GroupTransparency = 0}):Play()
 		GunInfoFrame.Visible = true
-		
+
 		if Tool and Tool.ClassName == "Gun" then
 			updateGunDisplay(Tool)
 		end
@@ -243,15 +256,41 @@ local function updateToolDisplay(equipping, Tool: ToolClass.ClassType, transitio
 	end
 end
 
+-- Enable LowHealthMuffle of all sound groups. If Unmuffle true, disable all sound group LowHealthMuffles.
+local function MuffleSounds (Unmuffle: boolean)
+	if Unmuffle then
+		for _,SoundGroup in pairs (SoundService:GetChildren()) do
+			if SoundGroup:IsA("SoundGroup") then
+				task.defer(function()
+					TweenService:Create(SoundGroup.LowHealthMuffle,TweenInfo.new(1),{HighGain = 0, LowGain = 0, MidGain = 0}):Play()
+					task.wait(1)
+					if SoundGroup.LowHealthMuffle.MidGain == 0 then
+						SoundGroup.LowHealthMuffle.Enabled = false
+					end
+				end)
+			end
+		end
+	else
+		if LowHealthMuffleSetting.Value then
+			for _,SoundGroup in pairs (SoundService:GetChildren()) do
+				if SoundGroup:IsA("SoundGroup") then
+					SoundGroup.LowHealthMuffle.Enabled = true
+					TweenService:Create(SoundGroup.LowHealthMuffle,TweenInfo.new(1),{HighGain = -120, LowGain = 60, MidGain = 0}):Play()
+				end
+			end
+		end
+	end
+end
+
 function module.LoadChar(Character)
 	Backpack = Player:WaitForChild("Backpack")
-	
+
 	ToolHandler.ToolEquipping:Connect(updateToolDisplay, true)
 	ToolHandler.ToolUnequipping:Connect(updateToolDisplay, false)
-	
+
 	local Humanoid = Character:WaitForChild("Humanoid")
 	local PlayerEffectsFolder = Player.PlayerScripts:WaitForChild("Effects")
-	
+
 	local allyIdTable = {
 		[0] = {Color3.fromRGB(0,255,255)},
 		[1] = {Color3.fromRGB(255,0,0)},
@@ -259,10 +298,13 @@ function module.LoadChar(Character)
 	}
 	local lastAbsorption = Humanoid:GetAttribute("Absorption")
 	
+	-- Set up bar by scaling the Main and Fade frames.
 	local function barSetup (bar,value)
 		bar.Main.Size = UDim2.fromScale(value,1)
 		bar.Fade.Size = UDim2.fromScale(value,1)
 	end
+	
+	-- Change the bar by scaling the Main and Fade frames.
 	local function barChange (bar,value,tween)
 		if tween then
 			TweenService:Create(bar.Main,TweenInfo.new(tween,Enum.EasingStyle.Linear),{Size = UDim2.fromScale(value,1)}):Play()
@@ -275,6 +317,8 @@ function module.LoadChar(Character)
 			bar.Fade.Size = UDim2.fromScale(value,1)
 		end
 	end
+	
+	-- Check if there is absorption and apply absorption color to HealthNumber
 	local function absorptionBarCheck ()
 		local Absorption = Humanoid:GetAttribute("Absorption")
 		HealthNumber.Text = math.floor(Humanoid.Health+Absorption)
@@ -287,6 +331,7 @@ function module.LoadChar(Character)
 		end
 	end
 	
+	-- Set up all Stamina, Health, Absorption bars.
 	barSetup(StaminaL,Humanoid:GetAttribute("Stamina")/Humanoid:GetAttribute("MaxStamina"))
 	barSetup(StaminaR,Humanoid:GetAttribute("Stamina")/Humanoid:GetAttribute("MaxStamina"))
 	barSetup(HealthL,Humanoid.Health/Humanoid.MaxHealth)
@@ -295,17 +340,19 @@ function module.LoadChar(Character)
 	barChange(AbsorptionR,Humanoid:GetAttribute("Absorption")/Humanoid:GetAttribute("MaxAbsorption"))
 	absorptionBarCheck()
 	
+	-- If Stamina changes, do a barChange on them.
 	local staminaChanged = Humanoid:GetAttributeChangedSignal("Stamina"):Connect(function()
 		barChange(StaminaL,Humanoid:GetAttribute("Stamina")/Humanoid:GetAttribute("MaxStamina"))
 		barChange(StaminaR,Humanoid:GetAttribute("Stamina")/Humanoid:GetAttribute("MaxStamina"))
 	end)
-	
+
 	local maxStaminaChanged = Humanoid:GetAttributeChangedSignal("MaxStamina"):Connect(function()
 		barChange(StaminaL,Humanoid:GetAttribute("Stamina")/Humanoid:GetAttribute("MaxStamina"))
 		barChange(StaminaR,Humanoid:GetAttribute("Stamina")/Humanoid:GetAttribute("MaxStamina"))
 	end)
 	
-	local GradientChange = VignetteAmount.Changed:Connect(function() -- Darkens vignette based on VignetteAmount
+	-- Darkens vignette based on VignetteAmount and plays ear ringing noise. Used for continuous shooting making a concussive effect.
+	local GradientChange = VignetteAmount.Changed:Connect(function() 
 		local Amount = VignetteAmount.Value
 		if Amount <= 0.8 then
 			if not EarRinging.IsPlaying then
@@ -324,38 +371,80 @@ function module.LoadChar(Character)
 			}
 		)
 	end)
-	
+
 	local healthChanged = Humanoid.HealthChanged:Connect(function()
 		HealthNumber.Text = math.floor(Humanoid.Health)
+		local HealthRatio = Humanoid.Health/Humanoid.MaxHealth
 		
-		barChange(HealthL,Humanoid.Health/Humanoid.MaxHealth)
-		barChange(HealthR,Humanoid.Health/Humanoid.MaxHealth)
+		-- Muffle sounds if health ratio is 30% or lower. Unmuffle if above 30%.
+		if HealthRatio <= 0.3 and PreviousHealthRatio > 0.3 then
+			MuffleSounds()
+		elseif PreviousHealthRatio <= 0.3 and HealthRatio > 0.3 then
+			MuffleSounds(true)
+		end
 		
-		if Humanoid.Health <= Humanoid.MaxHealth/1.25 then
-			TweenService:Create(BloodScreen,TweenInfo.new(0.2),{ImageTransparency = Humanoid.Health/Humanoid.MaxHealth}):Play()
+		-- Change health bars
+		barChange(HealthL, HealthRatio)
+		barChange(HealthR, HealthRatio)
+		
+		-- If Health is below or at 80%, set TransparencyLevel of BloodScreen for the heart beating effect of BloodScreen.
+		-- BloodScreen transparency will intensify and become more visible when health is lower.
+		if Humanoid.Health <= Humanoid.MaxHealth * 0.8 then
+			BloodScreen:SetAttribute("TransparencyLevel", HealthRatio)
 		end
-		if Humanoid.Health > Humanoid.MaxHealth/1.25 and BloodScreen.ImageTransparency < 1 then
-			TweenService:Create(BloodScreen,TweenInfo.new(0.2),{ImageTransparency = 1}):Play()
+		-- If Health is above 80%, set TransparencyLevel to 1. Thre is no BloodScreen effect.
+		if Humanoid.Health > Humanoid.MaxHealth * 0.8 and BloodScreen.ImageTransparency < 1 then
+			BloodScreen:SetAttribute("TransparencyLevel", 1)
 		end
+		
+		-- Set the image transparency to the TransparencyLevel multiplied by the BloodScreenRegainRatio.
+		-- BloodScreenRegainRatio is supposed to dictate how much transparency is regained from the beating effect.
+		BloodScreen.ImageTransparency = math.clamp(BloodScreen:GetAttribute("TransparencyLevel")*BloodScreenRegainRatio, 0, 1)
+
+		PreviousHealthRatio = HealthRatio
 	end)
 	
+	-- Change absorption bar if absorption changes.
 	local absorptionChanged = Humanoid:GetAttributeChangedSignal("Absorption"):Connect(function()
 		absorptionBarCheck()
 		local changeAmount = math.abs(lastAbsorption-Humanoid:GetAttribute("Absorption"))
 		lastAbsorption = Humanoid:GetAttribute("Absorption")
-		barChange(AbsorptionL,Humanoid:GetAttribute("Absorption")/Humanoid:GetAttribute("MaxAbsorption"),changeAmount/100)
-		barChange(AbsorptionR,Humanoid:GetAttribute("Absorption")/Humanoid:GetAttribute("MaxAbsorption"),changeAmount/100)
+		barChange(AbsorptionL,Humanoid:GetAttribute("Absorption")/Humanoid:GetAttribute("MaxAbsorption"), changeAmount/100)
+		barChange(AbsorptionR,Humanoid:GetAttribute("Absorption")/Humanoid:GetAttribute("MaxAbsorption"), changeAmount/100)
 	end)
 	
-	task.defer(function()
-		while task.wait() and Humanoid.Health > 0 do
-			if Humanoid.Health <= Humanoid.MaxHealth/2.5 and BloodScreen.ImageTransparency-0.1 > 0 then
-				TweenService:Create(BloodScreen,TweenInfo.new(0.2,Enum.EasingStyle.Linear,Enum.EasingDirection.Out,0,true),{ImageTransparency = BloodScreen.ImageTransparency-0.1}):Play()
-				task.wait((Humanoid.Health/Humanoid.MaxHealth)*5)
+	-- If the LowHealthMuffleSetting is changed, muffle sounds if health is 30% or lower. Unmuffle if above 30%.
+	local LowHealthMuffleSettingChanged = LowHealthMuffleSetting.Changed:Connect(function()
+		if LowHealthMuffleSetting.Value then
+			if Humanoid.Health/Humanoid.MaxHealth <= 0.3 then
+				MuffleSounds()
+			else
+				MuffleSounds(true)
 			end
 		end
 	end)
 	
+	-- This loop creates a heart beating effect with BloodScreen using TransparencyLevel and BloodScreenRegainRatio.
+	task.defer(function()
+		while task.wait() and Humanoid.Health > 0 do
+			if Humanoid.Health <= Humanoid.MaxHealth * 0.8 then
+				TweenService:Create(
+					BloodScreen,
+					TweenInfo.new(0.1,Enum.EasingStyle.Linear,Enum.EasingDirection.Out),
+					{ImageTransparency = math.clamp(BloodScreen:GetAttribute("TransparencyLevel"), 0, 1)}
+				):Play()
+				task.wait(0.1)
+				TweenService:Create(
+					BloodScreen,
+					TweenInfo.new(0.1,Enum.EasingStyle.Linear,Enum.EasingDirection.Out),
+					{ImageTransparency = math.clamp(BloodScreen:GetAttribute("TransparencyLevel")*BloodScreenRegainRatio, 0, 1)}
+				):Play()
+				task.wait(0.1)
+				task.wait((Humanoid.Health/Humanoid.MaxHealth)*5)
+			end
+		end
+	end)
+
 	local function getConsumableTotal()
 		local throwableTotal = 0
 		local medicalTotal = 0
@@ -377,19 +466,19 @@ function module.LoadChar(Character)
 		ThrowableNumber.Text = tostring(throwableTotal)
 		MedicalNumber.Text = tostring(medicalTotal)
 	end
-	
+
 	local backpackAdded = Backpack.ChildAdded:Connect(function(Tool)
 		if Tool:IsA("Tool") and (Tool:GetAttribute("ToolType") == 6 or Tool:GetAttribute("ToolType") == 4) then
 			getConsumableTotal()
 		end
 	end)
-	
+
 	local backpackRemoved = Backpack.ChildRemoved:Connect(function(Tool)
 		if Tool:IsA("Tool") and (Tool:GetAttribute("ToolType") == 6 or Tool:GetAttribute("ToolType") == 4) then
 			getConsumableTotal()
 		end
 	end)
-	
+
 	local charAdded = Character.ChildAdded:Connect(function(Tool)
 		if Tool:IsA("Tool") and (Tool:GetAttribute("ToolType") == 6 or Tool:GetAttribute("ToolType") == 4) then
 			getConsumableTotal()
@@ -401,117 +490,149 @@ function module.LoadChar(Character)
 			getConsumableTotal()
 		end
 	end)
-	
+
 	getConsumableTotal()
-	
+	MuffleSounds(true)
+
 	DownedProgress.Value = 100
 	ReviveProgress.Value = 0
 	CircleFramesModule.Progress(MainDownedProgressFrame,DownedProgress,DownedProgress.Value)
 	CircleFramesModule.Progress(MainReviveProgressFrame,ReviveProgress,ReviveProgress.Value)
 	local bannedParts = {"Head"}--,"RightUpperArm","LeftUpperArm","RightLowerArm","LeftLowerArm","RightHand","LeftHand"}
-	
+
 	local DownedEventFunction = DownedEvent.OnClientEvent:Connect(function(interactCharacter)
-		
-		if interactCharacter then
-			if interactCharacter:FindFirstChild("Humanoid") and interactCharacter.Humanoid:GetAttribute("Downed") then
-				local interactPlayer = game.Players:GetPlayerFromCharacter(interactCharacter)
-				local allyId = TeamHandler.Check(Player,interactPlayer)
-				interactCharacter:SetAttribute("HighlightColor",allyIdTable[allyId][1])
-				--if allyId == 1 then
-				--	interactCharacter:SetAttribute("interactFinishEventId",5)
-				---	interactCharacter:SetAttribute("interactText","EXECUTE")
-				--end
-			end
-			return
-		end
-		
-		local beginningheartbeatPitch = 0.8
-		local droneVolume = 3
-		local heartbeatVolume = 4
-		local ccBrightness = -0.5
-		local ccContrast = 1
-		local ccTintSat = 255
-		local droneNoise = DowningObjects:WaitForChild("Drone"):Clone()
-		local heartbeatNoise = DowningObjects:WaitForChild("Heartbeat"):Clone()
-		local DownedCC = DowningObjects:WaitForChild("DownedCC"):Clone()
-		DownedCC.Parent = Lighting
-		droneNoise.Parent = PlayerEffectsFolder
-		heartbeatNoise.Parent = PlayerEffectsFolder
-		droneNoise:Play()
-		heartbeatNoise:Play()
-		
-		DownedFrame.GroupTransparency = 1
-		DownedProgress.Value = 100
-		DownedMessage.Text = 'Hold  <font color="rgb(170,0,0)">"'.. KeybindHandler.Keybind("Speed Up Downing",Player).Name ..'"</font> To Give Up.'
-		CircleFramesModule.Progress(MainDownedProgressFrame,DownedProgress,DownedProgress.Value)
-		TweenService:Create(DownedFrame,TweenInfo.new(2,Enum.EasingStyle.Linear),{GroupTransparency = 0}):Play()
-		DownedFrame.Visible = true
-		
-		local Increment = 0.5
-		local Time = Humanoid:GetAttribute("DownStart") or 60
-		local waitTime = (Time/100)*Increment
-		
-		Humanoid:GetAttributeChangedSignal("Reviving"):Connect(function()
-			if Humanoid:GetAttribute("Reviving") > 0 then
-				DownedFrame.Visible = false
-				ReviveFrame.Visible = true
-				ReviveProgress.Value = 0
-				CircleFramesModule.Progress(MainReviveProgressFrame,ReviveProgress,ReviveProgress.Value)
-				TweenService:Create(ReviveProgress,TweenInfo.new(Humanoid:GetAttribute("Reviving"),Enum.EasingStyle.Linear),{Value = 100}):Play()
-			else
-				if Humanoid:GetAttribute("Downed") then
-					DownedFrame.Visible = true
-				end
-				ReviveFrame.Visible = false
-				ReviveProgress.Value = 0
-				CircleFramesModule.Progress(MainReviveProgressFrame,ReviveProgress,ReviveProgress.Value)
-			end
-		end)
-	
-		task.defer(function()
-			while task.wait() and Humanoid.Health > 0 do
-				CircleFramesModule.Progress(MainDownedProgressFrame,DownedProgress,DownedProgress.Value)
-				CircleFramesModule.Progress(MainReviveProgressFrame,ReviveProgress,ReviveProgress.Value)
-				heartbeatNoise.PlaybackSpeed = (1-(DownedProgress.Value/100))+beginningheartbeatPitch
-				droneNoise.Volume = droneVolume+((DownedProgress.Value/100)*-droneVolume)
-				heartbeatNoise.Volume = heartbeatVolume+((DownedProgress.Value/100)*-heartbeatVolume)
-				DownedCC.Brightness = ccBrightness+((DownedProgress.Value/100)*-ccBrightness)
-				DownedCC.Contrast = ccContrast+((DownedProgress.Value/100)*-ccContrast)
-				DownedCC.TintColor = Color3.fromHSV(0,1+((DownedProgress.Value/100)*-1),1)
-				if UserInputService:IsKeyDown(KeybindHandler.Keybind("Speed Up Downing",Player)) then
-					waitTime = (Time/100)*Increment*0.02
-					DownedMessage.Text = '<font color="rgb(255,0,0)">Giving Up on Life</font>'
-				else
-					waitTime = (Time/100)*Increment
-					DownedMessage.Text = 'Hold  <font color="rgb(255,0,0)">"'.. KeybindHandler.Keybind("Speed Up Downing",Player).Name ..'"</font> To Give Up.'
-				end
-			end
-		end)
-		
-		
-		task.defer(function()
-			while DownedProgress.Value > 0 and Humanoid:GetAttribute("Downed") and Humanoid.Health > 0 do
-				
-				if Humanoid:GetAttribute("Reviving") == 0 then
-					TweenService:Create(DownedProgress,TweenInfo.new(waitTime,Enum.EasingStyle.Linear),{Value = DownedProgress.Value-Increment}):Play()
-				end
-				task.wait(waitTime)
-			end
-			DownedFrame.GroupTransparency = 1
-			DownedProgress.Value = 100
-			DownedFrame.Visible = false
-			droneNoise:Destroy()
-			heartbeatNoise:Destroy()
-			DownedCC:Destroy()
-			if Humanoid:GetAttribute("Downed") then
-				DownedEvent:FireServer(Humanoid)
-			end
-		end)
-		
+
+		--if interactCharacter then
+		--	if interactCharacter:FindFirstChild("Humanoid") and interactCharacter.Humanoid:GetAttribute("Downed") then
+		--		local interactPlayer = game.Players:GetPlayerFromCharacter(interactCharacter)
+		--		local allyId = TeamHandler.Check(Player,interactPlayer)
+		--		interactCharacter:SetAttribute("HighlightColor",allyIdTable[allyId][1])
+		--		--if allyId == 1 then
+		--		--	interactCharacter:SetAttribute("interactFinishEventId",5)
+		--		---	interactCharacter:SetAttribute("interactText","EXECUTE")
+		--		--end
+		--	end
+		--	return
+		--end
+
+		--local beginningheartbeatPitch = 0.8
+		--local droneVolume = 3
+		--local heartbeatVolume = 4
+		--local ccBrightness = -0.5
+		--local ccContrast = 1
+		--local ccTintSat = 255
+		--local droneNoise = DowningObjects:WaitForChild("Drone"):Clone()
+		--local heartbeatNoise = DowningObjects:WaitForChild("Heartbeat"):Clone()
+		--local DownedCC = DowningObjects:WaitForChild("DownedCC"):Clone()
+		--DownedCC.Parent = Lighting
+		--droneNoise.Parent = PlayerEffectsFolder
+		--heartbeatNoise.Parent = PlayerEffectsFolder
+		--droneNoise:Play()
+		--heartbeatNoise:Play()
+
+		--DownedFrame.GroupTransparency = 1
+		--DownedProgress.Value = 100
+		--DownedMessage.Text = 'Hold  <font color="rgb(170,0,0)">"'.. KeybindHandler.Keybind("Speed Up Downing",Player).Name ..'"</font> To Give Up.'
+		--CircleFramesModule.Progress(MainDownedProgressFrame,DownedProgress,DownedProgress.Value)
+		--TweenService:Create(DownedFrame,TweenInfo.new(2,Enum.EasingStyle.Linear),{GroupTransparency = 0}):Play()
+		--DownedFrame.Visible = true
+
+		--local Increment = 0.5
+		--local Time = Humanoid:GetAttribute("DownStart") or 60
+		--local waitTime = (Time/100)*Increment
+
+		--Humanoid:GetAttributeChangedSignal("Reviving"):Connect(function()
+		--	if Humanoid:GetAttribute("Reviving") > 0 then
+		--		DownedFrame.Visible = false
+		--		ReviveFrame.Visible = true
+		--		ReviveProgress.Value = 0
+		--		CircleFramesModule.Progress(MainReviveProgressFrame,ReviveProgress,ReviveProgress.Value)
+		--		TweenService:Create(ReviveProgress,TweenInfo.new(Humanoid:GetAttribute("Reviving"),Enum.EasingStyle.Linear),{Value = 100}):Play()
+		--	else
+		--		if Humanoid:GetAttribute("Downed") then
+		--			DownedFrame.Visible = true
+		--		end
+		--		ReviveFrame.Visible = false
+		--		ReviveProgress.Value = 0
+		--		CircleFramesModule.Progress(MainReviveProgressFrame,ReviveProgress,ReviveProgress.Value)
+		--	end
+		--end)
+
+		--task.defer(function()
+		--	while task.wait() and Humanoid.Health > 0 do
+		--		CircleFramesModule.Progress(MainDownedProgressFrame,DownedProgress,DownedProgress.Value)
+		--		CircleFramesModule.Progress(MainReviveProgressFrame,ReviveProgress,ReviveProgress.Value)
+
+		--		heartbeatNoise.PlaybackSpeed = (1-(DownedProgress.Value/100))+beginningheartbeatPitch
+		--		droneNoise.Volume = droneVolume+((DownedProgress.Value/100)*-droneVolume)
+		--		heartbeatNoise.Volume = heartbeatVolume+((DownedProgress.Value/100)*-heartbeatVolume)
+		--		DownedCC.Brightness = ccBrightness+((DownedProgress.Value/100)*-ccBrightness)
+		--		DownedCC.Contrast = ccContrast+((DownedProgress.Value/100)*-ccContrast)
+		--		DownedCC.TintColor = Color3.fromHSV(0,1+((DownedProgress.Value/100)*-1),1)
+		--		if UserInputService:IsKeyDown(KeybindHandler.Keybind("Speed Up Downing",Player)) then
+		--			waitTime = (Time/100)*Increment*0.02
+		--			DownedMessage.Text = '<font color="rgb(255,0,0)">Giving Up on Life</font>'
+		--		else
+		--			waitTime = (Time/100)*Increment
+		--			DownedMessage.Text = 'Hold  <font color="rgb(255,0,0)">"'.. KeybindHandler.Keybind("Speed Up Downing",Player).Name ..'"</font> To Give Up.'
+		--		end
+		--	end
+		--end)
+
+
+		--task.defer(function()
+		--	while DownedProgress.Value > 0 and Humanoid:GetAttribute("Downed") and Humanoid.Health > 0 do
+
+		--		if Humanoid:GetAttribute("Reviving") == 0 then
+		--			TweenService:Create(DownedProgress,TweenInfo.new(waitTime,Enum.EasingStyle.Linear),{Value = DownedProgress.Value-Increment}):Play()
+		--		end
+		--		task.wait(waitTime)
+		--	end
+		--	DownedFrame.GroupTransparency = 1
+		--	DownedProgress.Value = 100
+		--	DownedFrame.Visible = false
+		--	droneNoise:Destroy()
+		--	heartbeatNoise:Destroy()
+		--	DownedCC:Destroy()
+		--	if Humanoid:GetAttribute("Downed") then
+		--		DownedEvent:FireServer(Humanoid)
+		--	end
+		--end)
+
 	end)
-		
+
 	Humanoid.Died:Once(function()
-		for _, connection in {staminaChanged,maxStaminaChanged,healthChanged,backpackAdded,backpackRemoved,charAdded,charRemoved,DownedEventFunction,absorptionChanged,GradientChange} do
+		for _, connection in {
+			staminaChanged,
+			maxStaminaChanged,
+			healthChanged,
+			backpackAdded,
+			backpackRemoved,
+			charAdded,charRemoved,
+			DownedEventFunction,
+			absorptionChanged,
+			GradientChange,
+			LowHealthMuffleSettingChanged
+			} 
+		do
+			connection:Disconnect()
+		end
+	end)
+
+	Character.AncestryChanged:Once(function()
+		for _, connection in {
+			staminaChanged,
+			maxStaminaChanged,
+			healthChanged,
+			backpackAdded,
+			backpackRemoved,
+			charAdded,charRemoved,
+			DownedEventFunction,
+			absorptionChanged,
+			GradientChange,
+			LowHealthMuffleSettingChanged
+			} 
+		do
 			connection:Disconnect()
 		end
 	end)
