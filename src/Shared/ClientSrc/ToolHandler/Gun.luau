@@ -408,16 +408,6 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		if Settings.CylinderAngle then -- If hammer exists, will reset position
 			Cylinder.C0 = CFrame.new(Cylinder.C0.Position)*CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))
 		end
-
-		if Settings.PitchLastBullets and Settings.PitchLastBullets > 0 and magBool.Value+1<= Settings.PitchLastBullets then
-			--/ The last 3 or so bullets are pitched up incrementally
-			local value = Settings.PitchLastBullets-(magBool.Value)
-			local pitch = Sounds["Fire"].PlaybackSpeed+((Sounds["Fire"].PlaybackSpeed*value)/Settings.PitchLastBullets)
-			CTF.playSound(Sounds,"Fire",Handle,true,true,{["PlaybackSpeed"] = pitch})
-		else
-			--/ bullets aren't pitched up
-			CTF.playSound(Sounds,"Fire",Handle,true,true)
-		end
 		
 		gunSpread() --/ apply gun spread
 		CTF.flashGun(Flash,Flash.FlashLight,true) -- uses CTF to flash the gun for light and particles
@@ -652,15 +642,6 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 			task.wait()
 		end
 	end
-	local function starterFireFunction ()
-		if Settings.Automatic then
-			while Settings.Automatic and UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) and Equipped do
-				mouseButtonFire()
-			end
-		else
-			mouseButtonFire()
-		end
-	end
 
 	local function scrollAim (Forward)
 		if Settings.ScrollAffectsAim and Aiming and Handle:FindFirstChild("AimNear") then
@@ -756,9 +737,6 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		if not Equipped or gpe or Humanoid:GetAttribute("InventoryOpen") then return end
 		if Input.KeyCode == KeybindHandler.Keybind("Drop",Player) then
 			CTF.dropItem(Character,Tool)
-		end
-		if Input.UserInputType == Enum.UserInputType.MouseButton1 then
-			starterFireFunction()
 		end
 
 		if Input.UserInputType == Enum.UserInputType.MouseButton2 then

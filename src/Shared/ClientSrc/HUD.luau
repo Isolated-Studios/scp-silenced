@@ -209,21 +209,22 @@ local function updateGunDisplay(Gun: ToolClass.ClassType)
 		end
 	end
 
-	MagFrame.UIGridLayout.CellSize = UDim2.new(1/Gun.Settings.MagSize,-1,1,0)
-	if Gun.Settings.MagSize > 50 then
-		MagFrame.UIGridLayout.CellSize = UDim2.new((1/Gun.Settings.MagSize)*2,-1,1,0)
+	local TotalCells = Gun.Settings.MagSize + 1
+	MagFrame.UIGridLayout.CellSize = UDim2.new(1/TotalCells,-1,1,0)
+	if TotalCells > 50 then
+		MagFrame.UIGridLayout.CellSize = UDim2.new((1/TotalCells)*2,-1,1,0)
 		InnerScaleLayout.Padding = UDim.new(1.2,0)
 	else
 		InnerScaleLayout.Padding = UDim.new(0.2,0)
 	end
-	for i=1,Gun.Settings.MagSize,1 do
+	for i = 1, TotalCells, 1 do
 		local bullet = PrimeMagBullet:Clone()
 		--bullet.Size = UDim2.new(1/Settings.MagSize,-1,1,0)
 		if i == 1 then
 			bullet.Round.BackgroundColor3 = Color3.fromRGB(255,255,255)
 		end
 		bullet.Name = tostring(i)
-		if tonumber(bullet.Name) > Gun.Ammo then
+		if i > Gun.Ammo + 1 or (i == 1 and not Gun.Bolted) then
 			bullet.Round.Size = UDim2.fromScale(1,0)
 		end
 		bullet.Parent = MagFrame
@@ -280,6 +281,10 @@ local function MuffleSounds (Unmuffle: boolean)
 			end
 		end
 	end
+end
+
+function module.updateGunDisplay(Tool: ToolClass.ClassType)
+	updateGunDisplay(Tool)
 end
 
 function module.LoadChar(Character)

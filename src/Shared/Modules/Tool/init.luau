@@ -6,6 +6,7 @@ local KeybindHandler = require(ReplicatedStorage.Modules.UI.KeybindHandler)
 local ViewModelHandler = nil -- STUPID recursive requires() 💔
 local Utils = require(ReplicatedStorage.Modules.Utils)
 local CTF = nil
+local CommonFuncs = nil
 
 -- Preliminary important global variables.
 local LocalPlayer = Players.LocalPlayer
@@ -28,6 +29,8 @@ local function __load_character(character)
 		ViewModelAnimator = nil
 	end)
 	ViewModelHandler = ViewModelHandler or require(ReplicatedStorage.ClientSrc.ViewModelHandler)
+	CTF = CTF or require(script.CommonToolFunctions)
+	CommonFuncs = CommonFuncs or require(ReplicatedStorage.Modules.CommonFuncs)
 	ViewModel = ViewModelHandler.getViewModel()
 	ViewModelAnimator = ViewModelHandler.getViewModelAnimator()
 	while ViewModel == nil or ViewModelAnimator == nil do
@@ -285,7 +288,6 @@ end
 
 function Tool:Drop()
 	if self.State ~= Tool.State.Equipped then return end
-	if not CTF then CTF = require(ReplicatedStorage.Modules.Tool.CommonToolFunctions) end
 	self:Unequip()
 	CTF.dropItem(Character, self.Instance)
 end
@@ -304,6 +306,8 @@ function Tool:__enable()
 		for bindingName, binding in self.Bindings do
 			local keybind = binding.DebugBinding or KeybindHandler.Keybind(bindingName, LocalPlayer)
 			if keybind
+			and self.State == Tool.State.Equipped
+			and not CommonFuncs.AreInputUIsActive()
 			and input.UserInputType == binding.InputType
 			and input.UserInputState == binding.InputState
 			and (if input.UserInputType == Enum.UserInputType.Keyboard then (input.KeyCode == keybind) else true)

@@ -2,6 +2,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local ToolClass = require(script.Parent)
 local Utils = require(ReplicatedStorage.Modules.Utils)
+local HUD = nil
+local CTF = nil
 
 --[[
 	====== TYPE DEFINITIONS ======
@@ -95,6 +97,13 @@ export type ClassType = ToolClass.ClassType & typeof(setmetatable(
 	Gun
 ))
 
+Gun.State = {
+	["Idle"] = 0;
+	["CancelingSprint"] = 1;
+	["Reloading"] = 2;
+	["Cooldown"] = 3;
+}
+
 --[[
 	====== FUNCTION DEFINITIONS ======
 
@@ -107,6 +116,10 @@ function Gun.new(Tool: Tool): ClassType
 	local self: ClassType = setmetatable(ToolClass.new(Tool), Gun)
 	assert(self.Handle, `Gun {Tool:GetFullName()} is missing a Handle`)
 	
+	CTF = CTF or require(script.Parent.CommonToolFunctions) -- TODO: REMEMBER TO GET RID OF CTF LATER!!!!
+	HUD = HUD or require(ReplicatedStorage.ClientSrc.HUD)
+	
+	self.GunState = Gun.State.Idle
 	self.Bolted = false
 	self.Ammo = self.Settings.MagSize
 	
@@ -240,19 +253,21 @@ end
 	Functions defined here are associated with unique objects.
 	This includes functions for animation handling, default methods, etc.
 ]]
-	
+
 function Gun:Equip()
 	if self.State ~= ToolClass.State.Unequipped then return end
 	self.State = ToolClass.State.Equipping
 	ToolClass.getHumanoid():EquipTool(self.Instance)
-	if self.Bolted then
-		self:PlayAnimationFor("Equip", self.Settings.EquipSpeed)
-	else
+	if self.Ammo > 0 and not self.Bolted then -- play the first equip (with bolting) animation if unbolted but has ammo
 		self:PlayAnimation("FirstEquip")
+		self:Bolt()
+	else
+		self:PlayAnimationFor("Equip", self.Settings.EquipSpeed)
 	end
+	task.defer(HUD.updateGunDisplay, self)
 	self.__task = task.delay(self.Settings.EquipSpeed, self.PlayAnimation, self, "Hold")
 	task.wait(self.Settings.EquipCancel)
-	self.Bolted = true -- !!TODO: Link this to an animation event instead maybe? So bolting matches with the animation
+	self.GunState = Gun.State.Idle -- in case the gun breaks and locks itself somehow, reequipping it should fix it
 	self:__enable()
 end
 
@@ -262,14 +277,63 @@ function Gun:Unequip()
 	ToolClass.Unequip(self)
 end
 
-function Gun:Click()
+--[[
+	Here are all the methods used for firing, reloading and all the very gun-specific stuff.
+]]
+
+function Gun:Bolt()
+	if self.Bolted or self.Ammo <= 0 then return end
+	self.Bolted = true
+	self.Ammo -= 1
+end
+
+function Gun:__fire()
 	local Handle = self.Handle
-	Utils.SFX.playSound(self.Sounds, "Fire", Handle, true, true)
-	local CommonToolFunctions = require(script.Parent.CommonToolFunctions)
-	CommonToolFunctions.flashGun(Handle.Flash,Handle.Flash.FlashLight,true) -- uses CTF to flash the gun for light and particles
+	
+	-- play the firing sound (with pitch modifications as needed)
+	if self.Settings.PitchLastBullets and self.Settings.PitchLastBullets > 0 and self.Ammo < self.Settings.PitchLastBullets then
+		--/ The last <PitchLastBullets> bullets are pitched up incrementally
+		local coefficient = (self.Settings.PitchLastBullets - self.Ammo) / self.Settings.PitchLastBullets
+		local pitch = self.Sounds["Fire"].PlaybackSpeed + coefficient * self.Sounds["Fire"].PlaybackSpeed
+		Utils.SFX.playSound(self.Sounds, "Fire", Handle, true, true, {["PlaybackSpeed"] = pitch})
+	else
+		Utils.SFX.playSound(self.Sounds, "Fire", Handle, true, true)
+	end
+	
+	CTF.flashGun(Handle.Flash, Handle.Flash.FlashLight, true) -- uses CTF to flash the gun for light and particles
+end
+
+function Gun:__attemptFire()
+	self.GunState = Gun.State.Cooldown
+	
+	if self.Bolted then
+		self:__fire()
+		self.Bolted = false
+		task.defer(HUD.updateGunDisplay, self)
+	end
+	
+	task.wait(60 / self.Settings.RPM)
+	self:Bolt() -- attempt to bolt gun again if it has ammo
+	task.defer(HUD.updateGunDisplay, self)
+	self.GunState = Gun.State.Idle
+end
+
+function Gun:Click(input: InputObject)
+	if self.GunState ~= Gun.State.Idle then return end
+	-- TODO: cancel running
+	CTF.playSound(self.Sounds, "Empty", self.Handle, true, true)
+	if self.Settings.Automatic then
+		repeat
+			self:__attemptFire()
+		until not (input.UserInputState ~= Enum.UserInputState.End and self.State == ToolClass.State.Equipped and self.Bolted)
+	else
+		self:__attemptFire()
+	end
 end
 
 function Gun:Reload(input: InputObject)
+	if self.GunState ~= Gun.State.Idle then return end
+	self.GunState = Gun.State.Reloading
 	if input.KeyCode == Enum.KeyCode.H then
 		print("reload 1")
 		self:PlayAnimation("Reload1", nil, nil, nil, true)
@@ -286,6 +350,8 @@ function Gun:Reload(input: InputObject)
 		self:PlayAnimation("Reload2Last", nil, nil, nil, true)
 	end
 	self:PlayAnimation("Reload3", nil, nil, nil, true)
+	task.defer(HUD.updateGunDisplay, self)
+	self.GunState = Gun.State.Idle
 end
 
 return Gun
