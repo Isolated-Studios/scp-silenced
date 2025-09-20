@@ -142,59 +142,7 @@ function module.Init()
 	HUDLoaded = true
 end
 
-local editMagTable = {
-	["Empty"] = function(tweenTime)
-		if not tweenTime then tweenTime = 0.1 end
-		local bullet = MagFrame["1"]
-		local round = bullet.Round
-		TweenService:Create(round,TweenInfo.new(tweenTime,Enum.EasingStyle.Linear),{Size = UDim2.fromScale(1,0)}):Play()
-	end,
-	["Cycle"] = function(tweenTime)
-		if not tweenTime then tweenTime = 0.1 end
-		if gun.Ammo+1 <= Settings.MagSize and gun.Ammo > 0 and MagFrame:FindFirstChild((gun.Ammo+1)) then
-			local bullet = MagFrame[tostring(gun.Ammo+1)]
-			local round = bullet.Round
-			TweenService:Create(round,TweenInfo.new(tweenTime,Enum.EasingStyle.Linear),{Size = UDim2.fromScale(1,0)}):Play()
-			local firstBullet = MagFrame["1"]
-			local firstRound = firstBullet.Round
-			TweenService:Create(firstRound,TweenInfo.new(tweenTime,Enum.EasingStyle.Linear),{Size = UDim2.fromScale(1,1),}):Play()
-		end
-	end,
-	["Load"] = function(tweenTime)
-		if not tweenTime then tweenTime = 0.1 end
-		local bullet = MagFrame[tostring(gun.Ammo)]
-		local round = bullet.Round
-		if MagFrame["1"].Round.Size.Y.Scale < 1 then
-			bullet = MagFrame["1"]
-			round = bullet.Round
-		end
-		TweenService:Create(round,TweenInfo.new(tweenTime,Enum.EasingStyle.Linear),{Size = UDim2.fromScale(1,1)}):Play()
-	end,
-	["Mag"] = function(tweenTime)
-		if not tweenTime then tweenTime = 0.1 end
-		for i=1,gun.Ammo,1 do
-			local bullet = MagFrame[tostring(i)]
-			local round = bullet.Round
-			TweenService:Create(round,TweenInfo.new(tweenTime,Enum.EasingStyle.Linear),{Size = UDim2.fromScale(1,1)}):Play()
-		end
-	end,
-}
-
-local function editBulletFrame (action,tweenTime)
-	ReserveText.Text = ammoBool.Value
-	NameText.Text = Tool.Name
-	if Settings.Automatic then
-		ModeText.Text = "Auto"
-	else
-		ModeText.Text = "Semi"
-	end
-	if not MagFrame:FindFirstChild("1") then
-		return
-	end
-	editMagTable[action](tweenTime)
-end
-
-local function updateGunDisplay(Gun: ToolClass.ClassType)
+local function updateGunDisplay(Gun: ToolClass.ClassType, instant: boolean?)
 	ReserveFrame.Visible = true
 	ReserveText.Text = Gun.Ammo
 	if Gun.Settings.Automatic then
@@ -203,37 +151,56 @@ local function updateGunDisplay(Gun: ToolClass.ClassType)
 		ModeText.Text = "Semi"
 	end
 
-	for _,oldBullet in pairs (MagFrame:GetChildren()) do
-		if oldBullet:IsA("Frame") then
-			oldBullet:Destroy()
+	if instant then
+		for _, oldBullet in pairs (MagFrame:GetChildren()) do
+			if oldBullet:IsA("Frame") then
+				oldBullet:Destroy()
+			end
 		end
-	end
-
-	local TotalCells = Gun.Settings.MagSize + 1
-	MagFrame.UIGridLayout.CellSize = UDim2.new(1/TotalCells,-1,1,0)
-	if TotalCells > 50 then
-		MagFrame.UIGridLayout.CellSize = UDim2.new((1/TotalCells)*2,-1,1,0)
-		InnerScaleLayout.Padding = UDim.new(1.2,0)
+	
+		local TotalCells = Gun.Settings.MagSize + 1
+		MagFrame.UIGridLayout.CellSize = UDim2.new(1/TotalCells,-1,1,0)
+		if TotalCells > 50 then
+			MagFrame.UIGridLayout.CellSize = UDim2.new((1/TotalCells)*2,-1,1,0)
+			InnerScaleLayout.Padding = UDim.new(1.2,0)
+		else
+			InnerScaleLayout.Padding = UDim.new(0.2,0)
+		end
+		for i = 1, TotalCells, 1 do
+			local bullet = PrimeMagBullet:Clone()
+			--bullet.Size = UDim2.new(1/Settings.MagSize,-1,1,0)
+			if i == 1 then
+				bullet.Round.BackgroundColor3 = Color3.fromRGB(255,255,255)
+			end
+			bullet.Name = tostring(i)
+			if i > Gun.Ammo + 1 or (i == 1 and not Gun.Bolted) then
+				bullet.Round.Size = UDim2.fromScale(1,0)
+			end
+			bullet.Parent = MagFrame
+		end
+		if not Gun.Bolted and Gun.Settings.Bolted and Gun.Ammo < Gun.Settings.MagSize and Gun.Ammo > 0 then
+			local firstRound = MagFrame["1"].Round
+			firstRound.Size = UDim2.fromScale(1,0)
+			local otherRound = MagFrame[tostring(Gun.Ammo+1)].Round
+			otherRound.Size = UDim2.fromScale(1,1)
+		end
 	else
-		InnerScaleLayout.Padding = UDim.new(0.2,0)
-	end
-	for i = 1, TotalCells, 1 do
-		local bullet = PrimeMagBullet:Clone()
-		--bullet.Size = UDim2.new(1/Settings.MagSize,-1,1,0)
-		if i == 1 then
-			bullet.Round.BackgroundColor3 = Color3.fromRGB(255,255,255)
+		for i = 1, Gun.Settings.MagSize do
+			local bullet = MagFrame:FindFirstChild(tostring(i + 1))
+			if not bullet then break end
+			bullet = bullet.Round
+			if Gun.Ammo >= i and bullet.Size.Y.Scale < 0.5 then
+				TweenService:Create(bullet, TweenInfo.new(0.05), {Size = UDim2.new(bullet.Size.X.Scale, -1, 1, 0)}):Play()
+			elseif Gun.Ammo < i and bullet.Size.Y.Scale > 0.5 then
+				TweenService:Create(bullet, TweenInfo.new(0.05), {Size = UDim2.new(bullet.Size.X.Scale, -1, 0, 0)}):Play()
+			end
 		end
-		bullet.Name = tostring(i)
-		if i > Gun.Ammo + 1 or (i == 1 and not Gun.Bolted) then
-			bullet.Round.Size = UDim2.fromScale(1,0)
+		
+		if Gun.Bolted then
+			TweenService:Create(MagFrame[1].Round, TweenInfo.new(0.05), {Size = UDim2.new(MagFrame[1].Round.Size.X.Scale, -1, 1, 0)}):Play()
+		else
+			TweenService:Create(MagFrame[1].Round, TweenInfo.new(0.05), {Size = UDim2.new(MagFrame[1].Round.Size.X.Scale, -1, 0, 0)}):Play()
 		end
-		bullet.Parent = MagFrame
-	end
-	if not Gun.Bolted and Gun.Settings.Bolted and Gun.Ammo < Gun.Settings.MagSize and Gun.Ammo > 0 then
-		local firstRound = MagFrame["1"].Round
-		firstRound.Size = UDim2.fromScale(1,0)
-		local otherRound = MagFrame[tostring(Gun.Ammo+1)].Round
-		otherRound.Size = UDim2.fromScale(1,1)
 	end
 end
 
@@ -244,7 +211,7 @@ local function updateToolDisplay(equipping, Tool: ToolClass.ClassType, transitio
 		GunInfoFrame.Visible = true
 
 		if Tool and Tool.ClassName == "Gun" then
-			updateGunDisplay(Tool)
+			updateGunDisplay(Tool, true)
 		end
 	else
 		local Tween = TweenService:Create(GunInfoFrame,TweenInfo.new(0.3),{GroupTransparency = 1})
