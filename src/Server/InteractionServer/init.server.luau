@@ -184,17 +184,28 @@ local InteractFunctions = {
 		end
 	end,
 
-	[3] = function(interactObject, player) -- pick up
+	[3] = function(interactObject, player) -- Pick up an item.
+		interactObject:SetAttribute("interactable", false)
 		if Physical:FindFirstChild(interactObject.Name) then
-			interactObject:SetAttribute("interactable",false)
-			local Tool = Physical[interactObject.Name]:Clone()
-			if Tool:FindFirstChild("Holder") and interactObject:FindFirstChild("Holder") then
-				Tool["Holder"]:Destroy()
-				interactObject["Holder"].Parent = Tool
+			local ToolFromItem = Physical[interactObject.Name]:Clone()
+			
+			-- Replace the configuration if it exists in the interact object. 
+			if interactObject:FindFirstChildOfClass("Configuration") then
+				-- Destroy the tool's configuration if it exists.
+				if ToolFromItem:FindFirstChildOfClass("Configuration") then
+					ToolFromItem:FindFirstChildOfClass("Configuration"):Destroy()
+				end
+
+				interactObject:FindFirstChildOfClass("Configuration").Parent = ToolFromItem
 			end
-			Tool:SetAttribute("NewTool",true)
-			Tool.Parent = player.Backpack
+			
+			-- Destroy the item model and give the tool to the player.
+			ToolFromItem:SetAttribute("NewTool", true)
+			ToolFromItem.Parent = player.Backpack
 			interactObject:Destroy()
+		else
+			warn("Invalid Pick up. Could not find item '"..interactObject.Name.. "' in physical tool folder")
+			interactObject:SetAttribute("interactable", true)
 		end
 	end,
 
@@ -257,6 +268,7 @@ local InteractFunctions = {
 		task.wait(0.2)
 		interactObject:SetAttribute("interactable", true)
 	end,
+
 }
 
 

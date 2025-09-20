@@ -78,4 +78,30 @@ function CommonFuncs.AreInputUIsActive(exception: string)
 	end
 end
 
+--[=[
+	creates a new interaction for the given InteractiveObject.
+	InteractiveVariables is a table of variables that are set.
+	Format:
+	InteractiveVariables = {
+		["interactable"] = boolean,
+		["interactFinishEventId"] = number,
+		["interactTime"] = number,
+		["interactText"] = string,
+		["interactRange"] = number,
+		["interactAnimId"] = number,
+		["doorType"] = string,
+		["freezePlayer"] = boolean,
+	}
+]=]
+function CommonFuncs.CreateInteraction(InteractiveObject: Model, InteractiveVariables: table)
+	InteractiveObject:SetAttribute("interactable", InteractiveVariables["interactable"] or nil)
+	InteractiveObject:SetAttribute("interactFinishEventId", InteractiveVariables["interactFinishEventId"] or 0)
+	InteractiveObject:SetAttribute("InteractTime", InteractiveVariables["interactTime"] or nil)
+	InteractiveObject:SetAttribute("InteractText", InteractiveVariables["interactText"] or nil)
+	InteractiveObject:SetAttribute("maxRange", InteractiveVariables["interactRange"] or 10)
+	InteractiveObject:SetAttribute("interactAnimId", InteractiveVariables["interactAnimId"] or 0)
+	InteractiveObject:SetAttribute("DoorType", InteractiveVariables["doorType"] or nil)
+	InteractiveObject:SetAttribute("freezePlayer", InteractiveVariables["freezePlayer"] or false)
+end
+
 return CommonFuncs

@@ -67,9 +67,9 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 	local Eject = Handle:WaitForChild("Eject")
 	local PrimeCasing = Casings["Air"]
 	local Holder = Tool:WaitForChild("Holder")
-	local boltBool = Holder:WaitForChild("Bolted")
-	local magBool = Holder:WaitForChild("Mag")
-	local ammoBool = AmmoList:WaitForChild(Settings.AmmoType)
+	local boltInstanceValue = Holder:WaitForChild("Bolted")
+	local magInstanceValue= Holder:WaitForChild("Mag")
+	local ammoInstanceValue = AmmoList:WaitForChild(Settings.AmmoType)
 
 	--//Bools
 	local Hammer = nil
@@ -314,7 +314,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 				local otherTime = tick()-startTime
 				if math.abs(otherTime-WaitTime) < 0.1 and (spreadReduction or BulletSpread == Settings.MinSpread) then -- really cheap way to check if gun is still "firing"
 					-- another really cheap way to check if gun is still "firing" when gun is automatic
-					if UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) and Settings.Automatic and magBool.Value > 0 and not Humanoid:GetAttribute("Running") then return end
+					if UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) and Settings.Automatic and magInstanceValue.Value > 0 and not Humanoid:GetAttribute("Running") then return end
 					VignetteTween:Play()
 				end
 			end)
@@ -381,7 +381,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		LastShotTick = currentTick
 		Bolted = false --/ subtract a round from the mag
 
-		SetItemHolder:FireServer(Tool,"Mag",magBool.Value) -- UI shenanigans
+		SetItemHolder:FireServer(Tool,"Mag",magInstanceValue.Value) -- UI shenanigans
 
 		if Settings.BoltRoundEvent then --/ Will stop the Bolt animation when fired (only for if BoltRoundEvent is true)
 			animationHandle("Bolt","Stop")
@@ -429,7 +429,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		
 		animationHandle("Recoil","Play") --/ play the recoil animation
 
-		if magBool.Value == 0 and Settings.BoltBackWhenEmpty and Handle:FindFirstChild("Bolt") then
+		if magInstanceValue.Value == 0 and Settings.BoltBackWhenEmpty and Handle:FindFirstChild("Bolt") then
 			--/ pushes the bolt back if BoltBackWhenEmpty is true and mag is empty
 			local Bolt = Handle.Bolt
 			BoltBackTween:Play()
@@ -444,10 +444,8 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 			Shove:Fire(Settings.LinearShove,Settings.AngularShove) --/ shove event
 		end
 		
-		if Settings.AutomaticBolt then
-			task.wait(60/Settings.RPM)
-			boltGun()
-		end
+		task.wait(60/Settings.RPM)
+		boltGun()
 		HoldFire = false
 	end
 
@@ -477,7 +475,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 				end
 				while task.wait() and currentTime < Settings.SqueezeTrigger and Tool.Parent == Character do
 					--/ The squeezing of the trigger that sets the positions of the hammer and/or cylinder
-					if Settings.HeldWhenSqueezed and not UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
+					if not UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
 						break
 					end
 					currentTime = tick() - initialTime
@@ -512,22 +510,18 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 	end
 
 	local function Reload ()
-		-- if magBool.Value < Settings.MagSize and ammoBool.Value > 0 and not Reloading and (not Humanoid:GetAttribute("Running") or Settings.RunAndReload) then
-		if ammoBool.Value > 0 and not Reloading and (not Humanoid:GetAttribute("Running") or Settings.RunAndReload) then
+		-- if magBool.Value < Settings.MagSize and ammoInstanceValue.Value > 0 and not Reloading and (not Humanoid:GetAttribute("Running") or Settings.RunAndReload) then
+		if ammoInstanceValue.Value > 0 and not Reloading and (not Humanoid:GetAttribute("Running") or Settings.RunAndReload) then
 			CancelReload = false
 			Reloading = true
 			--ChangeGrip:Fire(Viewmodel.UpperTorso)
 
 			if not Bolted then
-				if Settings.AutomaticBolt then
-					Bolted = true
-				else
-					boltGun()
-				end
+				boltGun()
 			end
 
 			if Settings.ReloadStyle == 1 then --/ Mag reload
-				if magBool.Value <= 0 and Settings.EmptyReload then
+				if magInstanceValue.Value <= 0 and Settings.EmptyReload then
 					animationHandle("EmptyReload","Play")
 					if Settings.EmptyReloadSpeed then
 						animationHandle("EmptyReload","Speed",VMEmptyReload.Length/Settings.EmptyReloadSpeed,CharEmptyReload.Length/Settings.EmptyReloadSpeed)
@@ -545,7 +539,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 				end
 
 			else --/ Shell reload
-				if magBool.Value <= 0 and Settings.EmptyReload then --/ Will play the EmptyReload as a transition instead of Reload1 if mag is empty
+				if magInstanceValue.Value <= 0 and Settings.EmptyReload then --/ Will play the EmptyReload as a transition instead of Reload1 if mag is empty
 					animationHandle("EmptyReload","Play")
 					if Settings.EmptyReloadSpeed then
 						animationHandle("EmptyReload","Speed",VMEmptyReload.Length/Settings.EmptyReloadSpeed,CharEmptyReload.Length/Settings.EmptyReloadSpeed)
@@ -559,14 +553,14 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 					VMReload1.Stopped:Wait() --/ Wait for the reload to stop
 				end
 				if Tool.Parent ~= Character then return end --/ stupid dumb idiot check i hate you gun script
-				if magBool.Value <= 0 and Settings.EmptyReload then --/ STOPPPP the empty reload if it exists
+				if magInstanceValue.Value <= 0 and Settings.EmptyReload then --/ STOPPPP the empty reload if it exists
 					animationHandle("EmptyReload","Stop")
 				else
 					animationHandle("Reload1","Stop") --/ STOPPPP the reload1 instead
 				end
-				while Tool.Parent == Character and magBool.Value < Settings.MagSize and ammoBool.Value > 0 do
+				while Tool.Parent == Character and magInstanceValue.Value < Settings.MagSize and ammoInstanceValue.Value > 0 do
 					--/Reload2 is our animation being looped to simulate the shells going in.
-					if (magBool.Value == Settings.MagSize-1 or CancelReload or ammoBool.Value == 1) and VMReload2Last then -- if Reload2Last animation exists, play that if last shell is inserted
+					if (magInstanceValue.Value == Settings.MagSize-1 or CancelReload or ammoInstanceValue.Value == 1) and VMReload2Last then -- if Reload2Last animation exists, play that if last shell is inserted
 						-- This will also play if CancelReload is true and then stop the reload cycle after Reload2Last is finished.
 						animationHandle("Reload2Last","Play")
 						if Settings.Reload2LastSpeed then
@@ -603,7 +597,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 
 	local function mouseButtonFire () --/ Checks if gun is full
 		if not Bursting and not FireCooldown and Equipped and (not Humanoid:GetAttribute("Running") or Settings.RunAndGun) then
-			if Reloading and not CancelReload and Settings.ReloadStyle == 0 and magBool.Value > 0 then
+			if Reloading and not CancelReload and Settings.ReloadStyle == 0 and magInstanceValue.Value > 0 then
 				CancelReload = true
 			elseif not Reloading then
 
@@ -616,7 +610,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 					animationHandle("Reload3","Stop")
 				end
 
-				if magBool.Value > 0 then
+				if magInstanceValue.Value > 0 then
 					gunPrime() --/ If gun is full, go to next step
 				else
 					FireCooldown = true
@@ -624,13 +618,13 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 					task.wait(60/Settings.RPM)
 					FireCooldown = false
 				end
-			elseif Reloading and Settings.ReloadStyle == 1 and magBool.Value > 0 then
+			elseif Reloading and Settings.ReloadStyle == 1 and magInstanceValue.Value > 0 then
 				Reloading = false
 				animationHandle("Reload1","Stop")
 				if VMEmptyReload then
 					animationHandle("EmptyReload","Stop")
 				end
-				if magBool.Value > 0 then
+				if magInstanceValue.Value > 0 then
 					gunPrime()
 				else
 					task.wait()
@@ -640,25 +634,6 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 			end
 		else
 			task.wait()
-		end
-	end
-
-	local function scrollAim (Forward)
-		if Settings.ScrollAffectsAim and Aiming and Handle:FindFirstChild("AimNear") then
-			local Aim = Handle.Aim
-			local AimNear = Handle.AimNear
-			local AimFar = Handle.AimFar
-			local increment = (AimNear.Position-AimFar.Position).Magnitude/10
-			if Tool:GetAttribute("AimPosition") then
-				Aim.Position = Vector3.new(Aim.Position.X,Aim.Position.Y,Tool:GetAttribute("AimPosition"))
-			end
-			if Forward then
-				Tool:SetAttribute("AimPosition",math.clamp(Aim.Position.Z+increment,AimNear.Position.Z,AimFar.Position.Z))
-				TweenService:Create(Aim,TweenInfo.new(0.1,Enum.EasingStyle.Linear),{Position = Vector3.new(Aim.Position.X,Aim.Position.Y,math.clamp(Aim.Position.Z+increment,AimNear.Position.Z,AimFar.Position.Z))}):Play()
-			else
-				Tool:SetAttribute("AimPosition",math.clamp(Aim.Position.Z-increment,AimNear.Position.Z,AimFar.Position.Z))
-				TweenService:Create(Aim,TweenInfo.new(0.1,Enum.EasingStyle.Linear),{Position = Vector3.new(Aim.Position.X,Aim.Position.Y,math.clamp(Aim.Position.Z-increment,AimNear.Position.Z,AimFar.Position.Z))}):Play()
-			end
 		end
 	end
 
@@ -699,7 +674,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		AimGun(true)
 	end
 
-	if boltBool.Value then
+	if boltInstanceValue.Value then
 		if Settings.HammerAngle then
 			Hammer.C0 = CFrame.new(Hammer.C0.Position)*CFrame.Angles(math.rad(Settings.HammerAngle.X),math.rad(Settings.HammerAngle.Y),math.rad(Settings.HammerAngle.Z))
 		end
@@ -743,7 +718,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 			AimGun(true)
 		end
 
-		if Input.KeyCode == KeybindHandler.Keybind("Reload",Player) then
+		if Input.KeyCode == KeybindHandler.Keybind("Reload", Player) then
 			Reload()
 		end
 	end)
@@ -755,7 +730,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 			for index,_ in pairs(animationTable) do
 				animationHandle(index,"Stop",0)
 			end
-			if Settings.BoltBackWhenEmpty and magBool.Value == 0 then -- If gun is empty and BoltBackWhenEmpty, set bolt because reload could be cancelled
+			if Settings.BoltBackWhenEmpty and magInstanceValue.Value == 0 then -- If gun is empty and BoltBackWhenEmpty, set bolt because reload could be cancelled
 				Handle.Bolt.C1 = BackBoltC1
 			end
 		end
@@ -767,22 +742,15 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		end
 	end)
 
-	local wheelForward = Mouse.WheelForward:Connect(function()
-		scrollAim(true)
-	end)
-	local wheelBackward = Mouse.WheelBackward:Connect(function()
-		scrollAim(false)
-	end)
-
 	local runChange = Humanoid:GetAttributeChangedSignal("Running"):Connect(function()
 		checkRunning()
 	end)
 
 	Tool.AncestryChanged:Once(function()
-		SetItemHolder:FireServer(Tool,"Mag",magBool.Value)
-		SetItemHolder:FireServer(Tool,"Bolted",Bolted)
+		SetItemHolder:FireServer(Tool, "Mag", magInstanceValue.Value)
+		SetItemHolder:FireServer(Tool, "Bolted", Bolted)
 		for index,_ in pairs(animationTable) do
-			animationHandle(index,"Stop",0)
+			animationHandle(index, "Stop", 0)
 		end
 		for _,animationFunction in pairs(animationFunctionsList) do
 			animationFunction:Disconnect()
@@ -802,7 +770,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 			ScopeModule.SetEnabled(false)
 		end
 		
-		if Settings.BoltBackWhenEmpty and magBool.Value == 0 and Handle:FindFirstChild("Bolt") then -- If gun is empty and BoltBackWhenEmpty, set bolt because reload could be cancelled
+		if Settings.BoltBackWhenEmpty and magInstanceValue.Value == 0 and Handle:FindFirstChild("Bolt") then -- If gun is empty and BoltBackWhenEmpty, set bolt because reload could be cancelled
 			Handle.Bolt.C1 = BackBoltC1
 		end
 		Equipped = false
@@ -827,7 +795,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		if Flash:FindFirstChild("FlashLight") then
 			Flash.FlashLight.Enabled = false
 		end
-		disconnectFunctions{inputBegan,inputEnded,renderStep,runChange,wheelBackward,wheelBackward,unequippedTool}
+		disconnectFunctions{inputBegan,inputEnded,renderStep,runChange,unequippedTool}
 		Tool:SetAttribute("Activated",nil)
 	end)
 	--\\
