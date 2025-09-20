@@ -97,11 +97,22 @@ export type ClassType = ToolClass.ClassType & typeof(setmetatable(
 	Gun
 ))
 
+--[[
+	====== ENUM DEFINITIONS ======
+
+	Custom Enums help with making the code more readable.
+]]
+
 Gun.State = {
 	["Idle"] = 0;
 	["CancelingSprint"] = 1;
 	["Reloading"] = 2;
 	["Cooldown"] = 3;
+}
+
+Gun.ReloadStyle = {
+	["SingleCartridge"] = 0;
+	["Magazine"] = 1;
 }
 
 --[[
@@ -129,22 +140,10 @@ function Gun.new(Tool: Tool): ClassType
 		DebugBinding = true; -- so the KeybindHandler doesn't constantly get called and print warnings for no reason.
 		Handler = Utils.wrapMethod(self, self.Click);
 	}
-	self.Bindings["R1"] = {
+	self.Bindings["Reload"] = {
 		InputType = Enum.UserInputType.Keyboard;
 		InputState = Enum.UserInputState.Begin;
-		DebugBinding = Enum.KeyCode.H;
-		Handler = Utils.wrapMethod(self, self.Reload);
-	}
-	self.Bindings["R2"] = {
-		InputType = Enum.UserInputType.Keyboard;
-		InputState = Enum.UserInputState.Begin;
-		DebugBinding = Enum.KeyCode.J;
-		Handler = Utils.wrapMethod(self, self.Reload);
-	}
-	self.Bindings["R3"] = {
-		InputType = Enum.UserInputType.Keyboard;
-		InputState = Enum.UserInputState.Begin;
-		DebugBinding = Enum.KeyCode.K;
+		DebugBinding = Enum.KeyCode.R;
 		Handler = Utils.wrapMethod(self, self.Reload);
 	}
 	
@@ -260,7 +259,7 @@ function Gun:Equip()
 	ToolClass.getHumanoid():EquipTool(self.Instance)
 	if self.Ammo > 0 and not self.Bolted then -- play the first equip (with bolting) animation if unbolted but has ammo
 		self:PlayAnimation("FirstEquip")
-		self:Bolt()
+		self:Bolt(true)
 	else
 		self:PlayAnimationFor("Equip", self.Settings.EquipSpeed)
 	end
@@ -281,10 +280,17 @@ end
 	Here are all the methods used for firing, reloading and all the very gun-specific stuff.
 ]]
 
-function Gun:Bolt()
+function Gun:Bolt(skipAnimation: boolean)
 	if self.Bolted or self.Ammo <= 0 then return end
+	if not skipAnimation then
+		local Animation = self:PlayAnimation("Bolt")
+		if Animation then
+			Animation:GetMarkerReachedSignal("BoltRound"):Wait()
+		end
+	end
 	self.Bolted = true
 	self.Ammo -= 1
+	task.defer(HUD.updateGunDisplay, self)
 end
 
 function Gun:__fire()
@@ -304,8 +310,6 @@ function Gun:__fire()
 end
 
 function Gun:__attemptFire()
-	self.GunState = Gun.State.Cooldown
-	
 	if self.Bolted then
 		self:__fire()
 		self.Bolted = false
@@ -315,12 +319,22 @@ function Gun:__attemptFire()
 	task.wait(60 / self.Settings.RPM)
 	self:Bolt() -- attempt to bolt gun again if it has ammo
 	task.defer(HUD.updateGunDisplay, self)
-	self.GunState = Gun.State.Idle
 end
 
 function Gun:Click(input: InputObject)
-	if self.GunState ~= Gun.State.Idle then return end
+	if self.GunState ~= Gun.State.Idle and self.GunState ~= Gun.State.Reloading then return end
+	if self.GunState == Gun.State.Reloading then
+		task.cancel(self.__task)
+		self:StopAnimation("EmptyReload")
+		self:StopAnimation("Reload1")
+		self:StopAnimation("Reload2")
+		self:StopAnimation("Reload2Last")
+		self:StopAnimation("Reload3")
+	end
+	
 	-- TODO: cancel running
+	
+	self.GunState = Gun.State.Cooldown
 	CTF.playSound(self.Sounds, "Empty", self.Handle, true, true)
 	if self.Settings.Automatic then
 		repeat
@@ -329,29 +343,62 @@ function Gun:Click(input: InputObject)
 	else
 		self:__attemptFire()
 	end
+	self.GunState = Gun.State.Idle
 end
 
-function Gun:Reload(input: InputObject)
+function Gun:Reload()
+	if self.Ammo >= self.Settings.MagSize and self.Bolted then return end
 	if self.GunState ~= Gun.State.Idle then return end
 	self.GunState = Gun.State.Reloading
-	if input.KeyCode == Enum.KeyCode.H then
-		print("reload 1")
-		self:PlayAnimation("Reload1", nil, nil, nil, true)
-		self:PlayAnimation("Reload2", nil, nil, nil, true)
-	elseif input.KeyCode == Enum.KeyCode.J then
-		print("reload 2")
-		self:PlayAnimation("Reload1", nil, nil, nil, true)
-		self:PlayAnimation("Reload2", nil, nil, nil, true)
-		self:PlayAnimation("Reload2Last", nil, nil, nil, true)
-	else
-		print("reload 2")
-		self:PlayAnimation("EmptyReload", nil, nil, nil, true)
-		self:PlayAnimation("Reload2", nil, nil, nil, true)
-		self:PlayAnimation("Reload2Last", nil, nil, nil, true)
+	
+	if self.Settings.ReloadStyle == Gun.ReloadStyle.Magazine then
+		if self.Ammo == 0 and self.Bolted == false then -- empty reload
+			self.__task = task.spawn(function()
+				self:PlayAnimation("EmptyReload", nil, nil, nil, true)
+				self.Ammo = self.Settings.MagSize
+				self:Bolt()
+				task.defer(HUD.updateGunDisplay, self)
+				self.GunState = Gun.State.Idle
+			end)
+		else
+			self.__task = task.spawn(function()
+				self:PlayAnimation("Reload1", nil, nil, nil, true)
+				self.Ammo = self.Settings.MagSize
+				self:Bolt()
+				task.defer(HUD.updateGunDisplay, self)
+				self.GunState = Gun.State.Idle
+			end)
+		end
+	elseif self.Settings.ReloadStyle == Gun.ReloadStyle.SingleCartridge then
+		local function loadCartridge()
+			if self.Ammo >= self.Settings.MagSize then
+				self:PlayAnimation("Reload3")
+				self.GunState = Gun.State.Idle
+				return
+			elseif self.Ammo == self.Settings.MagSize - 1 then
+				self:PlayAnimation("Reload2Last", nil, nil, nil, true)
+			else
+				self:PlayAnimation("Reload2", nil, nil, nil, true)
+			end
+			self.Ammo += 1
+			task.defer(HUD.updateGunDisplay, self)
+			self.__task = task.spawn(loadCartridge)
+		end
+		
+		if self.Bolted == false then -- empty reload
+			self.__task = task.spawn(function()
+				self:PlayAnimation("EmptyReload", nil, nil, nil, true)
+				self.Bolted = true
+				task.defer(HUD.updateGunDisplay, self)
+				self.__task = task.spawn(loadCartridge)
+			end)
+		else
+			self.__task = task.spawn(function()
+				self:PlayAnimation("Reload1", nil, nil, nil, true)
+				self.__task = task.spawn(loadCartridge)
+			end)
+		end
 	end
-	self:PlayAnimation("Reload3", nil, nil, nil, true)
-	task.defer(HUD.updateGunDisplay, self)
-	self.GunState = Gun.State.Idle
 end
 
 return Gun
