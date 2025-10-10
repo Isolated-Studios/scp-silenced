@@ -1,9 +1,16 @@
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local ToolClass = require(script.Parent)
 local Utils = require(ReplicatedStorage.Modules.Utils)
+local Spring = require(script.Parent.spring)
+local CameraModule = require(ReplicatedStorage.ClientSrc.Camera)
+local CustomMouse = require(ReplicatedStorage.Modules.UI.CustomMouse)
+local CommonFuncs = require(ReplicatedStorage.Modules.CommonFuncs)
 local HUD = nil
 local CTF = nil
+local ViewModelHandler = nil
 
 --[[
 	====== TYPE DEFINITIONS ======
@@ -18,8 +25,14 @@ Gun.ClassName = "Gun"
 
 export type ClassType = ToolClass.ClassType & typeof(setmetatable(
 	{} :: {
+		GunState: number;
 		Bolted: boolean;
 		Ammo: number;
+		
+		LastShotTick: number;
+		SubsequentShotsFired: number;
+		BulletSpread: number;
+		RecoilSpring: {};
 		
 		Settings: {
 			Damage: number,
@@ -126,13 +139,23 @@ Gun.ReloadStyle = {
 function Gun.new(Tool: Tool): ClassType
 	local self: ClassType = setmetatable(ToolClass.new(Tool), Gun)
 	assert(self.Handle, `Gun {Tool:GetFullName()} is missing a Handle`)
+	assert(self.Handle:FindFirstChild("Flash"), `Gun {Tool:GetFullName()}'s Handle is missing a 'Flash' attachment.`)
 	
 	CTF = CTF or require(script.Parent.CommonToolFunctions) -- TODO: REMEMBER TO GET RID OF CTF LATER!!!!
 	HUD = HUD or require(ReplicatedStorage.ClientSrc.HUD)
+	ViewModelHandler = require(ReplicatedStorage.ClientSrc.ViewModelHandler)
 	
 	self.GunState = Gun.State.Idle
 	self.Bolted = false
 	self.Ammo = self.Settings.MagSize
+	
+	-- other internal stuff
+	self.LastShotTick = 0
+	self.SubsequentShotsFired = 1
+	self.BulletSpread = self.Settings.MinSpread
+	
+	self.RecoilSpring = Spring.new()
+	self.RecoilSpring.Speed = 6
 	
 	self.Bindings["Fire"] = {
 		InputType = Enum.UserInputType.MouseButton1;
@@ -293,10 +316,56 @@ function Gun:Bolt(skipAnimation: boolean)
 	task.defer(HUD.updateGunDisplay, self)
 end
 
+function Gun:__projectBullet(randomValue) -- TODO! this function and its dependencies might require some refactoring.
+		local Origin = self.Handle.Flash.WorldCFrame
+		local ViewModel = ViewModelHandler.getViewModel()
+		if not ViewModel then return end
+		if ViewModel:GetAttribute("CloseToWall") then
+			Origin = ViewModel.CameraPart.CFrame
+		end
+		local MouseFilterList = {}
+		for _,thing in pairs(ViewModel:GetDescendants()) do
+			if thing:IsA("BasePart") then
+				table.insert(MouseFilterList,thing)
+			end
+		end
+		CustomMouse.TargetBlackList = MouseFilterList
+		local Direction = -(CustomMouse.Hit.Position-Origin.Position).Unit
+		local Spread = self.BulletSpread*0.003
+		Direction = CFrame.Angles(
+			(0.5 - math.random()) * 2 * Spread,
+			(0.5 - math.random()) * 2 * Spread,
+			(0.5 - math.random()) * 2 * Spread) * Direction
+		CTF.castBullet(self.Instance, Origin.Position, -Direction, self.Settings.TravelSpeed or nil, self.Settings.MaxDistance or nil, self.Settings.Acceleration or nil, self.Settings.BulletTemplate or nil, Players.LocalPlayer.Character, self.Settings.BulletsPerShot, randomValue, true)
+	end
+
 function Gun:__fire()
+	self.SubsequentShotsFired += 1
+	self.LastShotTick = tick()
+	
 	local Handle = self.Handle
 	
-	-- play the firing sound (with pitch modifications as needed)
+	local randomValue = math.random(1,999999999) -- I might be a little stupid (for a "key" in determining uniqueness of tracers)
+	for _ = 1, self.Settings.BulletsPerShot, 1 do
+		self:__projectBullet(randomValue)
+	end
+	
+	-- // shove camera
+	local XRecoilDampExponent = self.Settings.XRecoilDampExponent or 1
+	local YRecoilDampExponent = self.Settings.YRecoilDampExponent or 1
+	local randomizedDirection = math.random(0, 1) * 2 - 1
+	local recoil_modifier = Vector3.new(
+		1/((self.SubsequentShotsFired^XRecoilDampExponent) * self.Settings.XRecoilDampFactor),
+		1/((self.SubsequentShotsFired^YRecoilDampExponent) * self.Settings.YRecoilDampFactor) * randomizedDirection,
+		randomizedDirection
+	)
+	if self.Aiming then
+		recoil_modifier /= 2
+	end
+	local ShoveAmount = self.Settings.CameraShove * recoil_modifier
+	self.RecoilSpring:shove(ShoveAmount) -- shoves the camera
+	
+	-- // play the firing sound (with pitch modifications as needed)
 	if self.Settings.PitchLastBullets and self.Settings.PitchLastBullets > 0 and self.Ammo < self.Settings.PitchLastBullets then
 		--/ The last <PitchLastBullets> bullets are pitched up incrementally
 		local coefficient = (self.Settings.PitchLastBullets - self.Ammo) / self.Settings.PitchLastBullets
@@ -306,12 +375,15 @@ function Gun:__fire()
 		Utils.SFX.playSound(self.Sounds, "Fire", Handle, true, true)
 	end
 	
+	-- // play other VFX like muzzle flash, bolt movement, and shell casings
+	self:PlayAnimation("Recoil")
 	CTF.flashGun(Handle.Flash, Handle.Flash.FlashLight, true) -- uses CTF to flash the gun for light and particles
+	-- TODO!
 end
 
 function Gun:__attemptFire()
 	if self.Bolted then
-		self:__fire()
+		CommonFuncs.SafeCall(self.__fire, self) -- gun no sad if __fire sad
 		self.Bolted = false
 		task.defer(HUD.updateGunDisplay, self)
 	end
@@ -323,7 +395,7 @@ end
 
 function Gun:Click(input: InputObject)
 	if self.GunState ~= Gun.State.Idle and self.GunState ~= Gun.State.Reloading then return end
-	if self.GunState == Gun.State.Reloading then
+	if self.GunState == Gun.State.Reloading and (self.Bolted or self.Ammo > 0) then
 		task.cancel(self.__task)
 		self:StopAnimation("EmptyReload")
 		self:StopAnimation("Reload1")
@@ -336,6 +408,9 @@ function Gun:Click(input: InputObject)
 	
 	self.GunState = Gun.State.Cooldown
 	CTF.playSound(self.Sounds, "Empty", self.Handle, true, true)
+	if tick() - self.LastShotTick > 150 / self.Settings.RPM then
+		self.SubsequentShotsFired = 0
+	end
 	if self.Settings.Automatic then
 		repeat
 			self:__attemptFire()
@@ -399,6 +474,14 @@ function Gun:Reload()
 			end)
 		end
 	end
+end
+
+function Gun:__enable()
+	ToolClass.__enable(self)
+	self:__connect("RecoilSpringUpdate", RunService.RenderStepped, function(dt)
+		local updatedRecoilSpring = self.RecoilSpring:update(dt)
+		CameraModule.AddModifier(CFrame.Angles(math.rad(updatedRecoilSpring.x), updatedRecoilSpring.y, updatedRecoilSpring.z), true)
+	end)
 end
 
 return Gun

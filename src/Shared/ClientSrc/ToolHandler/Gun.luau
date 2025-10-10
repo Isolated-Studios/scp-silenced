@@ -89,8 +89,6 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 
 	--//Sets
 	local BulletSpread = math.round(Settings.MinSpread)
-	local SubsequentShotsFired = 0
-	local LastShotTick = 0
 	local BoltPosition = Settings.BoltPosition or {"LookVector",0.2}
 	local VignetteTween = nil
 	local ModificationList = {}
@@ -111,80 +109,9 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		ScopeModule.SetEnabled(true,MotorModel["ScopeObject"])
 	end
 
-	--//Animation Priming
-	local animationFunctionsList = {}
-	local Animator = Humanoid:WaitForChild("Animator")
-	local VMAnimator = Viewmodel.Humanoid.Animator
-	local CharacterAnimations = ToolObjects:WaitForChild("CharacterAnimations")
-	local VMAnimations = ToolObjects:WaitForChild("VMAnimations")
-
-	local VMReload1 = VMAnimator:LoadAnimation(VMAnimations.Reload1)
-	local CharReload1 = Animator:LoadAnimation(CharacterAnimations.Reload1)
-	local VMReload2 = nil
-	local CharReload2 = nil
-	local VMReload2Last = nil
-	local CharReload2Last = nil
-	local VMReload3 = nil
-	local CharReload3 = nil
-	local VMEmptyReload = nil
-	local CharEmptyReload = nil
-	local VMBolt = nil
-	local CharBolt = nil
-	local VMRecoil = nil
-	local CharRecoil = nil
-	--local VMRun = nil
-	local CharRun = nil
-
-	if VMAnimations:FindFirstChild("Bolt") then
-		VMBolt = VMAnimator:LoadAnimation(VMAnimations.Bolt)
-		CharBolt = Animator:LoadAnimation(CharacterAnimations.Bolt)
-	end
-	if VMAnimations:FindFirstChild("Reload2") then
-		VMReload2 = VMAnimator:LoadAnimation(VMAnimations.Reload2)
-		CharReload2 = Animator:LoadAnimation(CharacterAnimations.Reload2)
-	end
-	if VMAnimations:FindFirstChild("Reload2Last") then
-		VMReload2Last = VMAnimator:LoadAnimation(VMAnimations.Reload2Last)
-		CharReload2Last = Animator:LoadAnimation(CharacterAnimations.Reload2Last)
-	end
-	if VMAnimations:FindFirstChild("Reload3") then
-		VMReload3 = VMAnimator:LoadAnimation(VMAnimations.Reload3)
-		CharReload3 = Animator:LoadAnimation(CharacterAnimations.Reload3)
-	end
-	if VMAnimations:FindFirstChild("EmptyReload") then
-		VMEmptyReload = VMAnimator:LoadAnimation(VMAnimations.EmptyReload)
-		CharEmptyReload = Animator:LoadAnimation(CharacterAnimations.EmptyReload)
-	end
-	if VMAnimations:FindFirstChild("Recoil") then
-		VMRecoil = VMAnimator:LoadAnimation(VMAnimations.Recoil)
-		CharRecoil = Animator:LoadAnimation(CharacterAnimations.Recoil)
-	end
-	if VMAnimations:FindFirstChild("Run") then
-		--VMRun = VMAnimator:LoadAnimation(VMAnimations.Run)
-		CharRun = Animator:LoadAnimation(CharacterAnimations.Run)
-	end
-	local animationEvents = {
-		["Reload1"] = CTF.getAllAnimationEventNames(VMReload1),
-		["Reload2"] = CTF.getAllAnimationEventNames(VMReload2),
-		["Reload2Last"] = CTF.getAllAnimationEventNames(VMReload2Last),
-		["Reload3"] = CTF.getAllAnimationEventNames(VMReload3),
-		["EmptyReload"] = CTF.getAllAnimationEventNames(VMEmptyReload),
-		["Bolt"] = CTF.getAllAnimationEventNames(VMBolt)
-	}
-	local animationTable = {
-		["Run"] = {nil,CharRun},
-		["Recoil"] = {VMRecoil,CharRecoil},
-		["Bolt"] = {VMBolt,CharBolt},
-		["Reload1"] = {VMReload1,CharReload1},
-		["Reload2"] = {VMReload2,CharReload2},
-		["Reload2Last"] = {VMReload2Last,CharReload2Last},
-		["Reload3"] = {VMReload3,CharReload3},
-		["EmptyReload"] = {VMEmptyReload,CharEmptyReload},
-	}
-
-	local function animationHandle (animation,action,num,secondNum)
+	local function animationHandle (animation,action,num,charNum)
 		if not num then num = 0 end
-		if not secondNum then secondNum = num end
+		if not charNum then charNum = num end
 		local VManim = animationTable[animation][1] or nil
 		local Charanim = animationTable[animation][2] or nil
 		
@@ -204,7 +131,7 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 			actionFunctions[action](VManim,num)
 		end
 		if Charanim then
-			actionFunctions[action](Charanim,secondNum)
+			actionFunctions[action](Charanim,charNum)
 		end
 	end
 	--\\
@@ -374,11 +301,6 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 	local function fireGun () --/ Big evil function that fires the gun
 		if Bolted == false then return end --/ the mag is empty
 
-		local currentTick = tick()
-		if currentTick - LastShotTick >= 150/Settings.RPM then
-			SubsequentShotsFired = 0
-		end
-		LastShotTick = currentTick
 		Bolted = false --/ subtract a round from the mag
 
 		SetItemHolder:FireServer(Tool,"Mag",magInstanceValue.Value) -- UI shenanigans
@@ -412,15 +334,6 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		gunSpread() --/ apply gun spread
 		CTF.flashGun(Flash,Flash.FlashLight,true) -- uses CTF to flash the gun for light and particles
 		DarkenVignette() -- Darken the gun vignette for coolness
-
-		SubsequentShotsFired += 1
-		local XRecoilDampExponent = Settings.XRecoilDampExponent or 1
-		local YRecoilDampExponent = Settings.YRecoilDampExponent or 1
-		local recoil_modifier = Vector2.new(1/((SubsequentShotsFired^XRecoilDampExponent) * Settings.XRecoilDampFactor), 1/((SubsequentShotsFired^YRecoilDampExponent) * Settings.YRecoilDampFactor)) --/ This section reduces the shove of the gun if you're aiming
-		local possibleNegative = math.random(0, 1) * 2 - 1
-		if Aiming then
-			recoil_modifier /= 2
-		end
 		
 		local randomValue = math.random(1,999999999) -- I might be a little stupid (for a "key" in determining uniqueness of tracers)
 		for i=1,Settings.BulletsPerShot,1 do
