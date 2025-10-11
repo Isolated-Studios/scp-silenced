@@ -2,6 +2,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 
 local ToolClass = require(script.Parent)
 local Utils = require(ReplicatedStorage.Modules.Utils)
@@ -21,6 +22,9 @@ local HUD = PlayerGui:WaitForChild("HUD")
 local CrosshairPercent = PlayerGui:WaitForChild("MouseUI"):WaitForChild("Crosshair")
 local GunVignette = HUD:WaitForChild("GunVignette")
 local VignetteAmount = GunVignette:WaitForChild("Gradient"):WaitForChild("VignetteAmount")
+local VignetteTween: Tween = nil
+
+local spreadReduction = false -- TODO! this shouldn't be here, but I'm leaving it here till I implement spread.
 
 local Character: Model, Humanoid: Humanoid
 local ViewModel: Model
@@ -356,26 +360,26 @@ function Gun:Bolt(skipAnimation: boolean)
 end
 
 function Gun:__projectBullet(randomValue) -- TODO! this function and its dependencies might require some refactoring.
-		local Origin = self.Handle.Flash.WorldCFrame
-		if not ViewModel then return end
-		if ViewModel:GetAttribute("CloseToWall") then
-			Origin = ViewModel.CameraPart.CFrame
-		end
-		local MouseFilterList = {}
-		for _,thing in pairs(ViewModel:GetDescendants()) do
-			if thing:IsA("BasePart") then
-				table.insert(MouseFilterList,thing)
-			end
-		end
-		CustomMouse.TargetBlackList = MouseFilterList
-		local Direction = -(CustomMouse.Hit.Position-Origin.Position).Unit
-		local Spread = self.BulletSpread*0.003
-		Direction = CFrame.Angles(
-			(0.5 - math.random()) * 2 * Spread,
-			(0.5 - math.random()) * 2 * Spread,
-			(0.5 - math.random()) * 2 * Spread) * Direction
-		CTF.castBullet(self.Instance, Origin.Position, -Direction, self.Settings.TravelSpeed or nil, self.Settings.MaxDistance or nil, self.Settings.Acceleration or nil, self.Settings.BulletTemplate or nil, Player.Character, self.Settings.BulletsPerShot, randomValue, true)
+	local Origin = self.Handle.Flash.WorldCFrame
+	if not ViewModel then return end
+	if ViewModel:GetAttribute("CloseToWall") then
+		Origin = ViewModel.CameraPart.CFrame
 	end
+	local MouseFilterList = {}
+	for _,thing in pairs(ViewModel:GetDescendants()) do
+		if thing:IsA("BasePart") then
+			table.insert(MouseFilterList,thing)
+		end
+	end
+	CustomMouse.TargetBlackList = MouseFilterList
+	local Direction = -(CustomMouse.Hit.Position-Origin.Position).Unit
+	local Spread = self.BulletSpread*0.003
+	Direction = CFrame.Angles(
+		(0.5 - math.random()) * 2 * Spread,
+		(0.5 - math.random()) * 2 * Spread,
+		(0.5 - math.random()) * 2 * Spread) * Direction
+	CTF.castBullet(self.Instance, Origin.Position, -Direction, self.Settings.TravelSpeed or nil, self.Settings.MaxDistance or nil, self.Settings.Acceleration or nil, self.Settings.BulletTemplate or nil, Player.Character, self.Settings.BulletsPerShot, randomValue, true)
+end
 
 function Gun:__fire()
 	self.SubsequentShotsFired += 1
@@ -416,6 +420,28 @@ function Gun:__fire()
 		Utils.SFX.playSound(self.Sounds, "Fire", Handle, true, true, {["PlaybackSpeed"] = pitch})
 	else
 		Utils.SFX.playSound(self.Sounds, "Fire", Handle, true, true)
+	end
+	
+	-- // darken vignette for coolness
+	do -- local scope so these variables don't mix with others
+		local startTime = tick()
+		if VignetteTween then VignetteTween:Cancel() end
+		local TimeToTween = math.clamp(8*(VignetteAmount.Value-1)^2,0.2,8) -- GENIUS equation....
+		VignetteTween = TweenService:Create(VignetteAmount,TweenInfo.new(TimeToTween),{Value = 1})
+		local DarkenAmount = self.Settings.Damage*self.Settings.BulletsPerShot / ((self.Settings.Automatic == true) and (self.Settings.RPM * 2) or 400)
+		if VignetteAmount.Value > 0 then
+			VignetteAmount.Value = math.clamp(VignetteAmount.Value - DarkenAmount, 0, 1)
+		end
+		
+		local WaitTime = TimeToTween*2+2
+		task.delay(WaitTime,function()
+			local otherTime = tick()-startTime
+			if math.abs(otherTime-WaitTime) < 0.1 and (tick() - self.LastShotTick > 100 / self.Settings.RPM) then -- is gun still firing?
+				-- another really cheap way to check if gun is still "firing" when gun is automatic
+				if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) and self.Settings.Automatic and self.Ammo > 0 and not Humanoid:GetAttribute("Running") then return end
+				VignetteTween:Play()
+			end
+		end)
 	end
 	
 	-- // play other VFX like muzzle flash, bolt movement, and shell casings

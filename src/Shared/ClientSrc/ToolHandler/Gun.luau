@@ -201,33 +201,6 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 			end
 		end)
 	end
-	
-	local function DarkenVignette () -- darkens a vignette when shooting
-		if GunVignette then
-			local startTime = tick()
-			if VignetteTween then VignetteTween:Cancel() end
-			local TimeToTween = math.clamp(8*(VignetteAmount.Value-1)^2,0.2,8) -- GENIUS equation....
-			VignetteTween = TweenService:Create(VignetteAmount,TweenInfo.new(TimeToTween),{Value = 1})
-			local DarkenAmount = Settings.Damage*Settings.BulletsPerShot/400
-			if Settings.Automatic then
-				DarkenAmount = Settings.Damage*Settings.BulletsPerShot/(Settings.RPM*2)
-			end
-			if VignetteAmount.Value > 0 then
-				local newValue = math.clamp(VignetteAmount.Value-DarkenAmount,0,1)
-				VignetteAmount.Value = newValue
-			end
-			
-			local WaitTime = TimeToTween*2+2
-			task.delay(WaitTime,function()
-				local otherTime = tick()-startTime
-				if math.abs(otherTime-WaitTime) < 0.1 and (spreadReduction or BulletSpread == Settings.MinSpread) then -- really cheap way to check if gun is still "firing"
-					-- another really cheap way to check if gun is still "firing" when gun is automatic
-					if UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) and Settings.Automatic and magInstanceValue.Value > 0 and not Humanoid:GetAttribute("Running") then return end
-					VignetteTween:Play()
-				end
-			end)
-		end
-	end
 
 	local function boltGun ()
 		if not Equipped then return end -- Prevents bolting when unequipping
