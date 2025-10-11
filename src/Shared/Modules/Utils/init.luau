@@ -33,9 +33,16 @@ local Utils = {
 	local greeting = wrappedGreet(person2)
 	```
 ]=]
-function Utils.wrapMethod<T>(object: T, method: (T, ...any) -> (any...)): (...any) -> (any...)
-	return function(...)
-		return method(object, ...)
+function Utils.wrapMethod<T>(object: T, method: (T, ...any) -> (any...), ...): (...any) -> (any...)
+	local args = {...}
+	if #args > 0 then
+		return function(...)
+			return method(object, table.unpack(args), ...)
+		end
+	else
+		return function(...)
+			return method(object, ...)
+		end
 	end
 end
 

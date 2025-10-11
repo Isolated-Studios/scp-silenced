@@ -32,7 +32,6 @@ local ScopeModule = require(ToolModules.Scope)
 
 --//Events
 local HumanoidAttributeEvent = CharacterEvents.HumanoidAttribute
-local Shove = ViewmodelEvents.Shove
 local Aim = ViewmodelEvents.Aim
 local SetItemHolder = ToolEvents.SetItemHolder
 local AnimationModifier = ToolEvents.AnimationModifier
@@ -153,24 +152,6 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		end
 	end
 
-	local function AimGun (State)
-		if State and not Humanoid:GetAttribute("Running") then
-			Aim:Fire(true,Settings.AimInSpeed)
-			Aiming = true
-			Humanoid:SetAttribute("Aiming",true)
-			TweenService:Create(Camera,TweenInfo.new(Settings.AimInSpeed,Enum.EasingStyle.Cubic,Enum.EasingDirection.Out),{FieldOfView = Settings.AimFOV}):Play()
-			TweenService:Create(CrosshairPercent,TweenInfo.new(Settings.AimInSpeed,Enum.EasingStyle.Exponential,Enum.EasingDirection.Out),{Value = 1}):Play()
-		else
-			Aim:Fire(false,Settings.AimOutSpeed)
-			Aiming = false
-			Humanoid:SetAttribute("Aiming",nil)
-			TweenService:Create(Camera,TweenInfo.new(Settings.AimOutSpeed,Enum.EasingStyle.Cubic,Enum.EasingDirection.Out),{FieldOfView = 70}):Play()
-			if Tool.Parent == Character then
-				TweenService:Create(CrosshairPercent,TweenInfo.new(Settings.AimOutSpeed,Enum.EasingStyle.Exponential,Enum.EasingDirection.Out),{Value = BulletSpread}):Play()
-			end
-		end
-	end
-
 	local function dispenseCasing ()
 		local Casing = PrimeCasing:Clone()
 		Casing.Parent = TemporaryParts
@@ -248,27 +229,6 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		end
 	end
 
-	local function ProjectBullet (randomValue)
-		local Origin = Flash.WorldCFrame
-		if Viewmodel:GetAttribute("CloseToWall") then
-			Origin = Viewmodel.CameraPart.CFrame
-		end
-		local MouseFilterList = {}
-		for _,thing in pairs(Viewmodel:GetDescendants()) do
-			if thing:IsA("BasePart") then
-				table.insert(MouseFilterList,thing)
-			end
-		end
-		CustomMouse.TargetBlackList = MouseFilterList
-		local Direction = -(CustomMouse.Hit.Position-Origin.Position).Unit
-		local Spread = BulletSpread*0.003
-		Direction = CFrame.Angles(
-			(0.5 - math.random()) * 2 * Spread,
-			(0.5 - math.random()) * 2 * Spread,
-			(0.5 - math.random()) * 2 * Spread) * Direction
-		CTF.castBullet(Tool, Origin.Position, -Direction, Settings.TravelSpeed or nil, Settings.MaxDistance or nil, Settings.Acceleration or nil, Settings.BulletTemplate or nil, Character,  Settings.BulletsPerShot, randomValue, true)
-	end
-
 	local function boltGun ()
 		if not Equipped then return end -- Prevents bolting when unequipping
 		HoldFire = true
@@ -334,13 +294,6 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		gunSpread() --/ apply gun spread
 		CTF.flashGun(Flash,Flash.FlashLight,true) -- uses CTF to flash the gun for light and particles
 		DarkenVignette() -- Darken the gun vignette for coolness
-		
-		local randomValue = math.random(1,999999999) -- I might be a little stupid (for a "key" in determining uniqueness of tracers)
-		for i=1,Settings.BulletsPerShot,1 do
-			ProjectBullet(randomValue)
-		end
-		
-		animationHandle("Recoil","Play") --/ play the recoil animation
 
 		if magInstanceValue.Value == 0 and Settings.BoltBackWhenEmpty and Handle:FindFirstChild("Bolt") then
 			--/ pushes the bolt back if BoltBackWhenEmpty is true and mag is empty
@@ -349,14 +302,6 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 			Tool:SetAttribute("BoltSet",true)
 		end
 
-		local ShoveAmount = Vector3.new(Settings.CameraShove.X*recoil_modifier.X,Settings.CameraShove.Y*recoil_modifier.Y*possibleNegative,Settings.CameraShove.Z*recoil_modifier*possibleNegative)
-		recoilSpring:shove(ShoveAmount) -- shoves the camera
-		if Aiming and Settings.AimLinearShove and Settings.AimAngularShove then
-			Shove:Fire(Settings.AimLinearShove,Settings.AimAngularShove) --/ shove event but aiming!
-		else
-			Shove:Fire(Settings.LinearShove,Settings.AngularShove) --/ shove event
-		end
-		
 		task.wait(60/Settings.RPM)
 		boltGun()
 		HoldFire = false
@@ -614,28 +559,6 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 	BoltBackTween = TweenService:Create(Handle.Bolt,TweenInfo.new(0.2,Enum.EasingStyle.Linear),{C1 = BackBoltC1})
 	--\\
 
-	--//Events
-	
-	local renderStep = RunService.RenderStepped:Connect(function(dt)
-		local updatedRecoilSpring = recoilSpring:update(dt)
-		CameraModule.AddModifier(CFrame.Angles(math.rad(updatedRecoilSpring.x),updatedRecoilSpring.y,updatedRecoilSpring.z), true)
-	end)
-
-	local inputBegan = UIS.InputBegan:Connect(function(Input,gpe)
-		if not Equipped or gpe or Humanoid:GetAttribute("InventoryOpen") then return end
-		if Input.KeyCode == KeybindHandler.Keybind("Drop",Player) then
-			CTF.dropItem(Character,Tool)
-		end
-
-		if Input.UserInputType == Enum.UserInputType.MouseButton2 then
-			AimGun(true)
-		end
-
-		if Input.KeyCode == KeybindHandler.Keybind("Reload", Player) then
-			Reload()
-		end
-	end)
-
 	local unequippedTool = Tool:GetAttributeChangedSignal("Unequipping"):Connect(function()
 		if Tool:GetAttribute("Unequipping") then
 			Equipped = false
@@ -703,8 +626,6 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		end
 		--ChargePercent.Value = 0
 		Humanoid:SetAttribute("Aiming",nil)
-		AimGun(false)
-		Aim:Fire(false,Settings.AimOutSpeed)
 		if Flash:FindFirstChild("FlashLight") then
 			Flash.FlashLight.Enabled = false
 		end

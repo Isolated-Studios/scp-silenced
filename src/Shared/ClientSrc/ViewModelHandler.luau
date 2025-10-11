@@ -110,6 +110,20 @@ function module.getViewModelAnimator(): Animator?
 	return ViewModelAnimator
 end
 
+local AimSpring = nil
+function module.Aim(desiredState, speed)
+	if not AimSpring then return end
+	if desiredState then
+		AimSpring.Target = 1
+		AimSpring.Speed = 16 / speed
+	else
+		AimSpring.Target = 0
+		AimSpring.Speed = 16 / speed
+	end
+end
+
+module.ShoveViewModel = nil
+
 local Player = game.Players.LocalPlayer
 
 function module.Init()
@@ -130,7 +144,7 @@ function module.LoadChar(Character)
 	local VMaimsway = 0.1
 	local SwaySpring = springModule.new(nil, nil, nil, 15, 4)
 	local HandleSpring = springModule.new(nil,nil,90,4,3)
-	local AimSpring = spring2Module.new(0)
+	AimSpring = spring2Module.new(0)
 	AimSpring.Damper = 1
 	AimSpring.Speed = 16
 	local Offset = CFrame.identity
@@ -231,7 +245,7 @@ function module.LoadChar(Character)
 		end
 	end)
 
-	local ShoveFunction = Shove.Event:Connect(function(Force,rotForce)
+	module.ShoveViewModel = function(Force, rotForce)
 		local divisor = 1
 		if AimSpring.Target == 1 then
 			divisor = 3
@@ -245,17 +259,7 @@ function module.LoadChar(Character)
 			--local g0X,g0Y,g0Z = GripWeld.C0:ToEulerAnglesXYZ()
 			--local g1X,g1Y,g1Z = GripWeld.C1:ToEulerAnglesXYZ()
 		end
-	end)
-
-	local AimFunction = Aim.Event:Connect(function(aiming,speed)
-		if aiming then
-			AimSpring.Target = 1
-			AimSpring.Speed = 16/speed
-		else
-			AimSpring.Target = 0
-			AimSpring.Speed = 16/speed
-		end
-	end)
+	end
 
 	local ChangeGripFunction = ChangeGrip.Event:Connect(function(Part0)
 		if ViewModel.RightArm:FindFirstChild("GripWeld") then
@@ -589,8 +593,6 @@ function module.LoadChar(Character)
 		charChildRemove:Disconnect()
 		stateChange:Disconnect()
 		runChange:Disconnect()
-		AimFunction:Disconnect()
-		ShoveFunction:Disconnect()
 		ChangeGripFunction:Disconnect()
 		RunService:UnbindFromRenderStep("UpdateViewModel")
 		Running = false

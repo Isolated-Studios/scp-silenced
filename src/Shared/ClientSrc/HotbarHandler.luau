@@ -132,7 +132,7 @@ local function handleInput(Input, gameProcessedEvent)
 		and not CommonFuncs.AreInputUIsActive()
 	then
 		local PickedTool = Inventory[AcceptedKeys[Input.KeyCode.Name]]
-		NextTool = if PickedTool == CurrentTool then nil else PickedTool
+		NextTool = if ToolHandler.getTool(PickedTool) == ToolHandler.getCurrentTool() then nil else PickedTool
 		equipTool()
 	end
 end

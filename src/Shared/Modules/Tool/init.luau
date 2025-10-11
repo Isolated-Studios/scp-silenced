@@ -302,20 +302,23 @@ end
 
 function Tool:__enable()
 	self.State = Tool.State.Equipped
-	self:__connect("InputHandler", UserInputService.InputBegan, function(input: InputObject, gameProcessedEvent)
+	local function handleInput(input: InputObject, gameProcessedEvent)
 		for bindingName, binding in self.Bindings do
 			local keybind = binding.DebugBinding or KeybindHandler.Keybind(bindingName, LocalPlayer)
 			if keybind
 			and self.State == Tool.State.Equipped
 			and not CommonFuncs.AreInputUIsActive()
 			and input.UserInputType == binding.InputType
-			and input.UserInputState == binding.InputState
+			and (binding.UserInputState == nil or input.UserInputState == binding.InputState)
 			and (if input.UserInputType == Enum.UserInputType.Keyboard then (input.KeyCode == keybind) else true)
 			then
 				binding.Handler(input, gameProcessedEvent)
 			end
 		end
-	end)
+	end
+	self:__connect("InputHandler1", UserInputService.InputBegan, handleInput)
+	self:__connect("InputHandler2", UserInputService.InputChanged, handleInput)
+	self:__connect("InputHandler3", UserInputService.InputEnded, handleInput)
 end
 
 function Tool:__disable()

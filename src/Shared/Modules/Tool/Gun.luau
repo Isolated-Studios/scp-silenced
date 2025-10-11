@@ -1,6 +1,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 
 local ToolClass = require(script.Parent)
 local Utils = require(ReplicatedStorage.Modules.Utils)
@@ -8,9 +9,42 @@ local Spring = require(script.Parent.spring)
 local CameraModule = require(ReplicatedStorage.ClientSrc.Camera)
 local CustomMouse = require(ReplicatedStorage.Modules.UI.CustomMouse)
 local CommonFuncs = require(ReplicatedStorage.Modules.CommonFuncs)
-local HUD = nil
+local HUDModule = nil
 local CTF = nil
 local ViewModelHandler = nil
+
+local Player = Players.LocalPlayer
+
+-- // UI
+local PlayerGui = Player:WaitForChild("PlayerGui")
+local HUD = PlayerGui:WaitForChild("HUD")
+local CrosshairPercent = PlayerGui:WaitForChild("MouseUI"):WaitForChild("Crosshair")
+local GunVignette = HUD:WaitForChild("GunVignette")
+local VignetteAmount = GunVignette:WaitForChild("Gradient"):WaitForChild("VignetteAmount")
+
+local Character: Model, Humanoid: Humanoid
+local ViewModel: Model
+
+local function __load_character(character)
+	Character = character
+	Humanoid = Character:WaitForChild("Humanoid")
+	Humanoid.Died:Connect(function()
+		ViewModel = nil
+	end)
+	
+	ViewModelHandler = ViewModelHandler or require(ReplicatedStorage.ClientSrc.ViewModelHandler)
+	CTF = CTF or require(script.Parent.CommonToolFunctions) -- TODO: REMEMBER TO GET RID OF CTF LATER!!!!
+	HUDModule = HUDModule or require(ReplicatedStorage.ClientSrc.HUD)
+	CommonFuncs = CommonFuncs or require(ReplicatedStorage.Modules.CommonFuncs)
+	
+	ViewModel = ViewModelHandler.getViewModel()
+	while ViewModel == nil do
+		task.wait()
+		ViewModel = ViewModelHandler.getViewModel()
+	end
+end
+Player.CharacterAdded:Connect(__load_character)
+if Player.Character then task.defer(__load_character, Player.Character) end -- task.defer because STUPID recursive requires() 💔
 
 --[[
 	====== TYPE DEFINITIONS ======
@@ -26,6 +60,7 @@ Gun.ClassName = "Gun"
 export type ClassType = ToolClass.ClassType & typeof(setmetatable(
 	{} :: {
 		GunState: number;
+		Aiming: boolean;
 		Bolted: boolean;
 		Ammo: number;
 		
@@ -140,12 +175,9 @@ function Gun.new(Tool: Tool): ClassType
 	local self: ClassType = setmetatable(ToolClass.new(Tool), Gun)
 	assert(self.Handle, `Gun {Tool:GetFullName()} is missing a Handle`)
 	assert(self.Handle:FindFirstChild("Flash"), `Gun {Tool:GetFullName()}'s Handle is missing a 'Flash' attachment.`)
-	
-	CTF = CTF or require(script.Parent.CommonToolFunctions) -- TODO: REMEMBER TO GET RID OF CTF LATER!!!!
-	HUD = HUD or require(ReplicatedStorage.ClientSrc.HUD)
-	ViewModelHandler = require(ReplicatedStorage.ClientSrc.ViewModelHandler)
-	
+		
 	self.GunState = Gun.State.Idle
+	self.Aiming = false
 	self.Bolted = false
 	self.Ammo = self.Settings.MagSize
 	
@@ -162,6 +194,12 @@ function Gun.new(Tool: Tool): ClassType
 		InputState = Enum.UserInputState.Begin;
 		DebugBinding = true; -- so the KeybindHandler doesn't constantly get called and print warnings for no reason.
 		Handler = Utils.wrapMethod(self, self.Click);
+	}
+	self.Bindings["Aim"] = {
+		InputType = Enum.UserInputType.MouseButton2;
+		InputState = nil;
+		DebugBinding = true;
+		Handler = Utils.wrapMethod(self, self.Aim, false);
 	}
 	self.Bindings["Reload"] = {
 		InputType = Enum.UserInputType.Keyboard;
@@ -286,7 +324,7 @@ function Gun:Equip()
 	else
 		self:PlayAnimationFor("Equip", self.Settings.EquipSpeed)
 	end
-	task.defer(HUD.updateGunDisplay, self)
+	task.defer(HUDModule.updateGunDisplay, self)
 	self.__task = task.delay(self.Settings.EquipSpeed, self.PlayAnimation, self, "Hold")
 	task.wait(self.Settings.EquipCancel)
 	self.GunState = Gun.State.Idle -- in case the gun breaks and locks itself somehow, reequipping it should fix it
@@ -296,6 +334,7 @@ end
 function Gun:Unequip()
 	if self.State ~= ToolClass.State.Equipped then return end
 	self:StopAnimation("FirstEquip", math.min(0.2, self.Settings.UnequipSpeed))
+	self:Aim(false)
 	ToolClass.Unequip(self)
 end
 
@@ -313,12 +352,11 @@ function Gun:Bolt(skipAnimation: boolean)
 	end
 	self.Bolted = true
 	self.Ammo -= 1
-	task.defer(HUD.updateGunDisplay, self)
+	task.defer(HUDModule.updateGunDisplay, self)
 end
 
 function Gun:__projectBullet(randomValue) -- TODO! this function and its dependencies might require some refactoring.
 		local Origin = self.Handle.Flash.WorldCFrame
-		local ViewModel = ViewModelHandler.getViewModel()
 		if not ViewModel then return end
 		if ViewModel:GetAttribute("CloseToWall") then
 			Origin = ViewModel.CameraPart.CFrame
@@ -336,7 +374,7 @@ function Gun:__projectBullet(randomValue) -- TODO! this function and its depende
 			(0.5 - math.random()) * 2 * Spread,
 			(0.5 - math.random()) * 2 * Spread,
 			(0.5 - math.random()) * 2 * Spread) * Direction
-		CTF.castBullet(self.Instance, Origin.Position, -Direction, self.Settings.TravelSpeed or nil, self.Settings.MaxDistance or nil, self.Settings.Acceleration or nil, self.Settings.BulletTemplate or nil, Players.LocalPlayer.Character, self.Settings.BulletsPerShot, randomValue, true)
+		CTF.castBullet(self.Instance, Origin.Position, -Direction, self.Settings.TravelSpeed or nil, self.Settings.MaxDistance or nil, self.Settings.Acceleration or nil, self.Settings.BulletTemplate or nil, Player.Character, self.Settings.BulletsPerShot, randomValue, true)
 	end
 
 function Gun:__fire()
@@ -364,6 +402,11 @@ function Gun:__fire()
 	end
 	local ShoveAmount = self.Settings.CameraShove * recoil_modifier
 	self.RecoilSpring:shove(ShoveAmount) -- shoves the camera
+	if self.Aiming and self.Settings.AimLinearShove and self.ettings.AimAngularShove then
+		ViewModelHandler.ShoveViewModel(self.Settings.AimLinearShove, self.Settings.AimAngularShove) --/ shove event but aiming!
+	else
+		ViewModelHandler.ShoveViewModel(self.Settings.LinearShove, self.Settings.AngularShove) --/ shove event
+	end
 	
 	-- // play the firing sound (with pitch modifications as needed)
 	if self.Settings.PitchLastBullets and self.Settings.PitchLastBullets > 0 and self.Ammo < self.Settings.PitchLastBullets then
@@ -385,12 +428,12 @@ function Gun:__attemptFire()
 	if self.Bolted then
 		CommonFuncs.SafeCall(self.__fire, self) -- gun no sad if __fire sad
 		self.Bolted = false
-		task.defer(HUD.updateGunDisplay, self)
+		task.defer(HUDModule.updateGunDisplay, self)
 	end
 	
 	task.wait(60 / self.Settings.RPM)
 	self:Bolt() -- attempt to bolt gun again if it has ammo
-	task.defer(HUD.updateGunDisplay, self)
+	task.defer(HUDModule.updateGunDisplay, self)
 end
 
 function Gun:Click(input: InputObject)
@@ -421,6 +464,30 @@ function Gun:Click(input: InputObject)
 	self.GunState = Gun.State.Idle
 end
 
+-- // Aiming and reloading.
+
+function Gun:Aim(desiredState, input: InputObject?)
+	if input then
+		if input.UserInputState == Enum.UserInputState.Begin then
+			desiredState = true
+		elseif input.UserInputState == Enum.UserInputState.End then
+			desiredState = false
+		end
+	end
+	self.Aiming = desiredState and not Humanoid:GetAttribute("Running") and self.State == ToolClass.State.Equipped
+	ViewModelHandler.Aim(self.Aiming, if self.Aiming then self.Settings.AimInSpeed else self.Settings.AimOutSpeed)
+	Humanoid:SetAttribute("Aiming", self.Aiming or nil)
+	if self.Aiming then
+		TweenService:Create(workspace.CurrentCamera, TweenInfo.new(self.Settings.AimInSpeed,Enum.EasingStyle.Cubic,Enum.EasingDirection.Out), {FieldOfView = self.Settings.AimFOV}):Play()
+		TweenService:Create(CrosshairPercent, TweenInfo.new(self.Settings.AimInSpeed,Enum.EasingStyle.Exponential,Enum.EasingDirection.Out), {Value = 1}):Play()
+	else
+		TweenService:Create(workspace.CurrentCamera, TweenInfo.new(self.Settings.AimOutSpeed,Enum.EasingStyle.Cubic,Enum.EasingDirection.Out),{FieldOfView = 70}):Play()
+		if self.State ~= ToolClass.State.Unequipped then
+			TweenService:Create(CrosshairPercent, TweenInfo.new(self.Settings.AimOutSpeed,Enum.EasingStyle.Exponential,Enum.EasingDirection.Out), {Value = self.BulletSpread}):Play()
+		end
+	end
+end
+
 function Gun:Reload()
 	if self.Ammo >= self.Settings.MagSize and self.Bolted then return end
 	if self.GunState ~= Gun.State.Idle then return end
@@ -432,7 +499,7 @@ function Gun:Reload()
 				self:PlayAnimation("EmptyReload", nil, nil, nil, true)
 				self.Ammo = self.Settings.MagSize
 				self:Bolt()
-				task.defer(HUD.updateGunDisplay, self)
+				task.defer(HUDModule.updateGunDisplay, self)
 				self.GunState = Gun.State.Idle
 			end)
 		else
@@ -440,7 +507,7 @@ function Gun:Reload()
 				self:PlayAnimation("Reload1", nil, nil, nil, true)
 				self.Ammo = self.Settings.MagSize
 				self:Bolt()
-				task.defer(HUD.updateGunDisplay, self)
+				task.defer(HUDModule.updateGunDisplay, self)
 				self.GunState = Gun.State.Idle
 			end)
 		end
@@ -456,7 +523,7 @@ function Gun:Reload()
 				self:PlayAnimation("Reload2", nil, nil, nil, true)
 			end
 			self.Ammo += 1
-			task.defer(HUD.updateGunDisplay, self)
+			task.defer(HUDModule.updateGunDisplay, self)
 			self.__task = task.spawn(loadCartridge)
 		end
 		
@@ -464,7 +531,7 @@ function Gun:Reload()
 			self.__task = task.spawn(function()
 				self:PlayAnimation("EmptyReload", nil, nil, nil, true)
 				self.Bolted = true
-				task.defer(HUD.updateGunDisplay, self)
+				task.defer(HUDModule.updateGunDisplay, self)
 				self.__task = task.spawn(loadCartridge)
 			end)
 		else
