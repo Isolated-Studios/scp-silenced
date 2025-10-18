@@ -309,7 +309,7 @@ function Tool:__enable()
 			and self.State == Tool.State.Equipped
 			and not CommonFuncs.AreInputUIsActive()
 			and input.UserInputType == binding.InputType
-			and (binding.UserInputState == nil or input.UserInputState == binding.InputState)
+			and (binding.InputState == nil or input.UserInputState == binding.InputState)
 			and (if input.UserInputType == Enum.UserInputType.Keyboard then (input.KeyCode == keybind) else true)
 			then
 				binding.Handler(input, gameProcessedEvent)
