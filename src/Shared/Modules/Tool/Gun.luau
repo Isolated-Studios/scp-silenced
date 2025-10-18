@@ -81,7 +81,6 @@ export type ClassType = ToolClass.ClassType & typeof(setmetatable(
 			ReloadStyle: number,
 			BulletsPerShot: number,
 			BurstAmount: number,
-			--BurstDelay: number,
 			HeadshotFactor: number,
 			LegMultiplier: number,
 			CanDown: number,
@@ -499,10 +498,12 @@ function Gun:Click(input: InputObject)
 	if tick() - self.LastShotTick > 150 / self.Settings.RPM then
 		self.SubsequentShotsFired = 0
 	end
-	if self.Settings.Automatic then
+	if self.Settings.Automatic or self.Settings.BurstAmount > 1 then
+		local i = if self.Settings.BurstAmount > 1 then self.Settings.BurstAmount else math.huge
 		repeat
 			self:__attemptFire()
-		until not (input.UserInputState ~= Enum.UserInputState.End and self.State == ToolClass.State.Equipped and self.Bolted)
+			i -= 1
+		until (i == 0) or not (input.UserInputState ~= Enum.UserInputState.End and self.State == ToolClass.State.Equipped and self.Bolted)
 	else
 		self:__attemptFire()
 	end

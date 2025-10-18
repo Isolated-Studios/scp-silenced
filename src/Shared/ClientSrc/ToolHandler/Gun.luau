@@ -280,18 +280,6 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		HoldFire = false
 	end
 
-	local function attemptToFire()
-		if Settings.Bolted and not Bolted then --/ If the gun can and must be bolted
-			boltGun()
-		end
-		for i=1,Settings.BurstAmount,1 do --/ Burst loop pow pow pow
-			fireGun()
-			if Settings.BurstDelay then
-				task.wait(Settings.BurstDelay)
-			end
-		end
-	end
-
 	local function gunPrime ()
 		if not HoldFire and not FireCooldown then
 			FireCooldown = true

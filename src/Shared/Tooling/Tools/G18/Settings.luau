@@ -5,7 +5,7 @@ local Settings = {
 	MagSize = 16; -- The maximum ammount of ammo held in a gun
 	ReloadStyle = 1; -- 0 = single cartridge insert | 1 = mag reload
 	BulletsPerShot = 1; -- The amount of projectiles fired from one shot (Shotgun)
-	BurstAmount = 1; -- The amount of times fired per shot
+	BurstAmount = 3; -- The amount of times fired per shot
 	--BurstDelay = 0.05; -- The amount of time it takes to recover from each burst shot in seconds (AFFECTS FIRE SPEED)
 	HeadshotFactor = 0.4; -- Damage + Damage * HeadshotFactor if head is shot
 	LegMultiplier = 0.8; -- Damage * LegMultiplier if legs are hit. (is supposed to be <=1)
@@ -72,7 +72,7 @@ local Settings = {
 
 	HighlightColor = Color3.fromRGB(100, 210, 210);
 	InventorySize = Vector2.new(1,1); -- Does nothing right now
-	InventoryImage = "rbxassetid://0"; -- Does nothing right now
+	InventoryImage = "rbxassetid://18385551620"; -- Does nothing right now
 	Description = "" -- Does nothing right now
 }
 return Settings
