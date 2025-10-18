@@ -426,48 +426,6 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		end
 	end
 
-	local function mouseButtonFire () --/ Checks if gun is full
-		if not Bursting and not FireCooldown and Equipped and (not Humanoid:GetAttribute("Running") or Settings.RunAndGun) then
-			if Reloading and not CancelReload and Settings.ReloadStyle == 0 and magInstanceValue.Value > 0 then
-				CancelReload = true
-			elseif not Reloading then
-
-				animationHandle("Reload1","Stop") --/ Still stop the reload animations just in case
-				if VMEmptyReload then
-					animationHandle("EmptyReload","Stop")
-				end
-
-				if VMReload3 then
-					animationHandle("Reload3","Stop")
-				end
-
-				if magInstanceValue.Value > 0 then
-					gunPrime() --/ If gun is full, go to next step
-				else
-					FireCooldown = true
-					CTF.playSound(Sounds,"Empty",Handle,true,true) --/ if gun is empty, make clicking noise
-					task.wait(60/Settings.RPM)
-					FireCooldown = false
-				end
-			elseif Reloading and Settings.ReloadStyle == 1 and magInstanceValue.Value > 0 then
-				Reloading = false
-				animationHandle("Reload1","Stop")
-				if VMEmptyReload then
-					animationHandle("EmptyReload","Stop")
-				end
-				if magInstanceValue.Value > 0 then
-					gunPrime()
-				else
-					task.wait()
-				end
-			else
-				task.wait()
-			end
-		else
-			task.wait()
-		end
-	end
-
 	local function checkRunning ()
 		if Humanoid:GetAttribute("Running") then
 			if Aiming then

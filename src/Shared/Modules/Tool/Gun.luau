@@ -110,7 +110,7 @@ export type ClassType = ToolClass.ClassType & typeof(setmetatable(
 
 			AimInSpeed: number,
 			AimOutSpeed: number,
-			--SqueezeTrigger: number,
+			SqueezeTrigger: number,
 			--FireDelay: number,
 			Reload1Speed: number,
 			--Reload2Speed: number,
@@ -337,7 +337,7 @@ end
 
 function Gun:Unequip()
 	if self.State ~= ToolClass.State.Equipped then return end
-	self:StopAnimation("FirstEquip", math.min(0.2, self.Settings.UnequipSpeed))
+	self:StopAnimation("FirstEquip", math.min(0.2, self.Settings.UnequipSpeed or 0))
 	self:Aim(false)
 	ToolClass.Unequip(self)
 end
@@ -476,6 +476,25 @@ function Gun:Click(input: InputObject)
 	-- TODO: cancel running
 	
 	self.GunState = Gun.State.Cooldown
+	
+	-- Trigger squeezing delay
+	if self.Settings.SqueezeTrigger then
+		local connection = nil
+		local cancel = false
+		if self.Settings.HeldWhenSqueezed then
+			connection = input.Changed:Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then
+					self.GunState = Gun.State.Idle
+					cancel = true
+					connection:Disconnect()
+				end
+			end)
+		end
+		task.wait(self.Settings.SqueezeTrigger)
+		if connection then connection:Disconnect() end
+		if cancel then return end
+	end
+	
 	CTF.playSound(self.Sounds, "Empty", self.Handle, true, true)
 	if tick() - self.LastShotTick > 150 / self.Settings.RPM then
 		self.SubsequentShotsFired = 0
