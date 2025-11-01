@@ -1,3 +1,4 @@
+local Debris = game:GetService("Debris")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -23,8 +24,6 @@ local CrosshairPercent = PlayerGui:WaitForChild("MouseUI"):WaitForChild("Crossha
 local GunVignette = HUD:WaitForChild("GunVignette")
 local VignetteAmount = GunVignette:WaitForChild("Gradient"):WaitForChild("VignetteAmount")
 local VignetteTween: Tween = nil
-
-local spreadReduction = false -- TODO! this shouldn't be here, but I'm leaving it here till I implement spread.
 
 local Character: Model, Humanoid: Humanoid
 local ViewModel: Model
@@ -71,6 +70,7 @@ export type ClassType = ToolClass.ClassType & typeof(setmetatable(
 		LastShotTick: number;
 		SubsequentShotsFired: number;
 		BulletSpread: number;
+		SpreadReduction: boolean;
 		RecoilSpring: {};
 		
 		Settings: {
@@ -183,11 +183,15 @@ function Gun.new(Tool: Tool): ClassType
 	self.Aiming = false
 	self.Bolted = false
 	self.Ammo = self.Settings.MagSize
+	if self.Settings.Casing and ReplicatedStorage.Objects.Casings:FindFirstChild(self.Settings.Casing) and self.Handle:FindFirstChild("Eject") then
+		self.PrimeCasing = ReplicatedStorage.Objects.Casings[self.Settings.Casing]
+	end
 	
 	-- other internal stuff
 	self.LastShotTick = 0
 	self.SubsequentShotsFired = 1
 	self.BulletSpread = self.Settings.MinSpread
+	self.SpreadReduction = false
 	
 	self.RecoilSpring = Spring.new()
 	self.RecoilSpring.Speed = 6
@@ -320,6 +324,7 @@ end
 function Gun:Equip()
 	if self.State ~= ToolClass.State.Unequipped then return end
 	self.State = ToolClass.State.Equipping
+	CrosshairPercent.Value = self.BulletSpread
 	ToolClass.getHumanoid():EquipTool(self.Instance)
 	if self.Ammo > 0 and not self.Bolted then -- play the first equip (with bolting) animation if unbolted but has ammo
 		self:PlayAnimation("FirstEquip")
@@ -380,16 +385,56 @@ function Gun:__projectBullet(randomValue) -- TODO! this function and its depende
 	CTF.castBullet(self.Instance, Origin.Position, -Direction, self.Settings.TravelSpeed or nil, self.Settings.MaxDistance or nil, self.Settings.Acceleration or nil, self.Settings.BulletTemplate or nil, Player.Character, self.Settings.BulletsPerShot, randomValue, true)
 end
 
+function Gun:__beginSpreadReduction()
+	local function regenWait (Value, WaitTime)
+		local beginningValue = Value
+		local startTime = tick()
+		while Value == beginningValue do
+			local currentTime = tick() - startTime
+			if currentTime >= WaitTime then
+				break
+			end
+			task.wait()
+		end
+		local currentTime = tick() - startTime
+		if currentTime < self.Settings.SpreadRegenWait then
+			regenWait(Value, WaitTime)
+		end
+	end
+
+	regenWait(self.BulletSpread, self.Settings.SpreadRegenWait)
+	while tick() - self.LastShotTick >= 60 / self.Settings.RPM and self.BulletSpread > self.Settings.MinSpread do
+		local ReductionIncrement = self.Settings.ReductionIncrement or 0.2
+		local ReductionWait = self.Settings.ReductionWait or 0.01
+		self.BulletSpread = math.clamp(self.BulletSpread-ReductionIncrement, self.Settings.MinSpread, self.Settings.MaxSpread)
+		CrosshairPercent.Value = self.BulletSpread
+		task.wait(ReductionWait)
+	end
+	self.SpreadReduction = false
+	if self.BulletSpread > self.Settings.MinSpread then
+		self.SpreadReduction = true
+		self:__beginSpreadReduction()
+	end
+end
+
 function Gun:__fire()
 	self.SubsequentShotsFired += 1
 	self.LastShotTick = tick()
 	
-	local Handle = self.Handle
+	-- apply spread and cast bullet
+	self.BulletSpread = math.clamp(self.BulletSpread + self.Settings.SpreadCost, self.Settings.MinSpread, self.Settings.MaxSpread)
+	CrosshairPercent.Value = self.BulletSpread
+	if not self.SpreadReduction then
+		self.SpreadReduction = true
+		task.defer(self.__beginSpreadReduction, self)
+	end
 	
 	local randomValue = math.random(1,999999999) -- I might be a little stupid (for a "key" in determining uniqueness of tracers)
 	for _ = 1, self.Settings.BulletsPerShot, 1 do
 		self:__projectBullet(randomValue)
 	end
+	
+	-- ESSENTIAL effects (recoil and sound)
 	
 	-- // shove camera
 	local XRecoilDampExponent = self.Settings.XRecoilDampExponent or 1
@@ -416,9 +461,20 @@ function Gun:__fire()
 		--/ The last <PitchLastBullets> bullets are pitched up incrementally
 		local coefficient = (self.Settings.PitchLastBullets - self.Ammo) / self.Settings.PitchLastBullets
 		local pitch = self.Sounds["Fire"].PlaybackSpeed + coefficient * self.Sounds["Fire"].PlaybackSpeed
-		Utils.SFX.playSound(self.Sounds, "Fire", Handle, true, true, {["PlaybackSpeed"] = pitch})
+		Utils.SFX.playSound(self.Sounds, "Fire", self.Handle, true, true, {["PlaybackSpeed"] = pitch})
 	else
-		Utils.SFX.playSound(self.Sounds, "Fire", Handle, true, true)
+		Utils.SFX.playSound(self.Sounds, "Fire", self.Handle, true, true)
+	end
+	
+	-- COOOOL effects (vignette, recoil animation, gun flash, dispense casing)
+	
+	if self.PrimeCasing then
+		local Casing = self.PrimeCasing:Clone()
+		Casing.Parent = workspace
+		Casing.Anchored = false
+		Casing.CFrame = self.Handle.Eject.WorldCFrame
+		Casing.AssemblyLinearVelocity = Casing.CFrame.LookVector * 25
+		Debris:AddItem(Casing,10)
 	end
 	
 	-- // darken vignette for coolness
@@ -445,7 +501,7 @@ function Gun:__fire()
 	
 	-- // play other VFX like muzzle flash, bolt movement, and shell casings
 	self:PlayAnimation("Recoil")
-	CTF.flashGun(Handle.Flash, Handle.Flash.FlashLight, true) -- uses CTF to flash the gun for light and particles
+	CTF.flashGun(self.Handle.Flash, self.Handle.Flash.FlashLight, true) -- uses CTF to flash the gun for light and particles
 	-- TODO!
 end
 

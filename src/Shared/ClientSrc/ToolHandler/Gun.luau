@@ -94,112 +94,12 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 
 	--//Beginning Priming
 	CrosshairPercent.Value = BulletSpread
-	if Settings.Casing and Casings:FindFirstChild(Settings.Casing) then
-		PrimeCasing = Casings[Settings.Casing]
-	end
+	
 	if Handle:FindFirstChild("Hammer") then
 		Hammer = Handle.Hammer
 	end
 	if Handle:FindFirstChild("Cylinder") then
 		Cylinder = Handle.Cylinder
-	end
-
-	if MotorModel:FindFirstChild("ScopeObject") then
-		ScopeModule.SetEnabled(true,MotorModel["ScopeObject"])
-	end
-
-	local function animationHandle (animation,action,num,charNum)
-		if not num then num = 0 end
-		if not charNum then charNum = num end
-		local VManim = animationTable[animation][1] or nil
-		local Charanim = animationTable[animation][2] or nil
-		
-		local actionFunctions = {
-			["Play"] = function (anim,number)
-				anim:Play(number)
-			end,
-			["Stop"] = function (anim,number)
-				anim:Stop(number)
-			end,
-			["Speed"] = function (anim,number)
-				anim:AdjustSpeed(number)
-			end,
-		}
-		
-		if VManim then
-			actionFunctions[action](VManim,num)
-		end
-		if Charanim then
-			actionFunctions[action](Charanim,charNum)
-		end
-	end
-	--\\
-
-	--//Functions
-	local function disconnectFunctions (FunctionList)
-		for _,Function in pairs(FunctionList) do
-			if Function then
-				Function:Disconnect()
-			end
-		end
-	end
-
-	local function humAtt (name,val,rep)
-		if rep then
-			HumanoidAttributeEvent:FireServer(Humanoid,name,val)
-		else
-			Humanoid:SetAttribute(name,val)
-		end
-	end
-
-	local function dispenseCasing ()
-		local Casing = PrimeCasing:Clone()
-		Casing.Parent = TemporaryParts
-		Casing.Anchored = false
-		Casing.CFrame = Eject.WorldCFrame
-		Debris:AddItem(Casing,10)
-	end
-
-	local function regenWait (Value,WaitTime)
-		local beginningValue = Value
-		local startTime = tick()
-		while Value == beginningValue do
-			local currentTime = tick() - startTime
-			if currentTime >= WaitTime then
-				break
-			end
-			task.wait()
-		end
-		local currentTime = tick() - startTime
-		if currentTime < Settings.SpreadRegenWait then
-			regenWait(Value,WaitTime)
-		end
-	end
-
-	local function beginSpreadReduction ()
-		spreadReduction = true
-		regenWait(BulletSpread,Settings.SpreadRegenWait)
-		while not FireCooldown and BulletSpread > Settings.MinSpread do
-			local ReductionIncrement = Settings.ReductionIncrement or 0.2
-			local ReductionWait = Settings.ReductionWait or 0.01
-			BulletSpread = math.clamp(BulletSpread-ReductionIncrement,Settings.MinSpread,Settings.MaxSpread)
-			CrosshairPercent.Value = BulletSpread
-			task.wait(ReductionWait)
-		end
-		spreadReduction = false
-		if BulletSpread > Settings.MinSpread then
-			beginSpreadReduction()
-		end
-	end
-
-	local function gunSpread ()
-		task.defer(function()
-			BulletSpread = math.clamp(BulletSpread+Settings.SpreadCost,Settings.MinSpread,Settings.MaxSpread)
-			CrosshairPercent.Value = BulletSpread
-			if not spreadReduction then
-				beginSpreadReduction()
-			end
-		end)
 	end
 
 	local function boltGun ()
@@ -246,16 +146,6 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		SetItemHolder:FireServer(Tool,"Bolted",false)
 
 		HoldFire = true
-
-		if Settings.FireDelay then -- Used for when you want a delay for the round to be fired, typically when the hammer is coming down.
-			if Settings.HammerAngle then
-				Hammer.C0 = CFrame.new(Hammer.C0.Position)*CFrame.Angles(math.rad(Settings.HammerAngle.X),math.rad(Settings.HammerAngle.Y),math.rad(Settings.HammerAngle.Z))
-			end
-			if Settings.CylinderAngle then
-				Cylinder.C0 = CFrame.new(Cylinder.C0.Position)*CFrame.Angles(math.rad(Settings.CylinderAngle.X),math.rad(Settings.CylinderAngle.Y),math.rad(Settings.CylinderAngle.Z))
-			end
-			task.wait(Settings.FireDelay)
-		end
 
 		if Settings.HammerAngle then -- If hammer exists, will reset position
 			Hammer.C0 = CFrame.new(Hammer.C0.Position)*CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))
