@@ -75,7 +75,7 @@ local Settings = {
 
 	HighlightColor = Color3.fromRGB(100, 210, 210);
 	InventorySize = Vector2.new(6,3); -- Does nothing right now
-	InventoryImage = "rbxassetid://10811553601"; -- Does nothing right now
+	InventoryImage = "rbxassetid://76321969755870"; -- Does nothing right now
 	Description = "A reliable Soviet-era rifle used by a wide variety of groups, especially those based outside of the US and Western Europe. Despite lower than average RPM, the 7.62x39mm rounds it fires have substantial stopping power. " -- Does nothing right now
 }
 return Settings

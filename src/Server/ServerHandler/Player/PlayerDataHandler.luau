@@ -16,28 +16,43 @@ local DataEvents = ReplicatedStorage.Events.Data
 
 local SaveSettingChange = DataEvents.SaveSettingChange
 local StatChange = DataEvents.StatChange
+local LoadoutChange = DataEvents.LoadoutChange
+local LoadoutSelectedChange = DataEvents.LoadoutSelectedChange
 
 -- ProfileStore setup
 local TemplateSettings = ServerStorage.PlayerDataTemplate.Settings
 local TemplateStats = ServerStorage.PlayerDataTemplate.Stats
+local TemplateLoadout = ServerStorage.PlayerDataTemplate.Loadout
 local GatheredSettingDefaults = {}
 local GatheredStatDefaults = {}
+local GatheredLoadoutDefaults = {}
 
-for _,Setting in pairs(TemplateSettings:GetDescendants()) do
+for _, Setting in pairs(TemplateSettings:GetDescendants()) do
 	if not Setting:IsA("Folder") then
 		GatheredSettingDefaults[Setting.Name] = Setting:GetAttribute("Default")
 	end
 end
 
-for _,Stat in pairs(TemplateStats:GetDescendants()) do
+for _, Stat in pairs(TemplateStats:GetDescendants()) do
 	if not Stat:IsA("Folder") then
 		GatheredStatDefaults[Stat.Name] = Stat:GetAttribute("Default")
+	end
+end
+
+for _, Loadout in pairs(TemplateLoadout:GetChildren()) do
+	if Loadout:IsA("Folder") then
+		local LoadoutItemTable = {}
+		for _, LoadoutItem in pairs(Loadout:GetChildren()) do
+			LoadoutItemTable[LoadoutItem.Name] = LoadoutItem:GetAttribute("Default")
+		end
+		GatheredLoadoutDefaults[Loadout.Name] = {LoadoutItemTable, Loadout:GetAttribute("Selected")}
 	end
 end
 
 local ProfileTemplate = {
 	Settings = GatheredSettingDefaults,
 	Stats = GatheredStatDefaults,
+	Loadout = GatheredLoadoutDefaults,
 }
 local PlayerStore = ProfileStore.New("PlayerStore", ProfileTemplate)
 
@@ -73,15 +88,24 @@ function PlayerDataHandler.Init (Player)
 			Profile:EndSession()
 		end
 
-		for _,Setting in pairs(ReplicatedStorage.Players[tostring(Player.UserId)].Settings:GetDescendants()) do
+		for _, Setting in pairs(ReplicatedStorage.Players[tostring(Player.UserId)].Settings:GetDescendants()) do
 			if not Setting:IsA("Folder") then
 				Setting.Value = Profile.Data.Settings[Setting.Name]
 			end
 		end
 
-		for _,Stat in pairs(ReplicatedStorage.Players[tostring(Player.UserId)].Stats:GetDescendants()) do
+		for _, Stat in pairs(ReplicatedStorage.Players[tostring(Player.UserId)].Stats:GetDescendants()) do
 			if not Stat:IsA("Folder") then
 				Stat.Value = Profile.Data.Stats[Stat.Name]
+			end
+		end
+
+		for _, Loadout in pairs(ReplicatedStorage.Players[tostring(Player.UserId)].Loadout:GetChildren()) do
+			if Loadout:IsA("Folder") then
+				for _, LoadoutItem in pairs(Loadout:GetChildren()) do
+					LoadoutItem.Value = Profile.Data.Loadout[Loadout.Name][1][LoadoutItem.Name]
+				end
+				Loadout:SetAttribute("Selected", Profile.Data.Loadout[Loadout.Name][2])
 			end
 		end
 
@@ -111,10 +135,26 @@ SaveSettingChange.OnServerEvent:Connect(function(Player, Setting, NewValue)
 end)
 
 StatChange.Event:Connect(function(Player, Stat, NewValue)
-	if Stat and NewValue then
+	if Stat and NewValue and tonumber(Stat.Parent.Parent.Name) == Player.UserId then
 		local Profile = Profiles[Player]
 		Stat.Value = NewValue
 		Profile.Data.Stats[Stat.Name] = NewValue
+	end
+end)
+
+LoadoutChange.OnServerEvent:Connect(function(Player, Loadout, LoadoutItem, NewLoadoutItemValue)
+	if Loadout and LoadoutItem and NewLoadoutItemValue and tonumber(Loadout.Parent.Parent.Name) == Player.UserId then
+		local Profile = Profiles[Player]
+		Loadout[LoadoutItem.Name].Value = NewLoadoutItemValue
+		Profile.Loadout[Loadout.Name][1][LoadoutItem.Name] = NewLoadoutItemValue
+	end
+end)
+
+LoadoutSelectedChange.OnServerEvent:Connect(function(Player, Loadout, NewState)
+	if Loadout and tonumber(Loadout.Parent.Parent.Name) == Player.UserId then
+		local Profile = Profiles[Player]
+		Loadout:SetAttribute("Selected", NewState)
+		Profile.Loadout[Loadout.Name][2] = NewState
 	end
 end)
 

@@ -75,7 +75,7 @@ local Settings = {
 
 	HighlightColor = Color3.fromRGB(100, 210, 210);
 	InventorySize = Vector2.new(6,2); -- Does nothing right now
-	InventoryImage = "rbxassetid://15509673517"; -- Does nothing right now
+	InventoryImage = "rbxassetid://113222239342519"; -- Does nothing right now
 	Description = "" -- Does nothing right now
 }
 return Settings

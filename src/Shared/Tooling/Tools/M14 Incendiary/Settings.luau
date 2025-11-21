@@ -18,7 +18,7 @@ local Settings = {
 	
 	HighlightColor = Color3.fromRGB(100, 210, 210);
 	InventorySize = Vector2.new(1,1); -- Size in inventory
-	InventoryImage = "rbxassetid://77752292559585"; -- Icon in inventory
+	InventoryImage = "rbxassetid://132310020656239"; -- Icon in inventory
 	Description = "" -- Description of the item
 }
 return Settings

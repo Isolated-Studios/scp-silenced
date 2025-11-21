@@ -16,9 +16,10 @@ local Settings = {
 	
 	BindToHand = true; 
 	
+	LoadoutAmount = 2; -- Amount of item given when selecting a loadout.
 	HighlightColor = Color3.fromRGB(100, 210, 210);
 	InventorySize = Vector2.new(1,1); -- Size in inventory
-	InventoryImage = "rbxassetid://77752292559585"; -- Icon in inventory
+	InventoryImage = "rbxassetid://129779099805216"; -- Icon in inventory
 	Description = "" -- Description of the item
 }
 return Settings

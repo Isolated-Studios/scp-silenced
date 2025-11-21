@@ -450,7 +450,7 @@ function Gun:__fire()
 	end
 	local ShoveAmount = self.Settings.CameraShove * recoil_modifier
 	self.RecoilSpring:shove(ShoveAmount) -- shoves the camera
-	if self.Aiming and self.Settings.AimLinearShove and self.ettings.AimAngularShove then
+	if self.Aiming and self.Settings.AimLinearShove and self.Settings.AimAngularShove then
 		ViewModelHandler.ShoveViewModel(self.Settings.AimLinearShove, self.Settings.AimAngularShove) --/ shove event but aiming!
 	else
 		ViewModelHandler.ShoveViewModel(self.Settings.LinearShove, self.Settings.AngularShove) --/ shove event

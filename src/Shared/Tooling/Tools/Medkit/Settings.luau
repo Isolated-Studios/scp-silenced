@@ -24,9 +24,10 @@ local Settings = {
 	HasAidAnimation = false; -- If true, will use the Aid animation when healing other players
 	BindToHand = true;
 	
+	LoadoutAmount = 1; -- Amount of item given when selecting a loadout.
 	HighlightColor = Color3.fromRGB(100, 210, 210);
 	InventorySize = Vector2.new(1,2); -- Inventory Size
-	InventoryImage = "rbxassetid://18387305281"; -- Inventory Image
+	InventoryImage = "rbxassetid://83403788253800"; -- Inventory Image
 	Description = "" -- Does nothing right now
 }
 return Settings

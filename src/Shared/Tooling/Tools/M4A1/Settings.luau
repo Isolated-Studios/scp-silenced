@@ -33,7 +33,7 @@ local Settings = {
 	BoltBackWhenEmpty = false;
 	ScrollAffectsAim = true;
 
-	EquipSpeed = 0.75; -- Speed of equipping in seconds
+	EquipSpeed = 0.87; -- Speed of equipping in seconds
 	EquipCancel = 0.5;
 	UnequipSpeed = 0.75;
 	AimInSpeed = 0.35; -- Speed of aiming-in in seconds
@@ -63,8 +63,8 @@ local Settings = {
 	LongFallOffMult = 0.50; -- Damage Multiplier applied to when damage enters the Long Fall Off Zone.
 
 	CameraShove = Vector3.new(12,0.075,0); -- Shove applied to camera when recoiled
-	LinearShove = Vector3.new(0.4,0.4,.8); -- Linear shove applied to viewmodel when recoiled
-	AngularShove = Vector3.new(1,0.25,.25); -- Angular shove applied to viewmodel when recoiled
+	LinearShove = Vector3.new(0.2,0.3,0.1); -- Linear shove applied to viewmodel when recoiled
+	AngularShove = Vector3.new(.1,0.05,.05); -- Angular shove applied to viewmodel when recoiled
 	AimLinearShove = Vector3.new(0,0,3); -- Linear shove applied to the viewmodel when aiming and recoiled.
 	AimAngularShove = Vector3.new(0,0,0.15); -- Angular shove applied to the viewmodel when aiming and recoiled.
 	Stability = nil; -- Determines the torque of the gun when recoiling. Lower number is more unstable (more torque), Higher is more stable (less torque).
@@ -75,7 +75,7 @@ local Settings = {
 
 	HighlightColor = Color3.fromRGB(100, 210, 210);
 	InventorySize = Vector2.new(6,3); -- Does nothing right now
-	InventoryImage = "rbxassetid://10811553601"; -- Does nothing right now
+	InventoryImage = "rbxassetid://99247351586873"; -- Does nothing right now
 	Description = "The Foundation standard rifle, generally purchased from US military surplus. A jack of all trades, the M4A1 strikes a balance between speed, stopping power, and accuracy." -- Does nothing right now
 }
 return Settings

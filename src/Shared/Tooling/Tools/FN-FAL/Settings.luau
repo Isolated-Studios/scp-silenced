@@ -74,7 +74,7 @@ local Settings = {
 
 	HighlightColor = Color3.fromRGB(100, 210, 210);
 	InventorySize = Vector2.new(3,6); -- Does nothing right now
-	InventoryImage = "rbxassetid://0"; -- Does nothing right now
+	InventoryImage = "rbxassetid://124178049726126"; -- Does nothing right now
 	Description = "A semi-automatic battle rifle used by the Foundation. 7.62x51mm rounds pack a significant punch, and can be incredibly helpful for subduing escaping Anomalies." -- Does nothing right now
 }
 return Settings
