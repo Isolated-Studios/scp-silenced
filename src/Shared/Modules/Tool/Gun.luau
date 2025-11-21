@@ -647,9 +647,26 @@ end
 
 function Gun:__enable()
 	ToolClass.__enable(self)
-	self:__connect("RecoilSpringUpdate", RunService.RenderStepped, function(dt)
-		local updatedRecoilSpring = self.RecoilSpring:update(dt)
-		CameraModule.AddModifier(CFrame.Angles(math.rad(updatedRecoilSpring.x), updatedRecoilSpring.y, updatedRecoilSpring.z), true)
+	task.spawn(function()
+		local startTime = os.clock()
+		local virtualFrameCounter = 0
+		while true do
+			RunService.RenderStepped:Wait()
+			if self.State == ToolClass.State.Unequipped then
+				return
+			end
+			
+			local currentTime = os.clock()
+			local elapsedTime = currentTime - startTime
+			local expectedFrameCount = math.floor(elapsedTime * 240)
+			if expectedFrameCount > virtualFrameCounter then
+				for _ = 0, expectedFrameCount - virtualFrameCounter, 1 do
+					local updatedRecoilSpring = self.RecoilSpring:update(1/240)
+					CameraModule.AddModifier(CFrame.Angles(math.rad(updatedRecoilSpring.x), updatedRecoilSpring.y, updatedRecoilSpring.z), true)
+				end
+			end
+			virtualFrameCounter = expectedFrameCount
+		end
 	end)
 end
 
