@@ -22,4 +22,8 @@ function TweenModule.Tween (
 	end
 end
 
+function TweenModule.StopTween (Object: Model)
+	TweenObjectEvent:FireAllClients(Object, nil, nil, nil, nil, nil, true)
+end
+
 return TweenModule

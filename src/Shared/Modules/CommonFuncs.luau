@@ -65,6 +65,19 @@ function CommonFuncs.GetAncestorFromAttribute(object: Instance, attributeName: s
 end
 
 --[=[
+	returns the descendant of object by finding a descendant with the given descendantName.
+]=]
+function CommonFuncs.FindFirstDescendant(object: Instance, descendantName: string)
+	local pickedDescendant = nil
+	for _, descendant in pairs(object:GetDescendants()) do
+		if descendant.Name == descendantName then
+			pickedDescendant = descendant
+		end 
+	end
+	return pickedDescendant
+end
+
+--[=[
 	returns true if any major input UI (Chat, Settings, Inventory) is on.
 	`exception` is the name of an input UI to be excepted from the check.
 ]=]
@@ -83,25 +96,25 @@ end
 	InteractiveVariables is a table of variables that are set.
 	Format:
 	InteractiveVariables = {
-		["interactable"] = boolean,
-		["interactFinishEventId"] = number,
+		["Interactable"] = boolean,
+		["InteractId"] = number,
 		["interactTime"] = number,
-		["interactText"] = string,
+		["InteractText"] = string,
 		["interactRange"] = number,
-		["interactAnimId"] = number,
+		["InteractAnimationId"] = number,
 		["doorType"] = string,
-		["freezePlayer"] = boolean,
+		["FreezePlayer"] = boolean,
 	}
 ]=]
 function CommonFuncs.CreateInteraction(InteractiveObject: Model, InteractiveVariables: table)
-	InteractiveObject:SetAttribute("interactable", InteractiveVariables["interactable"] or nil)
-	InteractiveObject:SetAttribute("interactFinishEventId", InteractiveVariables["interactFinishEventId"] or 0)
+	InteractiveObject:SetAttribute("Interactable", InteractiveVariables["Interactable"] or nil)
+	InteractiveObject:SetAttribute("InteractId", InteractiveVariables["InteractId"] or 0)
 	InteractiveObject:SetAttribute("InteractTime", InteractiveVariables["interactTime"] or nil)
-	InteractiveObject:SetAttribute("InteractText", InteractiveVariables["interactText"] or nil)
-	InteractiveObject:SetAttribute("maxRange", InteractiveVariables["interactRange"] or 10)
-	InteractiveObject:SetAttribute("interactAnimId", InteractiveVariables["interactAnimId"] or 0)
+	InteractiveObject:SetAttribute("InteractText", InteractiveVariables["InteractText"] or nil)
+	InteractiveObject:SetAttribute("Range", InteractiveVariables["interactRange"] or 10)
+	InteractiveObject:SetAttribute("InteractAnimationId", InteractiveVariables["InteractAnimationId"] or 0)
 	InteractiveObject:SetAttribute("DoorType", InteractiveVariables["doorType"] or nil)
-	InteractiveObject:SetAttribute("freezePlayer", InteractiveVariables["freezePlayer"] or false)
+	InteractiveObject:SetAttribute("FreezePlayer", InteractiveVariables["FreezePlayer"] or false)
 end
 
 return CommonFuncs

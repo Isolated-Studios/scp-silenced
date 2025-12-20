@@ -52,22 +52,25 @@ local function completeInteraction()
 	Character:SetAttribute("Interacting", false)
 	UserInputService.MouseDeltaSensitivity = 1
 	if CurrentAnimTrack then CurrentAnimTrack:Stop() end
-	if InteractClientFunctions[Current:GetAttribute("interactFinishEventId")] then
-		InteractClientFunctions[Current:GetAttribute("interactFinishEventId")](Current)
+	if InteractClientFunctions[Current:GetAttribute("InteractId")] then
+		InteractClientFunctions[Current:GetAttribute("InteractId")](Current)
 	end
-	ReplicatedStorage.Events.Interaction.FinishInteraction:FireServer(Current, Current:GetAttribute("interactFinishEventId"))
+	if Current:GetAttribute("InteractId2") and InteractClientFunctions[Current:GetAttribute("InteractId2")] then
+		InteractClientFunctions[Current:GetAttribute("InteractId2")](Current)
+	end
+	ReplicatedStorage.Events.Interaction.FinishInteraction:FireServer(Current, Current:GetAttribute("InteractId"))
 end
 
 local function startInteraction(InteractTime)
 	Interacting = true
 	local localInteractionStart = tick()
 	lastInteractionStart = localInteractionStart
-	if (Current and Current:GetAttribute("interactAnimId") and validAnims[Current:GetAttribute("interactAnimId")]) then
-		CurrentAnimTrack = Animator:LoadAnimation(Animations[tostring(Current:GetAttribute("interactAnimId"))])
+	if (Current and Current:GetAttribute("InteractAnimationId") and validAnims[Current:GetAttribute("InteractAnimationId")]) then
+		CurrentAnimTrack = Animator:LoadAnimation(Animations[tostring(Current:GetAttribute("InteractAnimationId"))])
 		if CurrentAnimTrack then CurrentAnimTrack:Play() end
 		UserInputService.MouseDeltaSensitivity = 0
 	end
-	if Current:GetAttribute("freezePlayer") == true then
+	if Current:GetAttribute("FreezePlayer") == true then
 		Character:SetAttribute("Interacting", true)
 	end
 	if InteractTime and InteractTime > 0 then
@@ -167,15 +170,15 @@ function module.Init()
 				-- ...otherwise show the guide label
 				ProgressBar.GroupTransparency = math.clamp(ProgressBar.GroupTransparency + dt * 8, 0, 1)
 
-				local interactText = if Current:GetAttribute("InteractText") then "E | " .. Current:GetAttribute("InteractText") else "E"
-				if interactText ~= GuideLabel.Text then
+				local InteractText = if Current:GetAttribute("InteractText") then "E | " .. Current:GetAttribute("InteractText") else "E"
+				if InteractText ~= GuideLabel.Text then
 					local c = GuideLabel:Clone()
 					c.Parent = GuideLabel.Parent
 					local t = (1 - c.TextTransparency) / 8
 					TweenService:Create(c, TweenInfo.new(t, Enum.EasingStyle.Linear), {TextTransparency = 1, TextStrokeTransparency = 1}):Play()
 					Debris:AddItem(c, 0.3)
 				end
-				GuideLabel.Text = interactText
+				GuideLabel.Text = InteractText
 				GuideLabel.TextTransparency = math.clamp(GuideLabel.TextTransparency - dt * 8, 0, 1)
 				GuideLabel.TextStrokeTransparency = math.clamp(GuideLabel.TextStrokeTransparency - dt * 3.2, 0.6, 1)
 			end
@@ -204,12 +207,15 @@ function module.Init()
 		end
 
 		-- search for interactable objects
-		if Current and Interacting then return end -- skip if currently interacting, allowing user to continue interacting after breaking line of sight with object
+		if Current and Interacting then 
+			return -- skip if currently interacting, allowing user to continue interacting after breaking line of sight with object
+		end 
+
 		Current = Mouse.Target and Mouse.Target:FindFirstAncestorOfClass("Model")
-		if Current and not Current:GetAttribute("interactable") then Current = CommonFunctions.GetAncestorFromAttribute(Current, "interactable", true) end
-		if Current and not Current:GetAttribute("interactable") then Current = nil end
+		if Current and not Current:GetAttribute("Interactable") then Current = CommonFunctions.GetAncestorFromAttribute(Current, "Interactable", true) end
+		if Current and not Current:GetAttribute("Interactable") then Current = nil end
 		if Current and not Current.PrimaryPart then Current = nil end
-		if Current and Current.PrimaryPart and CommonToolFunctions.getDistance(Current.PrimaryPart.Position, Character.PrimaryPart.Position) > Current:GetAttribute("maxRange") then Current = nil end
+		if Current and Current.PrimaryPart and CommonToolFunctions.getDistance(Current.PrimaryPart.Position, Character.PrimaryPart.Position) > Current:GetAttribute("Range") then Current = nil end
 		if Highlight.Adornee ~= Current  and Highlight.FillTransparency ~= 1 then
 			local c = Highlight:Clone()
 			c.Parent = script

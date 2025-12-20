@@ -86,19 +86,25 @@ return {
 		Utils.SFX.playSound(Sounds.Miscellaneous.Cat.Meow, nil, InteractObject, true, true)
 	end,
 	
+	[9] = function(InteractObject) -- Message with attribute "Message"
+		local Message = InteractObject:GetAttribute("Message")
+		local MessageColor = InteractObject:GetAttribute("MessageColor") or Color3.fromRGB(255, 255, 255)
+		Messager.SendMessage(Message, MessageColor)
+	end,
+	
 	["Revive"] = function(InteractObject)
 		task.defer(function()
 			local Character = Player.Character
 			local Animator = Character.Humanoid.Animator
 			local ReviveAnim = Animator:LoadAnimation(OtherCharacterAnimations.Revive)
 			local ReviveVMAnim = Animator:LoadAnimation(OtherVMAnimations.Revive)
-			InteractObject:SetAttribute("freezePlayer",nil)
-			InteractObject:SetAttribute("interactable",nil)
-			InteractObject:SetAttribute("interactAnimId",nil)
-			InteractObject:SetAttribute("interactFinishEventId",nil)
-			InteractObject:SetAttribute("interactText",nil)
+			InteractObject:SetAttribute("FreezePlayer",nil)
+			InteractObject:SetAttribute("Interactable",nil)
+			InteractObject:SetAttribute("InteractAnimationId",nil)
+			InteractObject:SetAttribute("InteractId",nil)
+			InteractObject:SetAttribute("InteractText",nil)
 			InteractObject:SetAttribute("interactTime",nil)
-			InteractObject:SetAttribute("maxRange",nil)
+			InteractObject:SetAttribute("Range",nil)
 			InteractObject:SetAttribute("NoHighlight",nil)
 			local reviveTime = 5
 			local currentReviveAnimation = ReviveAnim

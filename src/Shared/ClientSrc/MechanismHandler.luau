@@ -81,60 +81,68 @@ function module.Init()
 		GivenTweenInfo: table,
 		Distance: number,
 		animationName: string,
-		newSize: Vector3
+		newSize: Vector3,
+		stopTween: boolean
 	)
-		local CFrameValue = Instance.new("CFrameValue")
-		CFrameValue.Parent = Object
-		
-		-- Assemble GivenTweenInfo into an actual TweenInfo.
-		local CreatedTweenInfo = TweenInfo.new(
-			GivenTweenInfo["Time"] or 1,
-			GivenTweenInfo["EasingStyle"] or Enum.EasingStyle.Linear,
-			GivenTweenInfo["EasingDirection"] or Enum.EasingDirection.Out,
-			GivenTweenInfo["RepeatCount"] or 0,
-			GivenTweenInfo["Reverses"] or false,
-			GivenTweenInfo["DelayTime"] or 0
-		)
-		
-		if Object:IsA("Model") and Object.PrimaryPart then
-			CFrameValue.Value = Object:GetPivot()
-			CFrameValue.Changed:Connect(function()
-				Object:PivotTo(CFrameValue.Value)
-			end)
-			if animationName and Object:FindFirstChild(animationName) and Object:FindFirstChild(animationName):IsA("Animation") and Object:FindFirstChildOfClass("AnimationController") then
-				local animation = Object:FindFirstChildOfClass("AnimationController"):LoadAnimation(Object:FindFirstChild(animationName))
-				animation:Play()
+		if stopTween then
+			for _, CFrameValue in pairs(Object:GetChildren()) do
+				if CFrameValue:IsA("CFrameValue") then
+					CFrameValue:Destroy()
+				end
 			end
-		elseif Object:IsA("BasePart") then
-			CFrameValue.Value = Object.CFrame
-			CFrameValue.Changed:Connect(function()
-				Object.CFrame = CFrameValue.Value
-			end)
-			if newSize then
-				TweenService:Create(Object, CreatedTweenInfo, {Size = newSize}):Play()
+		else	
+			local CFrameValue = Instance.new("CFrameValue")
+			CFrameValue.Parent = Object
+			
+			-- Assemble GivenTweenInfo into an actual TweenInfo.
+			local CreatedTweenInfo = TweenInfo.new(
+				GivenTweenInfo["Time"] or 1,
+				GivenTweenInfo["EasingStyle"] or Enum.EasingStyle.Linear,
+				GivenTweenInfo["EasingDirection"] or Enum.EasingDirection.Out,
+				GivenTweenInfo["RepeatCount"] or 0,
+				GivenTweenInfo["Reverses"] or false,
+				GivenTweenInfo["DelayTime"] or 0
+			)
+			
+			if Object:IsA("Model") and Object.PrimaryPart then
+				CFrameValue.Value = Object:GetPivot()
+				CFrameValue.Changed:Connect(function()
+					Object:PivotTo(CFrameValue.Value)
+				end)
+				if animationName and Object:FindFirstChild(animationName) and Object:FindFirstChild(animationName):IsA("Animation") and Object:FindFirstChildOfClass("AnimationController") then
+					local animation = Object:FindFirstChildOfClass("AnimationController"):LoadAnimation(Object:FindFirstChild(animationName))
+					animation:Play()
+				end
+			elseif Object:IsA("BasePart") then
+				CFrameValue.Value = Object.CFrame
+				CFrameValue.Changed:Connect(function()
+					Object.CFrame = CFrameValue.Value
+				end)
+				if newSize then
+					TweenService:Create(Object, CreatedTweenInfo, {Size = newSize}):Play()
+				end
+			end
+
+			Debris:AddItem(CFrameValue, CreatedTweenInfo.Time+0.1)
+			local objPos = nil
+
+			if Object:IsA("Model") then
+				objPos = Object:GetPivot().Position
+			else
+				objPos = Object.Position
+			end
+
+			Debris:AddItem(CFrameValue, CreatedTweenInfo.Time+0.1)
+
+			if Character and Character.Parent and Distance > 0 and math.round((Character.PrimaryPart.Position-objPos).Magnitude) <= Distance or Distance <= 0 or not Distance then
+				TweenService:Create(CFrameValue,CreatedTweenInfo,{Value = newCFrame}):Play()
+			else
+				task.defer(function()
+					task.wait(CreatedTweenInfo.Time)
+					CFrameValue.Value = newCFrame
+				end)
 			end
 		end
-
-		Debris:AddItem(CFrameValue, CreatedTweenInfo.Time+0.1)
-		local objPos = nil
-
-		if Object:IsA("Model") then
-			objPos = Object:GetPivot().Position
-		else
-			objPos = Object.Position
-		end
-
-		Debris:AddItem(CFrameValue, CreatedTweenInfo.Time+0.1)
-
-		if Character and Character.Parent and Distance > 0 and math.round((Character.PrimaryPart.Position-objPos).Magnitude) <= Distance or Distance <= 0 or not Distance then
-			TweenService:Create(CFrameValue,CreatedTweenInfo,{Value = newCFrame}):Play()
-		else
-			task.defer(function()
-				task.wait(CreatedTweenInfo.Time)
-				CFrameValue.Value = newCFrame
-			end)
-		end
-
 	end)
 end
 return module

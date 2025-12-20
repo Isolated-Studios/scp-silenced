@@ -1,17 +1,31 @@
+-- Services
 local ServerScriptService = game:GetService("ServerScriptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ServerStorage = game:GetService('ServerStorage')
-local TweenService = game:GetService('TweenService')
+local ServerStorage = game:GetService("ServerStorage")
+local TweenService = game:GetService("TweenService")
+local Debris = game:GetService("Debris")
 
+-- Tooling
 local Tooling = ReplicatedStorage.Tooling
 local ToolingTools = Tooling.Tools
 local Physical = Tooling.Physical
 
+-- Replicated Storage Objects
 local Events = ReplicatedStorage.Events
 local DoorConfigs = ReplicatedStorage.Configs.Doors
+local Sounds = ReplicatedStorage.Sounds
 
+-- Modules
 local TweenModule = require(ReplicatedStorage.Modules.Interaction.TweenModule)
 
+-- Events
+local finishInteraction = Events.Interaction.FinishInteraction
+
+-- Other
+local MedicalAmountCap = 2
+local insecureIds = {4,5}
+
+-- Get the distance between two Vector3 points and return the distance.
 function getDistance(point1 : Vector3, point2 : Vector3)
 	local distance
 	if point1 and point2 then
@@ -21,11 +35,6 @@ function getDistance(point1 : Vector3, point2 : Vector3)
 	end
 	return distance
 end
-
-local finishInteraction = Events.Interaction.FinishInteraction
-local MedicalAmountCap = 2
-
-local insecureIds = {4,5}
 
 local InteractFunctions = {
 	-- change this below, each new event needs a new id, make sure you add the , too
@@ -44,8 +53,22 @@ local InteractFunctions = {
 	end,
 
 	[2] = function(interactObject, player) -- basic button door
-		if not interactObject:GetAttribute("interactable") then return end -- Might fix door spam bug?
-		local function changeLightParts (LightModel,colorPicked)
+		-- Might fix door spam bug?
+		if not interactObject:GetAttribute("Interactable") then 
+			return 
+		end 
+		
+		local Allowed = true
+		local Opened = interactObject.DoorConfigs.Opened
+		local DoorSettings = require(DoorConfigs:FindFirstChild(interactObject:GetAttribute("DoorType")))
+
+		local LeftDoor = interactObject:FindFirstChild("DoorL") or interactObject:FindFirstChild("Door")
+		local RightDoor = interactObject:FindFirstChild("DoorR") or nil
+		local LightParts = interactObject:FindFirstChild("LightParts") or nil
+		local SoundPart = interactObject["SoundPart"]
+		
+		-- Change the parts/lights of LightModel to the colorPicked color.
+		local function changeLightParts (LightModel: Model, colorPicked: Color3)
 			if LightModel then
 				for _,light in pairs(LightModel:GetDescendants()) do
 					if light:IsA("BasePart") or light:IsA("SurfaceLight") or light:IsA("PointLight") or light:IsA("SpotLight") then
@@ -56,16 +79,18 @@ local InteractFunctions = {
 				end
 			end
 		end
-
-		local Allowed = true
-		local Opened = interactObject.DoorConfigs.Opened
-		local DoorSettings = require(DoorConfigs:FindFirstChild(interactObject:GetAttribute("DoorType")))
-		local TweenObjectEvent = game:GetService("ReplicatedStorage").Events.Interaction.TweenObjectEvent
-
-		local LeftDoor = interactObject:FindFirstChild("Door.L") or interactObject:FindFirstChild("Door")
-		local RightDoor = interactObject:FindFirstChild("Door.R") or nil
-		local LightParts = interactObject:FindFirstChild("LightParts") or nil
-		local SoundPart = interactObject["SoundPart"]
+		
+		local function playSound (SoundName: string)
+			if SoundName 
+				and Sounds.DoorSounds:FindFirstChild(interactObject:GetAttribute("DoorType")) 
+				and Sounds.DoorSounds[interactObject:GetAttribute("DoorType")]:FindFirstChild(SoundName)
+			then
+				local NewSound = Sounds.DoorSounds[interactObject:GetAttribute("DoorType")][SoundName]:Clone()
+				NewSound.Parent = SoundPart
+				NewSound:Play()
+				Debris:AddItem(NewSound, NewSound.TimeLength + 1)
+			end
+		end
 
 		if player.Character and player.Character:FindFirstChild("Humanoid") then
 			if DoorSettings.RequireKeycard then
@@ -88,21 +113,33 @@ local InteractFunctions = {
 				end
 			end
 
-			if SoundPart.button then SoundPart.button:Play() end
+			playSound("button")
 
 			if Allowed then
-				interactObject:SetAttribute("interactable",false)
+				interactObject:SetAttribute("Interactable",false)
 				if Opened.Value then
 					Opened.Value = false
-					interactObject:SetAttribute("interactText","open")
-					changeLightParts(LightParts,DoorSettings.LightColors[2])
-					SoundPart.door_close:Play()
+					if interactObject:GetAttribute("InteractText") 
+						and string.lower(interactObject:GetAttribute("InteractText")) == "close" 
+						and not interactObject:GetAttribute("Locked") 
+					then
+						interactObject:SetAttribute("InteractText", "OPEN")
+					end
+					changeLightParts(LightParts,DoorSettings.LightColors.Moving)
+					playSound("door_close")
+					-- Move left door
 					local DoorTweenInfo = {
 						["Time"] = DoorSettings.CloseSpeed, 
 						["EasingStyle"] = DoorSettings.CloseEasingStyle,
 						["EasingDirection"] = DoorSettings.CloseEasingDirection
 					}
-					local LeftDoorFinal = LeftDoor.PrimaryPart.CFrame * CFrame.Angles(math.rad(-DoorSettings.LeftDoorOpen[3].X),math.rad(-DoorSettings.LeftDoorOpen[3].Y),math.rad(-DoorSettings.LeftDoorOpen[3].Z))+LeftDoor.PrimaryPart.CFrame[DoorSettings.LeftDoorOpen[1]]*-DoorSettings.LeftDoorOpen[2]
+					local LeftDoorFinal = LeftDoor.PrimaryPart.CFrame * 
+						CFrame.Angles(
+							math.rad(-DoorSettings.LeftDoorOpen.Rotation.X),
+							math.rad(-DoorSettings.LeftDoorOpen.Rotation.Y),
+							math.rad(-DoorSettings.LeftDoorOpen.Rotation.Z)
+						)
+						+ LeftDoor.PrimaryPart.CFrame[DoorSettings.LeftDoorOpen.Vector] * -DoorSettings.LeftDoorOpen.Distance
 					TweenModule.Tween(
 						LeftDoor,
 						LeftDoorFinal,
@@ -111,9 +148,16 @@ local InteractFunctions = {
 						100,
 						"close"
 					)
+					-- Move right door
 					local RightDoorFinal = nil
 					if RightDoor then
-					 	RightDoorFinal = RightDoor.PrimaryPart.CFrame*CFrame.Angles(math.rad(-DoorSettings.RightDoorOpen[3].X),math.rad(-DoorSettings.RightDoorOpen[3].Y),math.rad(-DoorSettings.RightDoorOpen[3].Z))+RightDoor.PrimaryPart.CFrame[DoorSettings.RightDoorOpen[1]]*-DoorSettings.RightDoorOpen[2]
+						RightDoorFinal = RightDoor.PrimaryPart.CFrame * 
+							CFrame.Angles(
+								math.rad(-DoorSettings.RightDoorOpen.Rotation.X),
+								math.rad(-DoorSettings.RightDoorOpen.Rotation.Y),
+								math.rad(-DoorSettings.RightDoorOpen.Rotation.Z)
+							) 
+							+ RightDoor.PrimaryPart.CFrame[DoorSettings.RightDoorOpen.Vector] * -DoorSettings.RightDoorOpen.Distance
 						TweenModule.Tween(
 							RightDoor,
 							RightDoorFinal,
@@ -130,15 +174,27 @@ local InteractFunctions = {
 					end
 				else
 					Opened.Value = true
-					interactObject:SetAttribute("interactText","close")
-					changeLightParts(LightParts,DoorSettings.LightColors[1])
-					SoundPart.door_open:Play()
+					if interactObject:GetAttribute("InteractText") 
+						and string.lower(interactObject:GetAttribute("InteractText")) == "open" 
+						and not interactObject:GetAttribute("Locked") 
+					then
+						interactObject:SetAttribute("InteractText", "CLOSE")
+					end
+					changeLightParts(LightParts,DoorSettings.LightColors.Open)
+					playSound("door_open")
 					local DoorTweenInfo = {
 						["Time"] = DoorSettings.OpenSpeed, 
 						["EasingStyle"] = DoorSettings.OpenEasingStyle,
 						["EasingDirection"] = DoorSettings.OpenEasingDirection
 					}
-					local LeftDoorFinal = LeftDoor.PrimaryPart.CFrame * CFrame.Angles(math.rad(DoorSettings.LeftDoorOpen[3].X),math.rad(DoorSettings.LeftDoorOpen[3].Y),math.rad(DoorSettings.LeftDoorOpen[3].Z))+LeftDoor.PrimaryPart.CFrame[DoorSettings.LeftDoorOpen[1]]*DoorSettings.LeftDoorOpen[2]
+					-- Move left door
+					local LeftDoorFinal = LeftDoor.PrimaryPart.CFrame * 
+						CFrame.Angles(
+							math.rad(DoorSettings.LeftDoorOpen.Rotation.X),
+							math.rad(DoorSettings.LeftDoorOpen.Rotation.Y),
+							math.rad(DoorSettings.LeftDoorOpen.Rotation.Z)
+						)
+						+ LeftDoor.PrimaryPart.CFrame[DoorSettings.LeftDoorOpen.Vector] * DoorSettings.LeftDoorOpen.Distance
 					TweenModule.Tween(
 						LeftDoor,
 						LeftDoorFinal,
@@ -147,9 +203,16 @@ local InteractFunctions = {
 						100,
 						"open"
 					)
+					-- Move right door
 					local RightDoorFinal = nil
 					if RightDoor then
-						RightDoorFinal = RightDoor.PrimaryPart.CFrame * CFrame.Angles(math.rad(DoorSettings.RightDoorOpen[3].X),math.rad(DoorSettings.RightDoorOpen[3].Y),math.rad(DoorSettings.RightDoorOpen[3].Z))+RightDoor.PrimaryPart.CFrame[DoorSettings.RightDoorOpen[1]]*DoorSettings.RightDoorOpen[2]
+						RightDoorFinal = RightDoor.PrimaryPart.CFrame * 
+							CFrame.Angles(
+								math.rad(DoorSettings.RightDoorOpen.Rotation.X),
+								math.rad(DoorSettings.RightDoorOpen.Rotation.Y),
+								math.rad(DoorSettings.RightDoorOpen.Rotation.Z)
+							)
+							+ RightDoor.PrimaryPart.CFrame[DoorSettings.RightDoorOpen.Vector] * DoorSettings.RightDoorOpen.Distance
 						TweenModule.Tween(
 							RightDoor,
 							RightDoorFinal,
@@ -168,24 +231,24 @@ local InteractFunctions = {
 				if DoorSettings.Cooldown and DoorSettings.Cooldown > 0 then
 					task.wait(DoorSettings.Cooldown)
 				end
-				interactObject:SetAttribute("interactable",true)
+				interactObject:SetAttribute("Interactable",true)
 				--Playing = false
 			else
 				--Playing = true
-				interactObject:SetAttribute("interactable",false)
-				SoundPart.error:Play()
+				interactObject:SetAttribute("Interactable",false)
+				playSound("error")
 				local ogColor = LightParts.Light.Color
-				changeLightParts(LightParts,DoorSettings.LightColors[3])
+				changeLightParts(LightParts,DoorSettings.LightColors.Close)
 				task.wait(DoorSettings.Cooldown)
 				changeLightParts(LightParts,ogColor)
-				interactObject:SetAttribute("interactable",true)
+				interactObject:SetAttribute("Interactable",true)
 				--Playing = false
 			end
 		end
 	end,
 
 	[3] = function(interactObject, player) -- Pick up an item.
-		interactObject:SetAttribute("interactable", false)
+		interactObject:SetAttribute("Interactable", false)
 		if Physical:FindFirstChild(interactObject.Name) then
 			local ToolFromItem = Physical[interactObject.Name]:Clone()
 			
@@ -205,18 +268,18 @@ local InteractFunctions = {
 			interactObject:Destroy()
 		else
 			warn("Invalid Pick up. Could not find item '"..interactObject.Name.. "' in physical tool folder")
-			interactObject:SetAttribute("interactable", true)
+			interactObject:SetAttribute("Interactable", true)
 		end
 	end,
 
 	[4] = function(interactObject, player) -- revive
-		interactObject:SetAttribute("freezePlayer",nil)
-		interactObject:SetAttribute("interactable",nil)
-		interactObject:SetAttribute("interactAnimId",nil)
-		interactObject:SetAttribute("interactFinishEventId",nil)
-		interactObject:SetAttribute("interactText",nil)
+		interactObject:SetAttribute("FreezePlayer",nil)
+		interactObject:SetAttribute("Interactable",nil)
+		interactObject:SetAttribute("InteractAnimationId",nil)
+		interactObject:SetAttribute("InteractId",nil)
+		interactObject:SetAttribute("InteractText",nil)
 		interactObject:SetAttribute("interactTime",nil)
-		interactObject:SetAttribute("maxRange",nil)
+		interactObject:SetAttribute("Range",nil)
 		interactObject:SetAttribute("NoHighlight",nil)
 		local reviveTime = 5
 		local character = player.Character
@@ -250,7 +313,7 @@ local InteractFunctions = {
 	end,
 	
 	[8] = function(interactObject, player) -- the cat.
-		interactObject:SetAttribute("interactable", false)
+		interactObject:SetAttribute("Interactable", false)
 			
 		local CatObject = interactObject.PrimaryPart
 		local InitialCFrame = CatObject.CFrame
@@ -266,7 +329,7 @@ local InteractFunctions = {
 		task.wait(0.2)
 		TweenModule.Tween(CatObject, InitialCFrame, CatTweenInfo, true, 100, nil, InitialSize)
 		task.wait(0.2)
-		interactObject:SetAttribute("interactable", true)
+		interactObject:SetAttribute("Interactable", true)
 	end,
 
 }
@@ -274,16 +337,24 @@ local InteractFunctions = {
 
 function onfinishInteraction(player, current,insecureId)
 	if (current and (typeof(current) == "Instance")) then
-		if ((player.Character) and (player.Character.PrimaryPart) and (getDistance(player.Character.PrimaryPart.Position, current.PrimaryPart.Position) <= current:GetAttribute("maxRange") * 1.5 )) then
-			if current and InteractFunctions[current:GetAttribute("interactFinishEventId")] then
+		if ((player.Character) and (player.Character.PrimaryPart) and (getDistance(player.Character.PrimaryPart.Position, current.PrimaryPart.Position) <= current:GetAttribute("Range") * 1.5 )) then
+			if current and InteractFunctions[current:GetAttribute("InteractId")] then
 				if insecureId and table.find(insecureIds,insecureId) then
 					InteractFunctions[insecureId](current, player)
 				else
-					InteractFunctions[current:GetAttribute("interactFinishEventId")](current, player)
+					InteractFunctions[current:GetAttribute("InteractId")](current, player)
+					
 				end
 			end
-		elseif current and (getDistance(player.Character.PrimaryPart.Position, current.PrimaryPart.Position) > current:GetAttribute("maxRange") * 3) then
-			player:Kick("Impossible interaction at range.")
+			-- Play if there is a second interaction Id
+			if current and current:GetAttribute("InteractId2") and InteractFunctions[current:GetAttribute("InteractId2")] then
+				InteractFunctions[current:GetAttribute("InteractId2")](current, player)
+				if insecureId and table.find(insecureIds,insecureId) then
+					InteractFunctions[insecureId](current, player)
+				else
+					InteractFunctions[current:GetAttribute("InteractId2")](current, player)
+				end
+			end
 		end       
 	end
 end

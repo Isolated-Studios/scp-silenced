@@ -1,6 +1,14 @@
 return {
-	LeftDoorOpen = {"LookVector",4,Vector3.new(0,0,0)};
-	RightDoorOpen = {"LookVector",-4,Vector3.new(0,0,0)};
+	LeftDoorOpen = {
+		Vector = "LookVector", 
+		Distance = 4, 
+		Rotation = Vector3.new(0,0,0)
+	};
+	RightDoorOpen = {
+		Vector = "LookVector", 
+		Distance = -4, 
+		Rotation = Vector3.new(0,0,0)
+	};
 	
 	OpenSpeed = 3.5;
 	CloseSpeed = 0.4;
@@ -8,8 +16,8 @@ return {
 	CloseEasingStyle = Enum.EasingStyle.Bounce;
 
 	LightColors = {
-		Color3.fromRGB(107, 154, 96),
-		Color3.fromRGB(107, 154, 154),
-		Color3.fromRGB(154, 107, 108),
+		Open = Color3.fromRGB(107, 154, 96),
+		Moving = Color3.fromRGB(107, 154, 154),
+		Close = Color3.fromRGB(154, 107, 108),
 	};
 }

@@ -534,7 +534,7 @@ function module.LoadChar(Character)
 				and (ShowArms or table.find(ArmParts, part.Name) == nil) 
 			then
 				part.LocalTransparencyModifier = LocalTransparency
-			else
+			elseif Humanoid.Health > 0 then -- prevents corpse parts being invisible.
 				part.LocalTransparencyModifier = 1
 			end
 		end

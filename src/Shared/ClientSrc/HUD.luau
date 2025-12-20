@@ -480,8 +480,8 @@ function module.LoadChar(Character)
 		--		local allyId = TeamHandler.Check(Player,interactPlayer)
 		--		interactCharacter:SetAttribute("HighlightColor",allyIdTable[allyId][1])
 		--		--if allyId == 1 then
-		--		--	interactCharacter:SetAttribute("interactFinishEventId",5)
-		--		---	interactCharacter:SetAttribute("interactText","EXECUTE")
+		--		--	interactCharacter:SetAttribute("InteractId",5)
+		--		---	interactCharacter:SetAttribute("InteractText","EXECUTE")
 		--		--end
 		--	end
 		--	return

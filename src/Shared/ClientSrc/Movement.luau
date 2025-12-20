@@ -98,6 +98,9 @@ function module.LoadChar(Character)
 		"RightLowerLeg",
 		"RightFoot",
 	}
+
+	Humanoid:SetStateEnabled(Enum.HumanoidStateType.Climbing, false)
+
 	-- Create ShadowLimbs that will be used to display a shadow of the character
 	local ShadowLimbs = Instance.new("Model")
 	ShadowLimbs.Name = "ShadowLimbs"
