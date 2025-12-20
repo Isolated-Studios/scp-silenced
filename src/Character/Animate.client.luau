@@ -514,6 +514,7 @@ local function switchToAnim(anim, animName, transitionTime, humanoid)
 				[Enum.Material.Cobblestone] = WalkSounds.Concrete, 
 				[Enum.Material.Slate] = WalkSounds.Concrete, 
 				[Enum.Material.Rock] = WalkSounds.Concrete, 
+				[Enum.Material.Pavement] = WalkSounds.Concrete,
 
 				[Enum.Material.Metal] = WalkSounds.Metal, 
 				[Enum.Material.DiamondPlate] = WalkSounds.Metal, 
@@ -546,7 +547,7 @@ local function switchToAnim(anim, animName, transitionTime, humanoid)
 
 				[Enum.Material.Glass] = WalkSounds.Metal, 
 				[Enum.Material.ForceField] = WalkSounds.Metal, 
-				
+
 				[Enum.Material.Mud] = WalkSounds.Mud,
 
 				[Enum.Material.Foil] = WalkSounds.Default, 
@@ -560,7 +561,8 @@ local function switchToAnim(anim, animName, transitionTime, humanoid)
 				[Enum.Material.Brick] = RunSounds.Concrete, 
 				[Enum.Material.Cobblestone] = RunSounds.Concrete, 
 				[Enum.Material.Slate] = RunSounds.Concrete, 
-				[Enum.Material.Rock] = RunSounds.Concrete, 
+				[Enum.Material.Rock] = RunSounds.Concrete,
+				[Enum.Material.Pavement] = RunSounds.Concrete,
 
 				[Enum.Material.Metal] = RunSounds.Metal, 
 				[Enum.Material.DiamondPlate] = RunSounds.Metal, 
@@ -593,7 +595,7 @@ local function switchToAnim(anim, animName, transitionTime, humanoid)
 
 				[Enum.Material.Glass] = RunSounds.Metal, 
 				[Enum.Material.ForceField] = RunSounds.Metal, 
-				
+
 				[Enum.Material.Mud] = RunSounds.Mud,
 
 				[Enum.Material.Foil] = RunSounds.Default, 

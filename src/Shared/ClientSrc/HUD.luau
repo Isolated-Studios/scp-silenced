@@ -29,10 +29,6 @@ local PlayerSettings = ReplicatedStorage.Players:WaitForChild(tostring(Player.Us
 local SoundSettings = PlayerSettings.Sound
 local LowHealthMuffleSetting = SoundSettings["Low Health Muffle"]
 
--- Numbers
-local BloodScreenRegainRatio = 1.5
-local PreviousHealthRatio = 1
-
 -- UI
 local HUD
 local HUDLoaded = false
@@ -255,6 +251,10 @@ function module.updateGunDisplay(Tool: ToolClass.ClassType)
 end
 
 function module.LoadChar(Character)
+	-- Numbers
+	local BloodScreenRegainRatio = 1.5
+	local PreviousHealthRatio = 1
+	
 	Backpack = Player:WaitForChild("Backpack")
 
 	ToolHandler.ToolEquipping:Connect(updateToolDisplay, true)

@@ -68,8 +68,8 @@ for _, mod in modules do
 	CommonFunctions.SafeCall(task.spawn, mod.Init)
 end
 
-local Cmdr = require(ReplicatedStorage:WaitForChild("CmdrClient"))
-Cmdr:SetActivationKeys({ Enum.KeyCode.F2 })
+--local Cmdr = require(ReplicatedStorage:WaitForChild("CmdrClient"))
+--Cmdr:SetActivationKeys({ Enum.KeyCode.F2 })
 
 -- Any module that needs to deal with characters should have a LoadChar function (UnloadChar is optional).
 LocalPlayer.CharacterAdded:Connect(function(character)
