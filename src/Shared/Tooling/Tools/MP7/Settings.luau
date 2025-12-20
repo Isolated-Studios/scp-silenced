@@ -1,22 +1,22 @@
 local Settings = {
-	Damage = 22; -- Base damage against target
-	RPM = 700; -- The amount of rounds that can theoretically be fired in a minute
-	AP = 0; -- Value between 0 and 1 (0 being no armor penetration, 1 being complete armor penetration)
+	Damage = 18; -- Base damage against target
+	RPM = 800; -- The amount of rounds that can theoretically be fired in a minute
+	AP = 0.4; -- Value between 0 and 1 (0 being no armor penetration, 1 being complete armor penetration)
 	MagSize = 30; -- The maximum ammount of ammo held in a gun
 	ReloadStyle = 1; -- 0 = single cartridge insert | 1 = mag reload
 	BulletsPerShot = 1; -- The amount of projectiles fired from one shot (Shotgun)
 	BurstAmount = 1; -- The amount of times fired per shot
 	--BurstDelay = 0.05; -- The amount of time it takes to recover from each burst shot in seconds (AFFECTS FIRE SPEED)
-	HeadshotFactor = 0.4; -- Damage + Damage * HeadshotFactor if head is shot
-	LegMultiplier = 0.8; -- Damage * LegMultiplier if legs are hit. (is supposed to be <=1)
+	HeadshotFactor = 0.3; -- Damage + Damage * HeadshotFactor if head is shot
+	LegMultiplier = 0.85; -- Damage * LegMultiplier if legs are hit. (is supposed to be <=1)
 	CanDown = 60; -- If defined, non-headshots will down the target and will bleed out in the number defined.
 	AmmoType = "PDW"; -- What ammo it takes (Pistol , PDW , Handcannon , Rifle , Shotgun , LMG)
 	Acceleration = Vector3.new(0, -workspace.Gravity, 0); -- the environmental force applied to bullet
 	GibChance = 0.2;
-	PitchLastBullets = 4; -- If greater than zero will gradually pitch up until fire sound is double in pitch. The number determines how many bullets you must have left before it starts pitching.
+	PitchLastBullets = 10; -- If greater than zero will gradually pitch up until fire sound is double in pitch. The number determines how many bullets you must have left before it starts pitching.
 	Weight = 0; -- Does nothing right now
 
-	AimFOV = 55; -- Field of view when aiming
+	AimFOV = 50; -- Field of view when aiming
 	TravelSpeed = 3000; -- How fast the projectile is
 	Casing = ".45"; -- What casing is ejected from Casings folder
 	BulletTemplate = "OriginalTracer"; -- Tracer that is fired
@@ -33,26 +33,26 @@ local Settings = {
 	BoltBackWhenEmpty = true;
 	ScrollAffectsAim = true;
 
-	EquipSpeed = 0.5; -- Speed of equipping in seconds
+	EquipSpeed = 0.75; -- Speed of equipping in seconds
 	EquipCancel = 0.5;
 	UnequipSpeed = 0.5;
-	AimInSpeed = 0.5; -- Speed of aiming-in in seconds
-	AimOutSpeed = 0.3; -- Speed of aiming-out in seconds
+	AimInSpeed = 0.25; -- Speed of aiming-in in seconds
+	AimOutSpeed = 0.25; -- Speed of aiming-out in seconds
 	--SqueezeTrigger = 0.2; -- How long it takes to squeeze the trigger to fire/bolt gun in seconds (AFFECTS FIRE SPEED)
 	--FireDelay = 0.1; -- Delay after mouse button is clicked to fire gun (AFFECTS FIRE SPEED)
 	--Reload1Speed = 0.6; -- Speed of Reload1's animation in seconds
 	--Reload2Speed = 0.5; -- Speed of Reload2's animation in seconds
 	--Reload3Speed = 0.6; -- Speed of Reload3's animation in seconds
-	ReloadEmptySpeed = 0.5; -- Speed of ReloadEmpty's animation in seconds. Only works if EmptyReload is true
+	--ReloadEmptySpeed = 0.5; -- Speed of ReloadEmpty's animation in seconds. Only works if EmptyReload is true
 
-	MinSpread = 1; -- Minimum bullet spread of gun
-	MaxSpread = 20; -- Maximum bullet spread of gun
-	SpreadCost = 4; -- How much is added onto bullet spread
-	SpreadRegenWait = 1; -- How much time in seconds must pass before spread reduces
+	MinSpread = 0; -- Minimum bullet spread of gun
+	MaxSpread = 8; -- Maximum bullet spread of gun
+	SpreadCost = 0.5; -- How much is added onto bullet spread
+	SpreadRegenWait = 0.25; -- How much time in seconds must pass before spread reduces
 	XRecoilDampFactor = 1; -- The factor by which the x in (1/x) which is then multiplied by the recoil. x is the number of subsequent shots.
 	YRecoilDampFactor = 1; -- By increasing this factor, dampening becomes faster which means the gun will stabilize faster.
-	XRecoilDampExponent = 1; -- Exponent applied to each subsequent shot when accounting for recoil dampening of the x axis.
-	YRecoilDampExponent = 1; -- Exponent applied to each subsequent shot when accounting for recoil dampening of the y axis.
+	XRecoilDampExponent = 1/2; -- Exponent applied to each subsequent shot when accounting for recoil dampening of the x axis.
+	YRecoilDampExponent = 1/2; -- Exponent applied to each subsequent shot when accounting for recoil dampening of the y axis.
 
 	MaxDistance = 500; -- Maximum distance a bullet can travel.
 	MidFallOffDist = 100; -- Studs from Shooter to Target in which damage enters the Medium Fall Off Zone. (Base Damage will Decrease.)
@@ -60,11 +60,11 @@ local Settings = {
 	MidFallOffMult = 0.75; -- Damage Multiplier applied to when damage enters the Medium Fall Off Zone.
 	LongFallOffMult = 0.50; -- Damage Multiplier applied to when damage enters the Long Fall Off Zone.
 
-	CameraShove = Vector3.new(4,0.01,0.2); -- Shove applied to camera when recoiled
-	LinearShove = Vector3.new(-0.1,0.1,.1); -- Linear shove applied to viewmodel when recoiled
-	AngularShove = Vector3.new(5,0,0); -- Angular shove applied to viewmodel when recoiled
-	AimLinearShove = nil; -- Linear shove applied to the viewmodel when aiming and recoiled.
-	AimAngularShove = nil; -- Angular shove applied to the viewmodel when aiming and recoiled.
+	CameraShove = Vector3.new(2.5,0.01,0); -- Shove applied to camera when recoiled
+	LinearShove = Vector3.new(0.2,0.3,0.1); -- Linear shove applied to viewmodel when recoiled
+	AngularShove = Vector3.new(.1,0.05,.05); -- Angular shove applied to viewmodel when recoiled
+	AimLinearShove = Vector3.new(0.12,-.2,3); -- Linear shove applied to the viewmodel when aiming and recoiled.
+	AimAngularShove = Vector3.new(0,0,0.15); -- Angular shove applied to the viewmodel when aiming and recoiled.
 	Stability = nil; -- Determines the torque of the gun when recoiling. Lower number is more unstable (more torque), Higher is more stable (less torque).
 	AimStability = nil; -- Determines the torque of the gun when recoiling and aiming. Lower number is more unstable (more torque), Higher is more stable (less torque).
 	

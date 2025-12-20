@@ -33,7 +33,7 @@ local Settings = {
 	BoltBackWhenEmpty = false;
 	ScrollAffectsAim = true;
 
-	EquipSpeed = 0.87; -- Speed of equipping in seconds
+	EquipSpeed = 0.8; -- Speed of equipping in seconds
 	EquipCancel = 0.5;
 	UnequipSpeed = 0.75;
 	AimInSpeed = 0.35; -- Speed of aiming-in in seconds
