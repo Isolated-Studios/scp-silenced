@@ -149,6 +149,7 @@ function Tool.new(ToolInstance: Tool): ClassType
 	-- Animations
 	self.Animations = {}
 	for _, v in ToolObjects.VMAnimations:GetChildren() do
+		if not v:IsA("Animation") then continue end
 		self.Animations[v.Name] = v
 	end
 	self.__loaded_animations = {} -- Don't use this, it's only used as a strong reference to loaded animations, as the global one is a weak table.

@@ -100,7 +100,7 @@ export type ClassType = ToolClass.ClassType & typeof(setmetatable(
 			Bolted: boolean,
 			AutomaticBolt: boolean,
 			HeldWhenSqueezed: boolean,
-			--PlayHammerClick: boolean,
+			PlayHammerClick: boolean,
 			RunAndGun: boolean,
 			RunAndReload: boolean,
 			EmptyReload: boolean,
@@ -185,6 +185,15 @@ function Gun.new(Tool: Tool): ClassType
 	self.Ammo = self.Settings.MagSize
 	if self.Settings.Casing and ReplicatedStorage.Objects.Casings:FindFirstChild(self.Settings.Casing) and self.Handle:FindFirstChild("Eject") then
 		self.PrimeCasing = ReplicatedStorage.Objects.Casings[self.Settings.Casing]
+	end
+	
+	-- stuff used for effects
+	self.Hammer = self.Handle:FindFirstChild("Hammer")
+	self.Cylinder = self.Handle:FindFirstChild("Cylinder")
+	self.BoltPart = self.Handle:FindFirstChild("Bolt")
+	if self.BoltPart then
+		self.DefaultBoltC1 = self.BoltPart:GetAttribute("DefaultC1") or CFrame.new(0,0,0)
+		self.BackBoltC1 = self.DefaultBoltC1 + self.DefaultBoltC1["LookVector"] * 0.2
 	end
 	
 	-- other internal stuff
@@ -300,15 +309,6 @@ function Gun.new(Tool: Tool): ClassType
 			-- 	Tool:SetAttribute("BoltSet",nil)
 			-- end
 		end,
-
-		-- ["BoltRound"] = function()
-		-- 	assert(Settings.BoltRoundEvent ~= nil,"BoltRound animation event called, but BoltRoundEvent in settings is nil.")
-		-- 	if Settings.BoltRoundEvent then
-		-- 		SetItemHolder:FireServer(Tool,"Bolted",true)
-		-- 		Bolted = true
-		-- 		HoldFire = false
-		-- 	end
-		-- end,
 	}
 
 	return self
@@ -350,8 +350,35 @@ end
 	Here are all the methods used for firing, reloading and all the very gun-specific stuff.
 ]]
 
+function Gun:__modifyHammerAndCylinder(h0, h1, h2, c0, c1, c2) -- beacause it's used too many times
+	if self.Hammer and self.Settings.HammerAngle and h0 and h1 and h2 then
+		self.Hammer.C0 = CFrame.new(self.Hammer.C0.Position) * CFrame.Angles(
+			math.rad(self.Settings.HammerAngle.X) * h0,
+			math.rad(self.Settings.HammerAngle.Y) * h1,
+			math.rad(self.Settings.HammerAngle.Z) * h2
+		)
+	end
+	if self.Cylinder and self.Settings.CylinderAngle and c0 and c1 and c2 then
+		self.Cylinder.C0 = CFrame.new(self.Cylinder.C0.Position) * CFrame.Angles(
+			math.rad(self.Settings.CylinderAngle.X) * c0,
+			math.rad(self.Settings.CylinderAngle.Y) * c1,
+			math.rad(self.Settings.CylinderAngle.Z) * c2
+		)
+	end
+end
+
 function Gun:Bolt(skipAnimation: boolean)
-	if self.Bolted or self.Ammo <= 0 then return end
+	if self.Bolted then return end
+	if self.Ammo <= 0 then
+		if self.BoltPart and self.Settings.BoltBackWhenEmpty then
+			TweenService:Create(self.BoltPart, TweenInfo.new(0.05), {C1 = self.BackBoltC1}):Play()
+		end
+		return
+	else
+		if self.BoltPart and self.Settings.BoltBackWhenEmpty then
+			TweenService:Create(self.BoltPart, TweenInfo.new(0.05), {C1 = self.DefaultBoltC1}):Play()
+		end
+	end
 	if not skipAnimation then
 		local Animation = self:PlayAnimation("Bolt")
 		if Animation then
@@ -361,6 +388,11 @@ function Gun:Bolt(skipAnimation: boolean)
 	self.Bolted = true
 	self.Ammo -= 1
 	task.defer(HUDModule.updateGunDisplay, self)
+	
+	if self.Settings.PlayHammerClick then
+		Utils.SFX.playSound(self.Sounds, "BoltBack", self.Handle, true, true)
+	end
+	self:__modifyHammerAndCylinder(1, 1, 1, 1, 1, 1)
 end
 
 function Gun:__projectBullet(randomValue) -- TODO! this function and its dependencies might require some refactoring.
@@ -466,7 +498,7 @@ function Gun:__fire()
 		Utils.SFX.playSound(self.Sounds, "Fire", self.Handle, true, true)
 	end
 	
-	-- COOOOL effects (vignette, recoil animation, gun flash, dispense casing)
+	-- COOOOL effects (vignette, recoil animation, gun flash, dispense casing, hammer and cylinder movement)
 	
 	if self.PrimeCasing then
 		local Casing = self.PrimeCasing:Clone()
@@ -499,7 +531,10 @@ function Gun:__fire()
 		end)
 	end
 	
+	self:__modifyHammerAndCylinder(0, 0, 0, 0, 0, 0)
+	
 	-- // play other VFX like muzzle flash, bolt movement, and shell casings
+	self:StopAnimation("Bolt")
 	self:PlayAnimation("Recoil")
 	CTF.flashGun(self.Handle.Flash, self.Handle.Flash.FlashLight, true) -- uses CTF to flash the gun for light and particles
 	-- TODO!
@@ -545,7 +580,15 @@ function Gun:Click(input: InputObject)
 				end
 			end)
 		end
-		task.wait(self.Settings.SqueezeTrigger)
+		local initialTime = tick()
+		local currentTime = 0
+		self:__modifyHammerAndCylinder(0, 0, 0, 0, 0, 0)
+		while task.wait() and currentTime < self.Settings.SqueezeTrigger and self.State == ToolClass.State.Equipped and cancel == false do
+			currentTime = tick() - initialTime
+			local t = currentTime / self.Settings.SqueezeTrigger
+			self:__modifyHammerAndCylinder(t, t, t, t, t, t)
+		end
+		self:__modifyHammerAndCylinder(0, 0, 0, 0, 0, 0)
 		if connection then connection:Disconnect() end
 		if cancel then return end
 	end
@@ -598,18 +641,21 @@ function Gun:Reload()
 	if self.Settings.ReloadStyle == Gun.ReloadStyle.Magazine then
 		if self.Ammo == 0 and self.Bolted == false then -- empty reload
 			self.__task = task.spawn(function()
+				if self.BoltPart and self.Settings.BoltBackWhenEmpty then
+					TweenService:Create(self.BoltPart, TweenInfo.new(0.05), {C1 = self.DefaultBoltC1}):Play()
+				end
 				self:PlayAnimation("EmptyReload", nil, nil, nil, true)
 				self.Ammo = self.Settings.MagSize
-				self:Bolt()
 				task.defer(HUDModule.updateGunDisplay, self)
+				self:Bolt(true)
 				self.GunState = Gun.State.Idle
 			end)
 		else
 			self.__task = task.spawn(function()
 				self:PlayAnimation("Reload1", nil, nil, nil, true)
 				self.Ammo = self.Settings.MagSize
-				self:Bolt()
 				task.defer(HUDModule.updateGunDisplay, self)
+				self:Bolt()
 				self.GunState = Gun.State.Idle
 			end)
 		end

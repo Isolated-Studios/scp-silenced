@@ -103,19 +103,6 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 	end
 
 	local function boltGun ()
-		if not Equipped then return end -- Prevents bolting when unequipping
-		HoldFire = true
-		if Settings.PlayHammerClick then
-			CTF.playSound(Sounds,"BoltBack",Handle,true,true)
-		end
-
-		if Settings.HammerAngle then
-			Hammer.C0 = CFrame.new(Hammer.C0.Position)*CFrame.Angles(math.rad(Settings.HammerAngle.X),math.rad(Settings.HammerAngle.Y),math.rad(Settings.HammerAngle.Z))
-		end
-
-		if Settings.CylinderAngle then
-			Cylinder.C0 = CFrame.new(Cylinder.C0.Position)*CFrame.Angles(math.rad(Settings.CylinderAngle.X),math.rad(Settings.CylinderAngle.Y),math.rad(Settings.CylinderAngle.Z))
-		end
 
 		if VMBolt then
 			animationHandle("Bolt","Play")
@@ -138,26 +125,6 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 
 		SetItemHolder:FireServer(Tool,"Mag",magInstanceValue.Value) -- UI shenanigans
 
-		if Settings.BoltRoundEvent then --/ Will stop the Bolt animation when fired (only for if BoltRoundEvent is true)
-			animationHandle("Bolt","Stop")
-		end
-
-		Bolted = false --/ Gun is no longer bolted
-		SetItemHolder:FireServer(Tool,"Bolted",false)
-
-		HoldFire = true
-
-		if Settings.HammerAngle then -- If hammer exists, will reset position
-			Hammer.C0 = CFrame.new(Hammer.C0.Position)*CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))
-		end
-		if Settings.CylinderAngle then -- If hammer exists, will reset position
-			Cylinder.C0 = CFrame.new(Cylinder.C0.Position)*CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))
-		end
-		
-		gunSpread() --/ apply gun spread
-		CTF.flashGun(Flash,Flash.FlashLight,true) -- uses CTF to flash the gun for light and particles
-		DarkenVignette() -- Darken the gun vignette for coolness
-
 		if magInstanceValue.Value == 0 and Settings.BoltBackWhenEmpty and Handle:FindFirstChild("Bolt") then
 			--/ pushes the bolt back if BoltBackWhenEmpty is true and mag is empty
 			local Bolt = Handle.Bolt
@@ -168,140 +135,6 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 		task.wait(60/Settings.RPM)
 		boltGun()
 		HoldFire = false
-	end
-
-	local function gunPrime ()
-		if not HoldFire and not FireCooldown then
-			FireCooldown = true
-			if Settings.SqueezeTrigger and not Bolted then -- Holding trigger to squeeze
-				local initialTime = tick()
-				local currentTime = tick() - initialTime
-				if Settings.HammerAngle then --/ If a hammer exists will reset
-					Hammer.C0 = CFrame.new(Hammer.C0.Position)*CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))
-				end
-				if Settings.CylinderAngle then --/ If a cylinder exists will reset
-					Cylinder.C0 = CFrame.new(Cylinder.C0.Position)*CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))
-				end
-				while task.wait() and currentTime < Settings.SqueezeTrigger and Tool.Parent == Character do
-					--/ The squeezing of the trigger that sets the positions of the hammer and/or cylinder
-					if not UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
-						break
-					end
-					currentTime = tick() - initialTime
-					if Settings.HammerAngle then --/ If a hammer exists will pull back
-						Hammer.C0 = CFrame.new(Hammer.C0.Position)*CFrame.Angles(math.rad((currentTime/Settings.SqueezeTrigger)*Settings.HammerAngle.X),math.rad((currentTime/Settings.SqueezeTrigger)*Settings.HammerAngle.Y),math.rad((currentTime/Settings.SqueezeTrigger)*Settings.HammerAngle.Z))
-					end
-					if Settings.CylinderAngle then --/ If a cylinder exists will cycle
-						Cylinder.C0 = CFrame.new(Cylinder.C0.Position)*CFrame.Angles(math.rad((currentTime/Settings.SqueezeTrigger)*Settings.CylinderAngle.X),math.rad((currentTime/Settings.SqueezeTrigger)*Settings.CylinderAngle.Y),math.rad((currentTime/Settings.SqueezeTrigger)*Settings.CylinderAngle.Z))
-					end
-				end
-				if currentTime >= Settings.SqueezeTrigger then -- the squeezing has ended and will attempt to fire gun
-					attemptToFire()
-				else
-					if Settings.HammerAngle then -- reset hammer position
-						Hammer.C0 = CFrame.new(Hammer.C0.Position)*CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))
-					end
-
-					if Settings.CylinderAngle then -- reset cylinder position
-						Cylinder.C0 = CFrame.new(Cylinder.C0.Position)*CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))
-					end
-				end
-			else
-				attemptToFire()
-			end
-			print("fire again!")
-			task.wait(60/Settings.RPM)
-			boltGun()
-			FireCooldown = false
-		else
-			task.wait()
-		end
-	end
-
-	local function Reload ()
-		-- if magBool.Value < Settings.MagSize and ammoInstanceValue.Value > 0 and not Reloading and (not Humanoid:GetAttribute("Running") or Settings.RunAndReload) then
-		if ammoInstanceValue.Value > 0 and not Reloading and (not Humanoid:GetAttribute("Running") or Settings.RunAndReload) then
-			CancelReload = false
-			Reloading = true
-			--ChangeGrip:Fire(Viewmodel.UpperTorso)
-
-			if not Bolted then
-				boltGun()
-			end
-
-			if Settings.ReloadStyle == 1 then --/ Mag reload
-				if magInstanceValue.Value <= 0 and Settings.EmptyReload then
-					animationHandle("EmptyReload","Play")
-					if Settings.EmptyReloadSpeed then
-						animationHandle("EmptyReload","Speed",VMEmptyReload.Length/Settings.EmptyReloadSpeed,CharEmptyReload.Length/Settings.EmptyReloadSpeed)
-					end
-					
-					if Settings.BoltBackWhenEmpty then -- Set to default bolt position when empty reloading because it bolt back in the empty reload animation.
-						BoltBackTween:Cancel()
-						TweenService:Create(Handle.Bolt,TweenInfo.new(0.05,Enum.EasingStyle.Linear),{C1 = DefaultBoltC1}):Play()
-					end
-				else
-					animationHandle("Reload1","Play")
-					if Settings.Reload1Speed then
-						animationHandle("Reload1","Speed",VMReload1.Length/Settings.Reload1Speed,CharReload1.Length/Settings.Reload1Speed)
-					end
-				end
-
-			else --/ Shell reload
-				if magInstanceValue.Value <= 0 and Settings.EmptyReload then --/ Will play the EmptyReload as a transition instead of Reload1 if mag is empty
-					animationHandle("EmptyReload","Play")
-					if Settings.EmptyReloadSpeed then
-						animationHandle("EmptyReload","Speed",VMEmptyReload.Length/Settings.EmptyReloadSpeed,CharEmptyReload.Length/Settings.EmptyReloadSpeed)
-					end
-					VMEmptyReload.Stopped:Wait() --/ Wait for the reload to stop
-				else --/ Otherwise, just play Reload1 as a transition
-					animationHandle("Reload1","Play")
-					if Settings.Reload1Speed then
-						animationHandle("Reload1","Speed",VMReload1.Length/Settings.Reload1Speed,CharReload1.Length/Settings.Reload1Speed)
-					end
-					VMReload1.Stopped:Wait() --/ Wait for the reload to stop
-				end
-				if Tool.Parent ~= Character then return end --/ stupid dumb idiot check i hate you gun script
-				if magInstanceValue.Value <= 0 and Settings.EmptyReload then --/ STOPPPP the empty reload if it exists
-					animationHandle("EmptyReload","Stop")
-				else
-					animationHandle("Reload1","Stop") --/ STOPPPP the reload1 instead
-				end
-				while Tool.Parent == Character and magInstanceValue.Value < Settings.MagSize and ammoInstanceValue.Value > 0 do
-					--/Reload2 is our animation being looped to simulate the shells going in.
-					if (magInstanceValue.Value == Settings.MagSize-1 or CancelReload or ammoInstanceValue.Value == 1) and VMReload2Last then -- if Reload2Last animation exists, play that if last shell is inserted
-						-- This will also play if CancelReload is true and then stop the reload cycle after Reload2Last is finished.
-						animationHandle("Reload2Last","Play")
-						if Settings.Reload2LastSpeed then
-							animationHandle("Reload2Last","Speed",VMReload2Last.Length/Settings.Reload2LastSpeed,CharReload2Last.Length/Settings.Reload2LastSpeed)
-						end
-						VMReload2Last.Stopped:Wait()
-						if CancelReload then break end
-					else -- Otherwise, play the regular Reload2 animation
-						animationHandle("Reload2","Play")
-						if Settings.Reload2Speed then
-							animationHandle("Reload2","Speed",VMReload2.Length/Settings.Reload2Speed,CharReload2.Length/Settings.Reload2Speed)
-						end
-						VMReload2.Stopped:Wait()
-						if CancelReload and not VMReload2Last then break end -- Will only play if Reload2Last does not exist
-					end
-				end
-				CancelReload = false
-				if Tool.Parent ~= Character then return end
-				--animationHandle("Reload2","Stop")
-				animationHandle("Reload3","Play")
-				if Settings.Reload3Speed then
-					animationHandle("Reload3","Speed",VMReload3.Length/Settings.Reload3Speed,CharReload3.Length/Settings.Reload3Speed)
-				end
-
-				if Tool.Parent ~= Character then return end
-				--animationHandle("Reload3","Stop")
-				--ChangeGrip:Fire(Viewmodel.RightHand)
-				Reloading = false
-			end
-		else
-			task.wait()
-		end
 	end
 
 	local function checkRunning ()
@@ -361,12 +194,6 @@ function module.Init(Tool,ToolObjects,Character,Viewmodel)
 			boltGun()
 		end
 	end
-	if Handle:FindFirstChild("Bolt") then
-		DefaultBoltC1 = Handle.Bolt:GetAttribute("DefaultC1") or CFrame.new(0,0,0)
-		BackBoltC1 = DefaultBoltC1+DefaultBoltC1[BoltPosition[1]]*BoltPosition[2]
-	end
-	BoltBackTween = TweenService:Create(Handle.Bolt,TweenInfo.new(0.2,Enum.EasingStyle.Linear),{C1 = BackBoltC1})
-	--\\
 
 	local unequippedTool = Tool:GetAttributeChangedSignal("Unequipping"):Connect(function()
 		if Tool:GetAttribute("Unequipping") then
