@@ -512,20 +512,35 @@ function Gun:__fire()
 	-- // darken vignette for coolness
 	do -- local scope so these variables don't mix with others
 		local startTime = tick()
-		if VignetteTween then VignetteTween:Cancel() end
-		local TimeToTween = math.clamp(8*(VignetteAmount.Value-1)^2,0.2,8) -- GENIUS equation....
-		VignetteTween = TweenService:Create(VignetteAmount,TweenInfo.new(TimeToTween),{Value = 1})
-		local DarkenAmount = self.Settings.Damage*self.Settings.BulletsPerShot / ((self.Settings.Automatic == true) and (self.Settings.RPM * 2) or 400)
+		if VignetteTween then 
+			VignetteTween:Cancel() 
+		end
+		
+		local DarkenAmount = self.Settings.Damage * self.Settings.BulletsPerShot / ((self.Settings.Automatic == true and self.Settings.RPM * 5) or 1000)
 		if VignetteAmount.Value > 0 then
 			VignetteAmount.Value = math.clamp(VignetteAmount.Value - DarkenAmount, 0, 1)
 		end
 		
-		local WaitTime = TimeToTween*2+2
+		local TimeToTween = math.clamp( -- This equation really isn't any better
+			10 * math.pow(1 - VignetteAmount.Value, 1.5),
+			0.3,
+			10
+		)
+		
+		VignetteTween = TweenService:Create(VignetteAmount, TweenInfo.new(TimeToTween), {Value = 1})
+		
+		local WaitTime = TimeToTween * 2 + 2
 		task.delay(WaitTime,function()
 			local otherTime = tick()-startTime
 			if math.abs(otherTime-WaitTime) < 0.1 and (tick() - self.LastShotTick > 100 / self.Settings.RPM) then -- is gun still firing?
 				-- another really cheap way to check if gun is still "firing" when gun is automatic
-				if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) and self.Settings.Automatic and self.Ammo > 0 and not Humanoid:GetAttribute("Running") then return end
+				if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) 
+					and self.Settings.Automatic 
+					and self.Ammo > 0 
+					and not Humanoid:GetAttribute("Running") 
+				then 
+					return 
+				end
 				VignetteTween:Play()
 			end
 		end)
@@ -554,7 +569,7 @@ end
 
 function Gun:Click(input: InputObject)
 	if self.GunState ~= Gun.State.Idle and self.GunState ~= Gun.State.Reloading then return end
-	if self.GunState == Gun.State.Reloading and (self.Bolted or self.Ammo > 0) then
+	if self.GunState == Gun.State.Reloading then
 		task.cancel(self.__task)
 		self:StopAnimation("EmptyReload")
 		self:StopAnimation("Reload1")
@@ -563,7 +578,11 @@ function Gun:Click(input: InputObject)
 		self:StopAnimation("Reload3")
 	end
 	
-	-- TODO: cancel running
+	-- If player is running, cancel it
+	if Humanoid:GetAttribute("Running") then
+		CTF.stopRunning()
+		task.wait(0.1) -- Delays firing while transitioning from running anims to idle anims. (Could probably be improved less crudely)
+	end
 	
 	self.GunState = Gun.State.Cooldown
 	
@@ -619,16 +638,24 @@ function Gun:Aim(desiredState, input: InputObject?)
 			desiredState = false
 		end
 	end
-	self.Aiming = desiredState and not Humanoid:GetAttribute("Running") and self.State == ToolClass.State.Equipped
-	ViewModelHandler.Aim(self.Aiming, if self.Aiming then self.Settings.AimInSpeed else self.Settings.AimOutSpeed)
+	
+	-- If player is running, cancel it (Does not require another run button input. that is what that true is)
+	local RunMultiplier = 1
+	if Humanoid:GetAttribute("Running") then
+		CTF.stopRunning(true)
+		RunMultiplier = 2 -- Will make the aiming tweens longer to account for the run animation tranisitioning to idle.
+	end
+	
+	self.Aiming = desiredState and self.State == ToolClass.State.Equipped
+	ViewModelHandler.Aim(self.Aiming, if self.Aiming then self.Settings.AimInSpeed * RunMultiplier else self.Settings.AimOutSpeed * RunMultiplier)
 	Humanoid:SetAttribute("Aiming", self.Aiming or nil)
 	if self.Aiming then
-		TweenService:Create(workspace.CurrentCamera, TweenInfo.new(self.Settings.AimInSpeed,Enum.EasingStyle.Cubic,Enum.EasingDirection.Out), {FieldOfView = self.Settings.AimFOV}):Play()
-		TweenService:Create(CrosshairPercent, TweenInfo.new(self.Settings.AimInSpeed,Enum.EasingStyle.Exponential,Enum.EasingDirection.Out), {Value = 1}):Play()
+		TweenService:Create(workspace.CurrentCamera, TweenInfo.new(self.Settings.AimInSpeed * RunMultiplier, Enum.EasingStyle.Cubic,Enum.EasingDirection.Out), {FieldOfView = self.Settings.AimFOV}):Play()
+		TweenService:Create(CrosshairPercent, TweenInfo.new(self.Settings.AimInSpeed * RunMultiplier, Enum.EasingStyle.Exponential,Enum.EasingDirection.Out), {Value = 1}):Play()
 	else
-		TweenService:Create(workspace.CurrentCamera, TweenInfo.new(self.Settings.AimOutSpeed,Enum.EasingStyle.Cubic,Enum.EasingDirection.Out),{FieldOfView = 70}):Play()
+		TweenService:Create(workspace.CurrentCamera, TweenInfo.new(self.Settings.AimOutSpeed * RunMultiplier, Enum.EasingStyle.Cubic,Enum.EasingDirection.Out), {FieldOfView = 70}):Play()
 		if self.State ~= ToolClass.State.Unequipped then
-			TweenService:Create(CrosshairPercent, TweenInfo.new(self.Settings.AimOutSpeed,Enum.EasingStyle.Exponential,Enum.EasingDirection.Out), {Value = self.BulletSpread}):Play()
+			TweenService:Create(CrosshairPercent, TweenInfo.new(self.Settings.AimOutSpeed * RunMultiplier, Enum.EasingStyle.Exponential,Enum.EasingDirection.Out), {Value = self.BulletSpread}):Play()
 		end
 	end
 end

@@ -20,6 +20,7 @@ local Camera = workspace.CurrentCamera
 local LookEvent = Events.Character.LookEvent
 local DamageEvent = Events.Tool.Damage
 local SoundEvent = Events.Tool.SoundEvent
+local StopRunningEvent = Events.Character.StopRunning
 
 local PlayerAnimations = ReplicatedStorage.PlayerAssets.Animations.Character.Movement
 local FallDamageSounds = ReplicatedStorage.Sounds.FallDamage
@@ -56,6 +57,7 @@ function module.GetWalkSpeed()
 end
 
 function module.LoadChar(Character)
+	-- Booleans
 	local inAir = false
 	local jumpCooldown = false
 	local staminaGrowthStarted = false
@@ -65,6 +67,7 @@ function module.LoadChar(Character)
 	local DownedWalking = false
 	local NewSprintInput = false
 
+	-- Character stuff
 	local Humanoid: Humanoid = Character:WaitForChild('Humanoid')
 	local ViewmodelCrouch = Humanoid:WaitForChild("ViewmodelCrouch")
 	local ViewmodelRun = Humanoid:WaitForChild("ViewmodelRun")
@@ -78,9 +81,11 @@ function module.LoadChar(Character)
 	local Waist = UpperTorso:WaitForChild("Waist")
 	local Neck = Head:WaitForChild("Neck")
 
+	-- UI
 	local InteractUI = Player.PlayerGui:WaitForChild("InteractUI")
 	local SittingUI = InteractUI.SittingUI
 
+	-- Tables
 	local AllowedLimbs = {
 		"Head",
 		"UpperTorso",
@@ -98,6 +103,8 @@ function module.LoadChar(Character)
 		"RightLowerLeg",
 		"RightFoot",
 	}
+	local FunctionsToDisconnect = {}
+	
 
 	Humanoid:SetStateEnabled(Enum.HumanoidStateType.Climbing, false)
 
@@ -116,6 +123,7 @@ function module.LoadChar(Character)
 			ShadowLimb.Material = Enum.Material.ForceField
 			ShadowLimb.Transparency = -math.huge
 			ShadowLimb.Size = ActualLimb.Size
+			CollectionService:AddTag(ShadowLimb, "Ignore")
 			ShadowLimb.Parent = ShadowLimbs
 
 			local Actual = Instance.new("ObjectValue")
@@ -219,12 +227,12 @@ function module.LoadChar(Character)
 		if not Humanoid:GetAttribute("Running") 
 			and not standingStill 
 			and not Humanoid:GetAttribute("Crouching") 
+			and not Humanoid:GetAttribute("Aiming")
 			and not Character:GetAttribute("Loaded") 
 			and not walkingBackwards 
 			and UIS:IsKeyDown(KeybindHandler.Keybind("Sprint",Player))
 			and not Humanoid:GetAttribute("Downed") 
-			-- prevents the weird "sprint dashes" you can do if you held down sprint with zero stamina and it returned to one and consumed it.
-			and NewSprintInput 
+			and NewSprintInput -- prevents the weird "sprint dashes" you can do if you held down sprint with zero stamina and it returned to one and consumed it.
 		then
 			Humanoid:SetAttribute("Running",true)
 			TweenService:Create(ViewmodelRun,TweenInfo.new(0.2),{Value = 1}):Play()
@@ -360,6 +368,7 @@ function module.LoadChar(Character)
 			end
 		end
 	end)
+	table.insert(FunctionsToDisconnect, inputBegan)
 
 	local inputEnded = UIS.InputEnded:Connect(function(Input)
 		if Input.KeyCode == KeybindHandler.Keybind("Sprint", Player) then
@@ -369,10 +378,12 @@ function module.LoadChar(Character)
 			stopRunning()
 		end
 	end)
+	table.insert(FunctionsToDisconnect, inputEnded)
 
 	local humanoidRunning = Humanoid.Running:Connect(function(cS) --/ Get currentSpeed to tell if player is moving or not.
 		currentSpeed = cS
 	end)
+	table.insert(FunctionsToDisconnect, humanoidRunning)
 
 	local attributeChanged = Humanoid.AttributeChanged:Connect(function(atr)
 		if attributeFunctions[atr] then --/ play attribute function from attribute if it exists
@@ -391,6 +402,7 @@ function module.LoadChar(Character)
 			CharDownedWalk:Stop(.2)
 		end
 	end)
+	table.insert(FunctionsToDisconnect, attributeChanged)
 
 	local heartBeat = RunService.RenderStepped:Connect(function(dt)		
 		-- set target direction
@@ -484,6 +496,7 @@ function module.LoadChar(Character)
 			Character.Head.CanCollide = true
 		end
 	end)
+	table.insert(FunctionsToDisconnect, heartBeat)
 
 	local runChange = Humanoid.Running:Connect(function(speed)
 		if speed > 1 and Humanoid:GetAttribute("Running") then
@@ -513,6 +526,7 @@ function module.LoadChar(Character)
 			CharDownedWalk:Stop(.2)
 		end
 	end)
+	table.insert(FunctionsToDisconnect, runChange)
 
 	-- Determines fall damage.
 	local StateChanged = Humanoid.StateChanged:Connect(function(OldState, NewState)
@@ -555,6 +569,7 @@ function module.LoadChar(Character)
 
 		end
 	end)
+	table.insert(FunctionsToDisconnect, StateChanged)
 
 	local LookEventFunction = LookEvent.OnClientEvent:Connect(function(
 		CameraDirection: Vector3, 
@@ -566,6 +581,15 @@ function module.LoadChar(Character)
 	)
 		LimbMove(CameraDirection, LeftShoulder, RightShoulder, Neck, Waist, HeldType)
 	end)
+	table.insert(FunctionsToDisconnect, LookEventFunction)
+	
+	local StopRunningFunction = StopRunningEvent.Event:Connect(function(DoesNotAffectInput: boolean)
+		if not DoesNotAffectInput then
+			NewSprintInput = false
+		end
+		stopRunning()
+	end)
+	table.insert(FunctionsToDisconnect, StopRunningFunction)
 
 	Humanoid.Died:Once(function()
 		Humanoid:SetAttribute("Sitting", nil)
@@ -573,12 +597,10 @@ function module.LoadChar(Character)
 		if ShadowLimbs then
 			ShadowLimbs:Destroy()
 		end
-		inputBegan:Disconnect()
-		inputEnded:Disconnect()
-		heartBeat:Disconnect()
-		runChange:Disconnect()
-		attributeChanged:Disconnect()
-		humanoidRunning:Disconnect()
+		
+		for _, Funcs in pairs(FunctionsToDisconnect) do
+			Funcs:Disconnect()
+		end
 	end)
 	Character.AncestryChanged:Once(function()
 		Humanoid:SetAttribute("Running", false)
@@ -588,12 +610,10 @@ function module.LoadChar(Character)
 		if ShadowLimbs then
 			ShadowLimbs:Destroy()
 		end
-		inputBegan:Disconnect()
-		inputEnded:Disconnect()
-		heartBeat:Disconnect()
-		runChange:Disconnect()
-		attributeChanged:Disconnect()
-		humanoidRunning:Disconnect()
+		
+		for _, Funcs in pairs(FunctionsToDisconnect) do
+			Funcs:Disconnect()
+		end
 	end)
 end
 return module

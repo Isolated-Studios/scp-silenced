@@ -9,6 +9,7 @@ local DropItem = require(script.DropItem)
 local SoundsAndEffects = require(script.SoundsAndEffects)
 local AnimationEvent = require(script.AnimationEvent)
 local Distance = require(script.Distance)
+local MovementChanger = require(script.MovementChanger)
 
 
 
@@ -44,7 +45,7 @@ function module.dropItem (Character,Tool)
 	DropItem.dropItem(Character,Tool)
 end
 
-function module.getAllAnimationEventNames(animation): table
+function module.getAllAnimationEventNames (animation): table
 	return AnimationEvent.getAllAnimationEventNames(animation)
 end
 
@@ -54,6 +55,10 @@ end
 
 function module.getDistance(point1: Vector3, point2: Vector3)
 	return Distance.getDistance(point1, point2)
+end
+
+function module.stopRunning (DoesNotAffectInput: boolean)
+	MovementChanger.stopRunning(DoesNotAffectInput)
 end
 
 return module
