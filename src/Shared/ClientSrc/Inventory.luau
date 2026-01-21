@@ -27,8 +27,11 @@ local function loadCharacter(Character)
 	local ModalFrame = InventoryUI:WaitForChild("ModalFrame")
 	local SlotTemplate = Container:WaitForChild("SlotTemplate")
 	local ItemTemplate = Container:WaitForChild("ItemTemplate")
-
-	local InventoryHover = Player.PlayerGui.MouseUI.Dot.InventoryHover
+	
+	local InteractUI = Player.PlayerGui:WaitForChild("InteractUI")
+	local MouseUI = Player.PlayerGui:WaitForChild("MouseUI")
+	local InventoryHover = MouseUI.Dot.InventoryHover
+	local DotTexts = MouseUI.Dot.Texts
 	local MouseHighlight = Container.MouseHighlighter
 
 	local ViewportFrame = Container:WaitForChild("ViewportFrame")
@@ -551,6 +554,8 @@ local function loadCharacter(Character)
 		if input.KeyCode == KeybindHandler.Keybind("Open Inventory", game.Players.LocalPlayer) then
 			Main.Interactable = not Main.Interactable
 			ModalFrame.Modal = not ModalFrame.Modal
+			DotTexts.Visible = not Main.Interactable -- Hide dot texts when inventory is opened and vice versa.
+			InteractUI.Enabled = not Main.Interactable -- Hide interact UI when inventory is opened and vice versa.
 			for _,item in pairs(ItemList) do
 				item:Drop()
 			end
@@ -603,6 +608,8 @@ local function loadCharacter(Character)
 		disconnectFunctions{ammoFunctionsList}
 		Main.Interactable = false
 		ModalFrame.Modal = false
+		DotTexts.Visible = true
+		InteractUI.Enabled = true
 		--myFirstItem:Drop()
 		Humanoid:SetAttribute("InventoryOpen",nil)
 		TweenService:Create(Main,TweenInfo.new(0.2),{GroupTransparency = 1}):Play()

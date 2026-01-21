@@ -37,11 +37,14 @@ function module.Init()
 	local ArrowShadowFolder = ArrowFrame:WaitForChild("ArrowShadows")
 	local ChargeFrame = Dot:WaitForChild("ChargeBar")
 	local ChargeBar = ChargeFrame:WaitForChild("Bar")
+	
 	local arrowPowerIndex = {
 		[1] = {false,false,true,Color3.fromRGB(255, 87, 87)},
 		[2] = {false,true,true,Color3.fromRGB(208, 158, 42)},
 		[3] = {true,true,true,Color3.fromRGB(55, 200, 45)},
 	}
+	local CrosshairTweenInfo = TweenInfo.new(0.1,Enum.EasingStyle.Linear)
+	
 	local function changeArrowState ()
 		if ArrowPower:GetAttribute("Enabled") then
 			for i=1,3,1 do
@@ -85,10 +88,10 @@ function module.Init()
 		else
 			MainCrosshairFrame.Visible = true
 		end
-		TweenService:Create(CrosshairFrame.L,TweenInfo.new(0.1,Enum.EasingStyle.Linear),{Position = UDim2.new(0.47,-val,0.5,0)}):Play()
-		TweenService:Create(CrosshairFrame.R,TweenInfo.new(0.1,Enum.EasingStyle.Linear),{Position = UDim2.new(0.53,val,0.5,0)}):Play()
-		TweenService:Create(CrosshairFrame.U,TweenInfo.new(0.1,Enum.EasingStyle.Linear),{Position = UDim2.new(0.5,0,0.47,-val)}):Play()
-		TweenService:Create(CrosshairFrame.B,TweenInfo.new(0.1,Enum.EasingStyle.Linear),{Position = UDim2.new(0.5,0,0.53,val)}):Play()
+		TweenService:Create(CrosshairFrame.L, CrosshairTweenInfo, {Position = UDim2.new(0.47, -val, 0.5, 0)}):Play()
+		TweenService:Create(CrosshairFrame.R, CrosshairTweenInfo, {Position = UDim2.new(0.53, val, 0.5, 0)}):Play()
+		TweenService:Create(CrosshairFrame.U, CrosshairTweenInfo, {Position = UDim2.new(0.5, 0, 0.47, -val)}):Play()
+		TweenService:Create(CrosshairFrame.B, CrosshairTweenInfo, {Position = UDim2.new(0.5, 0, 0.53, val)}):Play()
 	end)
 	-- CircleFrames.Progress(CircleFrame,Percentage,0)
 	enableArrows()

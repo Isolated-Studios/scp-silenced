@@ -268,7 +268,19 @@ function module.createBulletHole (raycastResult,hitPerson,isPellet,randomValue)
 	lastRandomValue = randomValue
 end
 
-function module.castBullet (Tool,Origin,Direction,TravelSpeed,MaxDistance,Acceleration,BulletTemplate,Character,isPellet,randomValue,replicate)
+function module.castBullet (
+	Tool: Tool,
+	Origin: Vector3,
+	Direction: Vector3,
+	TravelSpeed: number,
+	MaxDistance: number,
+	Acceleration: Vector3,
+	BulletTemplate: Instance,
+	Character: Model,
+	isPellet: number,
+	randomValue: number,
+	replicate: boolean
+)
 	
 	bulletParams.FilterDescendantsInstances = {CollectionService:GetTagged("Ignore"),Character,Tool}
 	
@@ -276,7 +288,7 @@ function module.castBullet (Tool,Origin,Direction,TravelSpeed,MaxDistance,Accele
 	if not MaxDistance then MaxDistance = 9000 end
 	if not TravelSpeed then TravelSpeed = 3000 end
 	if isPellet and isPellet == 1 then isPellet = nil end
-	
+	 
 	CasterBehavior.RaycastParams = bulletParams or {}
 	CasterBehavior.MaxDistance = MaxDistance
 	CasterBehavior.Acceleration = Acceleration or Vector3.new(0, -workspace.Gravity, 0)
