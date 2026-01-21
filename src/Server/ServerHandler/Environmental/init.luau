@@ -1,9 +1,13 @@
 local Environmental = {}
 
 function Environmental.Init()
+	task.defer(function()
+		require(script.AutomaticDoor).Init()
+	end)
 	
-	require(script.AutomaticDoor).Init()
-
+	task.defer(function()
+		require(script.Detector).Init()
+	end)
 end
 
 
