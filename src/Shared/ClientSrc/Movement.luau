@@ -5,11 +5,11 @@ local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
-local Debris = game:GetService("Debris")
 
 local Events = ReplicatedStorage.Events
 local Modules = ReplicatedStorage.Modules
 
+local Trove = require(ReplicatedStorage.Packages.Trove)
 local CameraModule = require(script.Parent.Camera)
 local CommonFuncs = require(Modules.CommonFuncs)
 local KeybindHandler = require(Modules.UI.KeybindHandler)
@@ -103,8 +103,7 @@ function module.LoadChar(Character)
 		"RightLowerLeg",
 		"RightFoot",
 	}
-	local FunctionsToDisconnect = {}
-	
+	local _trove = Trove.new()
 
 	Humanoid:SetStateEnabled(Enum.HumanoidStateType.Climbing, false)
 
@@ -368,7 +367,7 @@ function module.LoadChar(Character)
 			end
 		end
 	end)
-	table.insert(FunctionsToDisconnect, inputBegan)
+	_trove:Add(inputBegan)
 
 	local inputEnded = UIS.InputEnded:Connect(function(Input)
 		if Input.KeyCode == KeybindHandler.Keybind("Sprint", Player) then
@@ -378,12 +377,12 @@ function module.LoadChar(Character)
 			stopRunning()
 		end
 	end)
-	table.insert(FunctionsToDisconnect, inputEnded)
+	_trove:Add(inputEnded)
 
 	local humanoidRunning = Humanoid.Running:Connect(function(cS) --/ Get currentSpeed to tell if player is moving or not.
 		currentSpeed = cS
 	end)
-	table.insert(FunctionsToDisconnect, humanoidRunning)
+	_trove:Add(humanoidRunning)
 
 	local attributeChanged = Humanoid.AttributeChanged:Connect(function(atr)
 		if attributeFunctions[atr] then --/ play attribute function from attribute if it exists
@@ -402,7 +401,7 @@ function module.LoadChar(Character)
 			CharDownedWalk:Stop(.2)
 		end
 	end)
-	table.insert(FunctionsToDisconnect, attributeChanged)
+	_trove:Add(attributeChanged)
 
 	local heartBeat = RunService.RenderStepped:Connect(function(dt)		
 		-- set target direction
@@ -496,7 +495,7 @@ function module.LoadChar(Character)
 			Character.Head.CanCollide = true
 		end
 	end)
-	table.insert(FunctionsToDisconnect, heartBeat)
+	_trove:Add(heartBeat)
 
 	local runChange = Humanoid.Running:Connect(function(speed)
 		if speed > 1 and Humanoid:GetAttribute("Running") then
@@ -526,7 +525,7 @@ function module.LoadChar(Character)
 			CharDownedWalk:Stop(.2)
 		end
 	end)
-	table.insert(FunctionsToDisconnect, runChange)
+	_trove:Add(runChange)
 
 	-- Determines fall damage.
 	local StateChanged = Humanoid.StateChanged:Connect(function(OldState, NewState)
@@ -569,7 +568,7 @@ function module.LoadChar(Character)
 
 		end
 	end)
-	table.insert(FunctionsToDisconnect, StateChanged)
+	_trove:Add(StateChanged)
 
 	local LookEventFunction = LookEvent.OnClientEvent:Connect(function(
 		CameraDirection: Vector3, 
@@ -581,7 +580,7 @@ function module.LoadChar(Character)
 	)
 		LimbMove(CameraDirection, LeftShoulder, RightShoulder, Neck, Waist, HeldType)
 	end)
-	table.insert(FunctionsToDisconnect, LookEventFunction)
+	_trove:Add(LookEventFunction)
 	
 	local StopRunningFunction = StopRunningEvent.Event:Connect(function(DoesNotAffectInput: boolean)
 		if not DoesNotAffectInput then
@@ -589,7 +588,7 @@ function module.LoadChar(Character)
 		end
 		stopRunning()
 	end)
-	table.insert(FunctionsToDisconnect, StopRunningFunction)
+	_trove:Add(StopRunningFunction)
 
 	Humanoid.Died:Once(function()
 		Humanoid:SetAttribute("Sitting", nil)
@@ -598,9 +597,7 @@ function module.LoadChar(Character)
 			ShadowLimbs:Destroy()
 		end
 		
-		for _, Funcs in pairs(FunctionsToDisconnect) do
-			Funcs:Disconnect()
-		end
+		_trove:Destroy()
 	end)
 	Character.AncestryChanged:Once(function()
 		Humanoid:SetAttribute("Running", false)
@@ -611,9 +608,7 @@ function module.LoadChar(Character)
 			ShadowLimbs:Destroy()
 		end
 		
-		for _, Funcs in pairs(FunctionsToDisconnect) do
-			Funcs:Disconnect()
-		end
+		_trove:Destroy()
 	end)
 end
 return module
