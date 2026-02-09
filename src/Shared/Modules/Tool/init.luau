@@ -185,7 +185,9 @@ function Tool:Destroy()
 	for i, _ in self do
 		self[i] = nil
 	end
-	setmetatable(self, {__index = function()
+	setmetatable(self, {__index = function(_, element)
+		if element == "Destroy" then return function() end end
+		if element == "IsDestroyed" then return true end
 		error("This object was destroyed and is no longer accessible")
 	end})
 end
@@ -208,12 +210,14 @@ function Tool:Unequip()
 	self:StopAnimation("Equip")
 	self:StopAnimation("Hold")
 	task.wait(self.Settings.UnequipSpeed)
+	if ViewModelAnimator then
 	for _, PlayingAnimation in ViewModelAnimator:GetPlayingAnimationTracks() do
 		-- this down here looks stupid, but don't remove it. you have to PLAY the animation with the desired fadeTime and weight
 		-- if you want them to work, because fadeTime and weight parameters of both :Stop() and :AdjustWeight() DON'T EVEN WORK.
 		-- in fact, im pretty sure removing the 0.0001 parameter in StopAnimation() will have NO impact whatsoever.
 		PlayingAnimation:Play(0.0001, 0.0001)
 		PlayingAnimation:Stop(0.0001)
+		end
 	end
 	Humanoid:UnequipTools()
 	self:__disable()

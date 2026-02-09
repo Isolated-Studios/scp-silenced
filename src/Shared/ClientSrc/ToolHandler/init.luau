@@ -71,6 +71,7 @@ function module.getCurrentTool(): ToolClass.ClassType?
 end
 
 function module.getCurrentToolState(): number
+	if CurrentTool and CurrentTool.IsDestroyed then CurrentTool = nil end
 	if CurrentTool then
 		return CurrentTool.State
 	else
