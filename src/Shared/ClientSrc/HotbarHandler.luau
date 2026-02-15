@@ -36,6 +36,7 @@ local AcceptedKeys = {
 
 module.InventoryToolTypeSlotIndex = {} -- is to be loaded by Inventory, used for checking equipped tools.
 local Inventory = {}
+local NextToolSlot = nil
 
 local function RefreshHotbar ()
 	for _, Cell in pairs(Hotbar:GetChildren()) do
@@ -57,12 +58,12 @@ local function RefreshHotbar ()
 				end
 			end
 			Cell.UIStroke.Thickness = 1.5
-			Cell.UIStroke.Color = Color3.fromRGB(150,150,150)
+			Cell.UIStroke.Color = Color3.fromRGB(150, 150, 150)
 		end
 	end
 end
 
-local function resetCell (Tool,resetImage,unequipSpeed)
+local function resetCell(Tool, resetImage, unequipSpeed)
 	if Tool:GetAttribute("ToolType") == 4 or Tool:GetAttribute("ToolType") == 6 then
 		local cell = ConsumablesFrame[tostring(Tool:GetAttribute("ToolType"))]
 		if unequipSpeed then
@@ -90,7 +91,7 @@ local function resetCell (Tool,resetImage,unequipSpeed)
 	end
 end
 
-local function setCell (Tool)
+local function setCell(Tool)
 	if Tool:GetAttribute("ToolType") == 4 or Tool:GetAttribute("ToolType") == 6 then
 		local cell = ConsumablesFrame[tostring(Tool:GetAttribute("ToolType"))]
 		local tweenTime = require(Tools[Tool:GetAttribute("ToolName")].Settings).EquipSpeed
@@ -141,26 +142,33 @@ local function handleInput(Input, gameProcessedEvent)
 	then
 		local PickedTool = Inventory[AcceptedKeys[Input.KeyCode.Name]].Metadata.Tool
 		NextTool = if ToolHandler.getTool(PickedTool) == ToolHandler.getCurrentTool() then nil else PickedTool
+		NextToolSlot = if NextTool ~= nil then AcceptedKeys[Input.KeyCode.Name] else nil
 		equipTool()
 	end
 end
 
 function module.Init()
 	StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, false)
-	
+
 	-- wait for UI to load
 	HUD = Player.PlayerGui:WaitForChild("HUD")
 	ListFrame = HUD:WaitForChild("RightFrame"):WaitForChild("ListFrame")
 	Hotbar = ListFrame:WaitForChild("Hotbar")
 	ConsumablesFrame = ListFrame:WaitForChild("InfoFrame"):WaitForChild("Consumables"):WaitForChild("Frame")
-	
+
 	RunService.RenderStepped:Connect(function()
 		for i, v in module.InventoryToolTypeSlotIndex do
 			Inventory[i] = v.Item
 		end
 		RefreshHotbar()
+		
+		if NextToolSlot and (Inventory[NextToolSlot] == nil or Inventory[NextToolSlot].Metadata.Tool ~= NextTool) then
+			NextToolSlot = nil
+			NextTool = nil
+			equipTool()
+		end
 	end)
-	
+
 	AcceptedKeys[KeybindHandler.Keybind("Grenade", Player).Name] = 6
 	UserInputService.InputBegan:Connect(handleInput)
 end
