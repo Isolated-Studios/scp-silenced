@@ -33,9 +33,9 @@ local Settings = {
 	BoltBackWhenEmpty = false;
 	ScrollAffectsAim = true;
 
-	EquipSpeed = 0.86; -- Speed of equipping in seconds
+	EquipSpeed = 0.80; -- Speed of equipping in seconds
 	EquipCancel = 0.5;
-	UnequipSpeed = 0.5;
+	UnequipSpeed = 0.35;
 	AimInSpeed = 0.5; -- Speed of aiming-in in seconds
 	AimOutSpeed = 0.3; -- Speed of aiming-out in seconds
 	--SqueezeTrigger = 0.2; -- How long it takes to squeeze the trigger to fire/bolt gun in seconds (AFFECTS FIRE SPEED)
@@ -60,9 +60,9 @@ local Settings = {
 	MidFallOffMult = 0.75; -- Damage Multiplier applied to when damage enters the Medium Fall Off Zone.
 	LongFallOffMult = 0.50; -- Damage Multiplier applied to when damage enters the Long Fall Off Zone.
 
-	CameraShove = Vector3.new(4,0.01,0.2); -- Shove applied to camera when recoiled
-	LinearShove = Vector3.new(-0.1,0,.1); -- Linear shove applied to viewmodel when recoiled
-	AngularShove = Vector3.new(0.1,0.4,0.2); -- Angular shove applied to viewmodel when recoiled
+	CameraShove = Vector3.new(0.01,0.02,0); -- Shove applied to camera when recoiled
+	LinearShove = Vector3.new(0.1,-0.05,0.55); -- Linear shove applied to viewmodel when recoiled
+	AngularShove = Vector3.new(-0.01,0,-0.01); -- Angular shove applied to viewmodel when recoiled
 	AimLinearShove = nil; -- Linear shove applied to the viewmodel when aiming and recoiled.
 	AimAngularShove = nil; -- Angular shove applied to the viewmodel when aiming and recoiled.
 	Stability = 8; -- Determines the torque of the gun when recoiling. Lower number is more unstable (more torque), Higher is more stable (less torque).

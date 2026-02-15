@@ -34,9 +34,9 @@ local Settings = {
 	ScrollAffectsAim = true;
 	BoltRoundEvent = true; -- If true, will bolt the next round when animation event "BoltRound" is called instead of when VMBolt has stopped playing.
 
-	EquipSpeed = 1; -- Speed of equipping in seconds
-	EquipCancel = 0.75;
-	UnequipSpeed = 0.75;
+	EquipSpeed = .6166; -- Speed of equipping in seconds
+	EquipCancel = 0.4;
+	UnequipSpeed = 0.48;
 	AimInSpeed = 0.35; -- Speed of aiming-in in seconds
 	AimOutSpeed = 0.35; -- Speed of aiming-out in seconds
 	--SqueezeTrigger = 0.2; -- How long it takes to squeeze the trigger to fire/bolt gun in seconds (AFFECTS FIRE SPEED)
