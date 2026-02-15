@@ -24,7 +24,7 @@ local ConsumablesFrame: Frame
 
 local Humanoid: Humanoid = nil
 local Debounce = false
-local CurrentTool, NextTool
+local NextTool
 
 local AcceptedKeys = {
 	["One"]   =	1,
@@ -38,18 +38,26 @@ module.InventoryToolTypeSlotIndex = {} -- is to be loaded by Inventory, used for
 local Inventory = {}
 
 local function RefreshHotbar ()
-	for _,cell in pairs(Hotbar:GetChildren()) do
-		if cell:IsA("Frame") then
-			local index = tonumber(cell.Name)
-			if Inventory[index] then
-				local actualTool = Inventory[index]
-				if actualTool then
-					cell.Icon.Image = actualTool.TextureId
-					cell.Icon.Inner.Image = actualTool.TextureId
+	for _, Cell in pairs(Hotbar:GetChildren()) do
+		if Cell:IsA("Frame") then
+			local index = tonumber(Cell.Name)
+			if Inventory[index] and Inventory[index].Metadata then
+				if not Cell.Icon:GetAttribute("DisplayImage") then
+					TweenService:Create(Cell.Icon, TweenInfo.new(0.1), {ImageTransparency = 0}):Play()
+					TweenService:Create(Cell.Icon.Inner, TweenInfo.new(0.1), {ImageTransparency = 0}):Play()
+					Cell.Icon:SetAttribute("DisplayImage", true)
+				end
+				Cell.Icon.Image = Inventory[index].Metadata.Image
+				Cell.Icon.Inner.Image = Inventory[index].Metadata.Image
+			else
+				if Cell.Icon:GetAttribute("DisplayImage") == true then
+					TweenService:Create(Cell.Icon, TweenInfo.new(0.1), {ImageTransparency = 1}):Play()
+					TweenService:Create(Cell.Icon.Inner, TweenInfo.new(0.1), {ImageTransparency = 1}):Play()
+					Cell.Icon:SetAttribute("DisplayImage", false)
 				end
 			end
-			cell.UIStroke.Thickness = 1.5
-			cell.UIStroke.Color = Color3.fromRGB(150,150,150)
+			Cell.UIStroke.Thickness = 1.5
+			Cell.UIStroke.Color = Color3.fromRGB(150,150,150)
 		end
 	end
 end
@@ -65,8 +73,8 @@ local function resetCell (Tool,resetImage,unequipSpeed)
 		end
 	elseif Tool:GetAttribute("ToolType") <= 3 then
 		local cell = Hotbar[tostring(Tool:GetAttribute("ToolType"))]
-		if resetImage and  Inventory[Tool:GetAttribute("ToolType")] then
-			local nextTool = Inventory[Tool:GetAttribute("ToolType")]
+		if resetImage and Inventory[Tool:GetAttribute("ToolType")] then
+			local nextTool = Inventory[Tool:GetAttribute("ToolType")].Metadata.Tool
 			cell.Icon.Image = nextTool.TextureId
 			cell.Icon.Inner.Image = nextTool.TextureId
 		elseif resetImage then
@@ -131,7 +139,7 @@ local function handleInput(Input, gameProcessedEvent)
 		and Inventory[AcceptedKeys[Input.KeyCode.Name]]
 		and not CommonFuncs.AreInputUIsActive()
 	then
-		local PickedTool = Inventory[AcceptedKeys[Input.KeyCode.Name]]
+		local PickedTool = Inventory[AcceptedKeys[Input.KeyCode.Name]].Metadata.Tool
 		NextTool = if ToolHandler.getTool(PickedTool) == ToolHandler.getCurrentTool() then nil else PickedTool
 		equipTool()
 	end
@@ -148,7 +156,7 @@ function module.Init()
 	
 	RunService.RenderStepped:Connect(function()
 		for i, v in module.InventoryToolTypeSlotIndex do
-			Inventory[i] = if v.Item then v.Item.Metadata.Tool else nil
+			Inventory[i] = v.Item
 		end
 		RefreshHotbar()
 	end)
