@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local SoundService = game:GetService("SoundService")
+local RunService = game:GetService("RunService")
 
 -- Replicated Storage References
 local Events = ReplicatedStorage.Events
@@ -28,10 +29,22 @@ local Backpack = nil
 local PlayerSettings = ReplicatedStorage.Players:WaitForChild(tostring(Player.UserId)).Settings
 local SoundSettings = PlayerSettings.Sound
 local LowHealthMuffleSetting = SoundSettings["Low Health Muffle"]
+local Camera = workspace.CurrentCamera
 
 -- UI
 local HUD
 local HUDLoaded = false
+
+-- Values
+local PreviousAmmo = nil
+local LastCamCF = CFrame.new()
+local shakeOffset = Vector2.new()
+local UIStates = {
+	[0] = "Reset",
+	[1] = "Bolt",
+	[2] = "Reload",
+	[3] = "Fire"
+}
 
 local Bars
 local RightFrame
@@ -138,66 +151,88 @@ function module.Init()
 	HUDLoaded = true
 end
 
-local function updateGunDisplay(Gun: ToolClass.ClassType, instant: boolean?)
+local function updateGunDisplay (Gun: ToolClass.ClassType, UIState: number)
 	ReserveFrame.Visible = true
-	ReserveText.Text = Gun.Ammo
+	ReserveText.Text = Gun.ReserveHolder.Value
 	if Gun.Settings.Automatic then
 		ModeText.Text = "Auto"
 	else
 		ModeText.Text = "Semi"
 	end
-
-	if instant then
-		for _, oldBullet in pairs (MagFrame:GetChildren()) do
-			if oldBullet:IsA("Frame") then
-				oldBullet:Destroy()
-			end
-		end
 	
-		local TotalCells = Gun.Settings.MagSize + 1
-		MagFrame.UIGridLayout.CellSize = UDim2.new(1/TotalCells,-1,1,0)
-		if TotalCells > 50 then
-			MagFrame.UIGridLayout.CellSize = UDim2.new((1/TotalCells)*2,-1,1,0)
-			InnerScaleLayout.Padding = UDim.new(1.2,0)
-		else
-			InnerScaleLayout.Padding = UDim.new(0.2,0)
-		end
-		for i = 1, TotalCells, 1 do
-			local bullet = PrimeMagBullet:Clone()
-			--bullet.Size = UDim2.new(1/Settings.MagSize,-1,1,0)
-			if i == 1 then
-				bullet.Round.BackgroundColor3 = Color3.fromRGB(255,255,255)
+	local GunUIFunctions = {
+		["Reset"] = function()
+			for _, oldBullet in pairs (MagFrame:GetChildren()) do
+				if oldBullet:IsA("Frame") then
+					oldBullet:Destroy()
+				end
 			end
-			bullet.Name = tostring(i)
-			if i > Gun.Ammo + 1 or (i == 1 and not Gun.Bolted) then
-				bullet.Round.Size = UDim2.fromScale(1,0)
+
+			local TotalCells = Gun.Settings.MagSize + 1
+			MagFrame.UIGridLayout.CellSize = UDim2.new(1/TotalCells,-1,1,0)
+			if TotalCells > 50 then
+				MagFrame.UIGridLayout.CellSize = UDim2.new((1/TotalCells)*2,-1,1,0)
+				InnerScaleLayout.Padding = UDim.new(1.2,0)
+			else
+				InnerScaleLayout.Padding = UDim.new(0.2,0)
 			end
-			bullet.Parent = MagFrame
-		end
-		if not Gun.Bolted and Gun.Settings.Bolted and Gun.Ammo < Gun.Settings.MagSize and Gun.Ammo > 0 then
-			local firstRound = MagFrame["1"].Round
-			firstRound.Size = UDim2.fromScale(1,0)
-			local otherRound = MagFrame[tostring(Gun.Ammo+1)].Round
-			otherRound.Size = UDim2.fromScale(1,1)
-		end
-	else
-		for i = 1, Gun.Settings.MagSize do
-			local bullet = MagFrame:FindFirstChild(tostring(i + 1))
-			if not bullet then break end
-			bullet = bullet.Round
-			if Gun.Ammo >= i and bullet.Size.Y.Scale < 0.5 then
-				TweenService:Create(bullet, TweenInfo.new(0.05), {Size = UDim2.new(bullet.Size.X.Scale, -1, 1, 0)}):Play()
-			elseif Gun.Ammo < i and bullet.Size.Y.Scale > 0.5 then
-				TweenService:Create(bullet, TweenInfo.new(0.05), {Size = UDim2.new(bullet.Size.X.Scale, -1, 0, 0)}):Play()
+			for i = 1, TotalCells, 1 do
+				local bullet = PrimeMagBullet:Clone()
+				if i == 1 then
+					bullet.Round.BackgroundColor3 = Color3.fromRGB(255,255,255)
+				end
+				bullet.Name = tostring(i)
+				if i > Gun.Ammo + 1 or (i == 1 and not Gun.Bolted) then
+					bullet.Round.Size = UDim2.fromScale(1,0)
+				end
+				bullet.Parent = MagFrame
 			end
-		end
+			if not Gun.Bolted and Gun.Settings.Bolted and Gun.Ammo < Gun.Settings.MagSize and Gun.Ammo > 0 then
+				local firstRound = MagFrame["1"].Round
+				firstRound.Size = UDim2.fromScale(1,0)
+				local otherRound = MagFrame[tostring(Gun.Ammo+1)].Round
+				otherRound.Size = UDim2.fromScale(1,1)
+			end
+			PreviousAmmo = Gun.Ammo
+		end,
+		["Bolt"] = function()
+			MagFrame[1].Round.Size = UDim2.new(MagFrame[1].Round.Size.X.Scale, -1, 0, 0)
+			TweenService:Create(MagFrame[1].Round, TweenInfo.new(0.1), {Size = UDim2.new(MagFrame[1].Round.Size.X.Scale, -1, 1, 0)}):Play()
+			
+			for i = 1, Gun.Settings.MagSize do
+				local bullet = MagFrame:FindFirstChild(tostring(i + 1))
+				if not bullet then break end
+				bullet = bullet.Round
+				if Gun.Ammo < i then
+					TweenService:Create(bullet, TweenInfo.new(0.1), {Size = UDim2.new(bullet.Size.X.Scale, -1, 0, 0)}):Play()
+				end
+			end
+		end,
 		
-		if Gun.Bolted then
-			TweenService:Create(MagFrame[1].Round, TweenInfo.new(0.05), {Size = UDim2.new(MagFrame[1].Round.Size.X.Scale, -1, 1, 0)}):Play()
-		else
-			TweenService:Create(MagFrame[1].Round, TweenInfo.new(0.05), {Size = UDim2.new(MagFrame[1].Round.Size.X.Scale, -1, 0, 0)}):Play()
-		end
-	end
+		["Reload"] = function()
+			TweenService:Create(MagFrame[1].Round, TweenInfo.new(0.1), {Size = UDim2.new(MagFrame[1].Round.Size.X.Scale, -1, 1, 0)}):Play()
+			
+			for i = 1, Gun.Settings.MagSize do
+				local bullet = MagFrame:FindFirstChild(tostring(i + 1))
+				if not bullet then break end
+				bullet = bullet.Round
+				if Gun.Ammo >= i then
+					TweenService:Create(bullet, TweenInfo.new(0.1), {Size = UDim2.new(bullet.Size.X.Scale, -1, 1, 0)}):Play()
+				end
+			end
+			PreviousAmmo = Gun.Ammo
+		end,
+		
+		["Fire"] = function()
+			if PreviousAmmo > 0 then
+				MagFrame[1].Round.Size = UDim2.new(MagFrame[1].Round.Size.X.Scale, -1, 1, 0)
+				TweenService:Create(MagFrame[1].Round, TweenInfo.new(0.1), {Size = UDim2.new(MagFrame[1].Round.Size.X.Scale, -1, 0, 0)}):Play()
+			end
+			PreviousAmmo = Gun.Ammo
+		end,
+	}
+	
+	GunUIFunctions[UIStates[UIState]]()
 end
 
 local function updateToolDisplay(equipping, Tool: ToolClass.ClassType, transitionTime)
@@ -207,7 +242,7 @@ local function updateToolDisplay(equipping, Tool: ToolClass.ClassType, transitio
 		GunInfoFrame.Visible = true
 
 		if Tool and Tool.ClassName == "Gun" then
-			updateGunDisplay(Tool, true)
+			updateGunDisplay(Tool, 0)
 		end
 	else
 		local Tween = TweenService:Create(GunInfoFrame,TweenInfo.new(0.3),{GroupTransparency = 1})
@@ -246,8 +281,8 @@ local function MuffleSounds (Unmuffle: boolean)
 	end
 end
 
-function module.updateGunDisplay(Tool: ToolClass.ClassType)
-	updateGunDisplay(Tool)
+function module.updateGunDisplay(Tool: ToolClass.ClassType, UIState: number)
+	updateGunDisplay(Tool, UIState)
 end
 
 function module.LoadChar(Character)
@@ -291,15 +326,17 @@ function module.LoadChar(Character)
 	end
 	
 	-- Check if there is absorption and apply absorption color to HealthNumber
-	local function absorptionBarCheck ()
+	local function absorptionBarCheck (HealthRatio)
 		local Absorption = Humanoid:GetAttribute("Absorption")
 		HealthNumber.Text = math.floor(Humanoid.Health+Absorption)
 		if Absorption > 0 then
-			--AbsorptionFrame.Visible = true
-			HealthNumber.TextColor3 = Color3.fromRGB(255, 235, 133)
+			HealthNumber.TextColor3 = Color3.fromRGB(255, 235, 133) -- yellow
 		else
-			--AbsorptionFrame.Visible = false
-			HealthNumber.TextColor3 = Color3.fromRGB(255, 255, 255)
+			if HealthRatio and HealthRatio <= 0.2 then
+				HealthNumber.TextColor3 = Color3.fromRGB(255, 133, 133) -- red
+			else
+				HealthNumber.TextColor3 = Color3.fromRGB(255, 255, 255) -- white
+			end
 		end
 	end
 	
@@ -337,9 +374,9 @@ function module.LoadChar(Character)
 		end
 		Gradient.Transparency = NumberSequence.new(
 			{
-				NumberSequenceKeypoint.new(0,math.clamp(Amount,0.2,1)),
-				NumberSequenceKeypoint.new(0.5,1),
-				NumberSequenceKeypoint.new(1,math.clamp(Amount,0.2,1)),
+				NumberSequenceKeypoint.new(0,math.clamp(Amount, 0.5, 1)),
+				NumberSequenceKeypoint.new(0.5, 1),
+				NumberSequenceKeypoint.new(1,math.clamp(Amount, 0.5, 1)),
 			}
 		)
 	end)
@@ -354,6 +391,9 @@ function module.LoadChar(Character)
 		elseif PreviousHealthRatio <= 0.3 and HealthRatio > 0.3 then
 			MuffleSounds(true)
 		end
+		
+		
+		absorptionBarCheck(HealthRatio) -- Serves as a means to turn the HealthNumber red when health is low while also accounting for absorption with this.
 		
 		-- Change health bars
 		barChange(HealthL, HealthRatio)
@@ -371,7 +411,7 @@ function module.LoadChar(Character)
 		
 		-- Set the image transparency to the TransparencyLevel multiplied by the BloodScreenRegainRatio.
 		-- BloodScreenRegainRatio is supposed to dictate how much transparency is regained from the beating effect.
-		BloodScreen.ImageTransparency = math.clamp(BloodScreen:GetAttribute("TransparencyLevel")*BloodScreenRegainRatio, 0, 1)
+		BloodScreen.ImageTransparency = math.clamp(BloodScreen:GetAttribute("TransparencyLevel") * BloodScreenRegainRatio, 0, 1)
 
 		PreviousHealthRatio = HealthRatio
 	end)
@@ -398,22 +438,33 @@ function module.LoadChar(Character)
 	
 	-- This loop creates a heart beating effect with BloodScreen using TransparencyLevel and BloodScreenRegainRatio.
 	task.defer(function()
-		while task.wait() and Humanoid.Health > 0 do
+		while Humanoid.Health > 0 do
 			if Humanoid.Health <= Humanoid.MaxHealth * 0.8 then
+				local HealthRatio = Humanoid.Health / Humanoid.MaxHealth
+				local Intensity = (1 - HealthRatio)^2.5 
+
+				-- How deeper the beat gets.
+				local BeatTransparency = math.clamp(BloodScreen:GetAttribute("TransparencyLevel") - (0.35 * Intensity), 0, 1)
+
+				-- Beat in.
 				TweenService:Create(
 					BloodScreen,
-					TweenInfo.new(0.1,Enum.EasingStyle.Linear,Enum.EasingDirection.Out),
-					{ImageTransparency = math.clamp(BloodScreen:GetAttribute("TransparencyLevel"), 0, 1)}
+					TweenInfo.new(0.1, Enum.EasingStyle.Linear),
+					{ImageTransparency = BeatTransparency}
 				):Play()
-				task.wait(0.1)
+
+				task.wait(0.1) -- constant wait inbetween both beats. For that ba-dum effect.
+
+				-- Beat out.
 				TweenService:Create(
 					BloodScreen,
-					TweenInfo.new(0.1,Enum.EasingStyle.Linear,Enum.EasingDirection.Out),
-					{ImageTransparency = math.clamp(BloodScreen:GetAttribute("TransparencyLevel")*BloodScreenRegainRatio, 0, 1)}
+					TweenInfo.new(0.1, Enum.EasingStyle.Linear),
+					{ImageTransparency = math.clamp(BloodScreen:GetAttribute("TransparencyLevel") + (Intensity * 0.2), 0, 1)}
 				):Play()
-				task.wait(0.1)
-				task.wait((Humanoid.Health/Humanoid.MaxHealth)*5)
+
+				task.wait((HealthRatio ^ 1.25) * 4) -- Heartbeat speed.
 			end
+			task.wait()
 		end
 	end)
 
@@ -572,6 +623,32 @@ function module.LoadChar(Character)
 		--end)
 
 	end)
+	
+	local RenderStepLoop = RunService.RenderStepped:Connect(function(dt)
+		local CurrentCamCF = Camera.CFrame
+
+		local deltaCF = LastCamCF:ToObjectSpace(CurrentCamCF)
+		local rx, ry, rz = deltaCF:ToOrientation()
+		local targetOffset = Vector2.new(-math.deg(ry), math.deg(rx))
+
+		local ShakeStrength = 0.6
+		targetOffset *= ShakeStrength
+
+		-- Clamp
+		targetOffset = Vector2.new(
+			math.clamp(targetOffset.X, -12, 12),
+			math.clamp(targetOffset.Y, -12, 12)
+		)
+
+		local Smoothness = 6
+		shakeOffset = shakeOffset:Lerp(targetOffset, math.clamp(dt * Smoothness, 0, 1))
+		Bars.Position = Bars:GetAttribute("OriginalPosition")
+			+ UDim2.fromOffset(shakeOffset.X, shakeOffset.Y)
+		RightFrame.Position = RightFrame:GetAttribute("OriginalPosition")
+			+ UDim2.fromOffset(shakeOffset.X, shakeOffset.Y)
+
+		LastCamCF = CurrentCamCF
+	end)
 
 	Humanoid.Died:Once(function()
 		for _, connection in {
@@ -584,7 +661,8 @@ function module.LoadChar(Character)
 			DownedEventFunction,
 			absorptionChanged,
 			GradientChange,
-			LowHealthMuffleSettingChanged
+			LowHealthMuffleSettingChanged,
+			RenderStepLoop
 			} 
 		do
 			connection:Disconnect()
@@ -602,7 +680,8 @@ function module.LoadChar(Character)
 			DownedEventFunction,
 			absorptionChanged,
 			GradientChange,
-			LowHealthMuffleSettingChanged
+			LowHealthMuffleSettingChanged,
+			RenderStepLoop
 			} 
 		do
 			connection:Disconnect()

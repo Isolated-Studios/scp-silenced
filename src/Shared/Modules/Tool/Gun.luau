@@ -26,12 +26,13 @@ local GunVignette = HUD:WaitForChild("GunVignette")
 local VignetteAmount = GunVignette:WaitForChild("Gradient"):WaitForChild("VignetteAmount")
 local VignetteTween: Tween = nil
 
-local Character: Model, Humanoid: Humanoid
+local Character: Model, Humanoid: Humanoid, AmmoHolder: Configuration
 local ViewModel: Model
 
 local function __load_character(character)
 	Character = character
 	Humanoid = Character:WaitForChild("Humanoid")
+	AmmoHolder = Character:WaitForChild("Ammo")
 	Humanoid.Died:Connect(function()
 		ViewModel = nil
 	end)
@@ -166,6 +167,13 @@ Gun.ReloadStyle = {
 	["Magazine"] = 1;
 }
 
+Gun.UIState = {
+	["Reset"] = 0,
+	["Bolt"] = 1,
+	["Reload"] = 2,
+	["Fire"] = 3
+}
+
 --[[
 	====== FUNCTION DEFINITIONS ======
 
@@ -183,6 +191,7 @@ function Gun.new(Tool: Tool): ClassType
 	self.Aiming = false
 	self.Bolted = false
 	self.Ammo = self.Settings.MagSize
+	self.ReserveHolder = AmmoHolder:FindFirstChild(self.Settings.AmmoType)
 	if self.Settings.Casing and ReplicatedStorage.Objects.Casings:FindFirstChild(self.Settings.Casing) and self.Handle:FindFirstChild("Eject") then
 		self.PrimeCasing = ReplicatedStorage.Objects.Casings[self.Settings.Casing]
 	end
@@ -324,7 +333,7 @@ end
 function Gun:Equip()
 	if self.State ~= ToolClass.State.Unequipped then return end
 	self.State = ToolClass.State.Equipping
-	CrosshairPercent.Value = self.BulletSpread
+	CrosshairPercent.Value = math.clamp(self.BulletSpread, 0.001, math.huge)
 	ToolClass.getHumanoid():EquipTool(self.Instance)
 	if self.Ammo > 0 and not self.Bolted then -- play the first equip (with bolting) animation if unbolted but has ammo
 		self:PlayAnimation("FirstEquip")
@@ -332,7 +341,7 @@ function Gun:Equip()
 	else
 		self:PlayAnimationFor("Equip", self.Settings.EquipSpeed)
 	end
-	task.defer(HUDModule.updateGunDisplay, self)
+	HUDModule.updateGunDisplay(self, Gun.UIState.Reset)
 	self.__task = task.delay(self.Settings.EquipSpeed, self.PlayAnimation, self, "Hold")
 	task.wait(self.Settings.EquipCancel)
 	self.GunState = Gun.State.Idle -- in case the gun breaks and locks itself somehow, reequipping it should fix it
@@ -350,7 +359,7 @@ end
 	Here are all the methods used for firing, reloading and all the very gun-specific stuff.
 ]]
 
-function Gun:__modifyHammerAndCylinder(h0, h1, h2, c0, c1, c2) -- beacause it's used too many times
+function Gun:__modifyHammerAndCylinder(h0, h1, h2, c0, c1, c2) -- because it's used too many times
 	if self.Hammer and self.Settings.HammerAngle and h0 and h1 and h2 then
 		self.Hammer.C0 = CFrame.new(self.Hammer.C0.Position) * CFrame.Angles(
 			math.rad(self.Settings.HammerAngle.X) * h0,
@@ -387,7 +396,7 @@ function Gun:Bolt(skipAnimation: boolean)
 	end
 	self.Bolted = true
 	self.Ammo -= 1
-	task.defer(HUDModule.updateGunDisplay, self)
+	HUDModule.updateGunDisplay(self, Gun.UIState.Bolt)
 	
 	if self.Settings.PlayHammerClick then
 		Utils.SFX.playSound(self.Sounds, "BoltBack", self.Handle, true, true)
@@ -517,8 +526,8 @@ function Gun:__fire()
 	-- // darken vignette for coolness
 	do -- local scope so these variables don't mix with others
 		local startTime = tick()
-		if VignetteTween then 
-			VignetteTween:Cancel() 
+		if VignetteTween then
+			VignetteTween:Cancel()
 		end
 		
 		local DarkenAmount = self.Settings.Damage * self.Settings.BulletsPerShot / ((self.Settings.Automatic == true and self.Settings.RPM * 5) or 1000)
@@ -539,12 +548,12 @@ function Gun:__fire()
 			local otherTime = tick()-startTime
 			if math.abs(otherTime-WaitTime) < 0.1 and (tick() - self.LastShotTick > 100 / self.Settings.RPM) then -- is gun still firing?
 				-- another really cheap way to check if gun is still "firing" when gun is automatic
-				if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) 
-					and self.Settings.Automatic 
-					and self.Ammo > 0 
-					and not Humanoid:GetAttribute("Running") 
-				then 
-					return 
+				if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1)
+					and self.Settings.Automatic
+					and self.Ammo > 0
+					and not Humanoid:GetAttribute("Running")
+				then
+					return
 				end
 				VignetteTween:Play()
 			end
@@ -564,12 +573,11 @@ function Gun:__attemptFire()
 	if self.Bolted then
 		CommonFuncs.SafeCall(self.__fire, self) -- gun no sad if __fire sad
 		self.Bolted = false
-		task.defer(HUDModule.updateGunDisplay, self)
+		HUDModule.updateGunDisplay(self, Gun.UIState.Bolt)
 	end
-	
+	HUDModule.updateGunDisplay(self, Gun.UIState.Fire)
 	task.wait(60 / self.Settings.RPM)
 	self:Bolt() -- attempt to bolt gun again if it has ammo
-	task.defer(HUDModule.updateGunDisplay, self)
 end
 
 function Gun:Click(input: InputObject)
@@ -657,7 +665,7 @@ function Gun:Aim(desiredState, input: InputObject?)
 	if self.Aiming then
 		TweenService:Create(workspace.CurrentCamera, TweenInfo.new(self.Settings.AimInSpeed * RunMultiplier, Enum.EasingStyle.Cubic,Enum.EasingDirection.Out), {FieldOfView = self.Settings.AimFOV}):Play()
 		TweenService:Create(CrosshairPercent, TweenInfo.new(self.Settings.AimInSpeed * RunMultiplier, Enum.EasingStyle.Exponential,Enum.EasingDirection.Out), {Value = 1}):Play()
-	else
+	else	
 		TweenService:Create(workspace.CurrentCamera, TweenInfo.new(self.Settings.AimOutSpeed * RunMultiplier, Enum.EasingStyle.Cubic,Enum.EasingDirection.Out), {FieldOfView = 70}):Play()
 		if self.State ~= ToolClass.State.Unequipped then
 			TweenService:Create(CrosshairPercent, TweenInfo.new(self.Settings.AimOutSpeed * RunMultiplier, Enum.EasingStyle.Exponential,Enum.EasingDirection.Out), {Value = self.BulletSpread}):Play()
@@ -668,6 +676,7 @@ end
 function Gun:Reload()
 	if self.Ammo >= self.Settings.MagSize and self.Bolted then return end
 	if self.GunState ~= Gun.State.Idle then return end
+	if self.ReserveHolder.Value == 0 then return end -- Ran out of reserve ammo.
 	self.GunState = Gun.State.Reloading
 	
 	if self.Settings.ReloadStyle == Gun.ReloadStyle.Magazine then
@@ -677,42 +686,49 @@ function Gun:Reload()
 					TweenService:Create(self.BoltPart, TweenInfo.new(0.05), {C1 = self.DefaultBoltC1}):Play()
 				end
 				self:PlayAnimation("EmptyReload", nil, nil, nil, true)
-				self.Ammo = self.Settings.MagSize
-				task.defer(HUDModule.updateGunDisplay, self)
+				-- This will get the exact amount needed to load the mag with respect to the reserve ammo.
+				local LoadingAmount = math.min(self.Settings.MagSize - self.Ammo, self.ReserveHolder.Value)
+				self.Ammo += LoadingAmount
+				self.ReserveHolder.Value -= LoadingAmount
+				HUDModule.updateGunDisplay(self, Gun.UIState.Reload)
 				self:Bolt(true)
 				self.GunState = Gun.State.Idle
 			end)
 		else
 			self.__task = task.spawn(function()
 				self:PlayAnimation("Reload1", nil, nil, nil, true)
-				self.Ammo = self.Settings.MagSize
-				task.defer(HUDModule.updateGunDisplay, self)
+				-- This will get the exact amount needed to load the mag with respect to the reserve ammo.
+				local LoadingAmount = math.min(self.Settings.MagSize - self.Ammo, self.ReserveHolder.Value)
+				self.Ammo += LoadingAmount
+				self.ReserveHolder.Value -= LoadingAmount
+				HUDModule.updateGunDisplay(self, Gun.UIState.Reload)
 				self:Bolt()
 				self.GunState = Gun.State.Idle
 			end)
 		end
 	elseif self.Settings.ReloadStyle == Gun.ReloadStyle.SingleCartridge then
 		local function loadCartridge()
-			if self.Ammo >= self.Settings.MagSize then
+			if self.Ammo >= self.Settings.MagSize or self.ReserveHolder.Value == 0 then
 				self:PlayAnimation("Reload3")
 				self.GunState = Gun.State.Idle
 				return
-			elseif self.Ammo == self.Settings.MagSize - 1 then
+			elseif self.Ammo == self.Settings.MagSize - 1 or self.ReserveHolder.Value == 1 then
 				self:PlayAnimation("Reload2Last", nil, nil, nil, true)
 			else
 				self:PlayAnimation("Reload2", nil, nil, nil, true)
 			end
 			self.Ammo += 1
-			task.defer(HUDModule.updateGunDisplay, self)
+			self.ReserveHolder.Value -= 1
 			self.__task = task.spawn(loadCartridge)
+			HUDModule.updateGunDisplay(self, Gun.UIState.Reload)
 		end
 		
 		if self.Bolted == false then -- empty reload
 			self.__task = task.spawn(function()
 				self:PlayAnimation("EmptyReload", nil, nil, nil, true)
 				self.Bolted = true
-				task.defer(HUDModule.updateGunDisplay, self)
 				self.__task = task.spawn(loadCartridge)
+				HUDModule.updateGunDisplay(self, Gun.UIState.Reload)
 			end)
 		else
 			self.__task = task.spawn(function()
