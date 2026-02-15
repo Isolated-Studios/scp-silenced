@@ -14,6 +14,8 @@ local ViewmodelEvents = Events.Viewmodel
 local Shove = ViewmodelEvents.Shove
 local Aim = ViewmodelEvents.Aim
 local ChangeGrip = ViewmodelEvents.ChangeGrip
+local WeldTool = Events.Tool.WeldTool
+local DestroyToolWeld = Events.Tool.DestroyToolWeld
 
 local Modules = ReplicatedStorage.Modules
 local FolderViewmodels = PlayerAssets.Viewmodels
@@ -274,9 +276,15 @@ function module.LoadChar(Character)
 
 			if RightHand:FindFirstChild("RightGrip") then Character["RightHand"]["RightGrip"]:Destroy() end
 			if not Tool:FindFirstChild("Handle") and ViewModel:FindFirstChild("MotorModel") then ToolHandler.UnequipTool(Tool) return end
-			if Tool.RequiresHandle or Tool.CanBeDropped then ToolHandler.UnequipTool(Tool) warn("Attempted to equip tool with RequiresHandle/CanBeDropped set to true") end
+			if Tool.RequiresHandle or Tool.CanBeDropped then
+				ToolHandler.UnequipTool(Tool)
+				warn("Attempted to equip tool with RequiresHandle/CanBeDropped set to true")
+			end
 
 			-- Set RunType if it exists in the tool
+			
+			local CharacterWeld = WeldTool:InvokeServer(Tool)
+			CharacterWeld:Destroy()
 
 			local GripWeld = Instance.new("Motor6D")
 			GripWeld.Name = "GripWeld"
@@ -311,6 +319,7 @@ function module.LoadChar(Character)
 				if toolPart:IsA("BasePart") then
 					toolPart.CanCollide = false
 					toolPart.Anchored = false
+					toolPart.LocalTransparencyModifier = 0
 				end
 				if not table.find(IgnoreToolCameraing, toolPart.Name) then
 					toolPart.Parent = MotorModel
@@ -355,6 +364,7 @@ function module.LoadChar(Character)
 				end
 			end
 			AimSpring.Target = 0
+			DestroyToolWeld:FireServer()
 		elseif Child:IsA("Model") and Child:GetAttribute("TargetPart") then
 			-- // Unequip Clothing
 			for _,VMclothing in pairs(ViewModel:GetChildren()) do
@@ -413,15 +423,32 @@ function module.LoadChar(Character)
 	local function uglyViewmodelMath (MouseDelta,updatedSwaySpring,updatedHandleSpring,dt)
 		local WalkSpeed = MovementModule:GetWalkSpeed()
 		local AppliedSwaySize = SwaySize
+		local WalkSpeedDivisor = 4
 		if AimSpring.Target == 1 then
-			AppliedSwaySize = SwaySize/5
+			AppliedSwaySize = AppliedSwaySize/5
 		end
+
+		local Stamina = Humanoid:GetAttribute("Stamina") or 100
+		local MaxStamina = Humanoid:GetAttribute("MaxStamina") or 100
+		local StaminaSwayRatio = math.clamp(Stamina / MaxStamina, 0, 1)
+		AppliedSwaySize *= 1 + ((1 - StaminaSwayRatio) ^ 1.5) * 0.75  -- Max +75% Sway
+		
+		local WalkFrequency = WalkSpeed/WalkSpeedDivisor
+		
 		if Humanoid and Running and Humanoid:GetState() ~= Enum.HumanoidStateType.Freefall and Humanoid:GetState() ~= Enum.HumanoidStateType.Landed then
 			WalkSway = WalkSway:Lerp(
-				CFrame.new((0.07*AppliedSwaySize) * math.sin(tick() * (2 * math.floor(WalkSpeed/4))),(0.07*AppliedSwaySize) * math.cos(tick() * (4 * math.floor(WalkSpeed/4))),0)*
-					CFrame.Angles(0,0,(-.06*AppliedSwaySize) * math.cos(tick() * (2 * WalkSpeed/4))),3*Sensitivity*dt)
+				CFrame.new(
+					0.07 * AppliedSwaySize * math.sin(tick() * (2 * WalkFrequency)),
+					0.07 * AppliedSwaySize * math.cos(tick() * (4 * WalkFrequency)),
+					0
+				) * CFrame.Angles(
+					0,
+					0,
+					-0.06 * AppliedSwaySize * math.cos(tick() * (2 * WalkFrequency))
+				),
+				3 * Sensitivity * dt)
 		else
-			WalkSway = WalkSway:Lerp(CFrame.new(), 1.5*Sensitivity*dt)
+			WalkSway = WalkSway:Lerp(CFrame.new(), 1.5 * Sensitivity * dt)
 		end
 
 		--//Sway that deals with Strafing
@@ -515,7 +542,7 @@ function module.LoadChar(Character)
 
 			ViewModel:PivotTo(ViewModel.PrimaryPart.CFrame*CFrame.new(updatedSwaySpring.x,updatedSwaySpring.y,updatedSwaySpring.z))
 			if Handle then
-			Handle.CFrame = Handle.CFrame*CFrame.Angles( (((updatedHandleSpring.z)^2)^0.5) / stabilityToUse , (((updatedHandleSpring.y)^2)^0.5) / (stabilityToUse*2) ,0)	
+				Handle.CFrame = Handle.CFrame*CFrame.Angles( (((updatedHandleSpring.z)^2)^0.5) / stabilityToUse , (((updatedHandleSpring.y)^2)^0.5) / (stabilityToUse*2) ,0)	
 			end
 			if AimSpring.Target == 0 then swayRotLoop(1,1.2) else swayRotLoop(0.3,0.5) end -- Apply rotational sway
 		end
@@ -532,7 +559,7 @@ function module.LoadChar(Character)
 			if part.Name ~= "Head" 
 				-- Torso is hidden to prevent seeing it when rocking character's waist back and forth in Movement.
 				and not table.find(TorsoPartsToHide,string.lower(part.Name))
-				and (ShowArms or table.find(ArmParts, part.Name) == nil) 
+				and (ShowArms or table.find(ArmParts, part.Name) == nil)
 			then
 				part.LocalTransparencyModifier = LocalTransparency
 			elseif Humanoid.Health > 0 then -- prevents corpse parts being invisible.
@@ -555,7 +582,7 @@ function module.LoadChar(Character)
 
 		if Character and Character:FindFirstChildOfClass("Tool") and not CommonFuncs.AreInputUIsActive() then
 			if Character:FindFirstChildOfClass("Tool"):GetAttribute("ToolSource") == "Gun"
-				and Player.PlayerGui 
+				and Player.PlayerGui
 				and Player.PlayerGui:FindFirstChild("MouseUI")
 				and Player.PlayerGui.MouseUI:FindFirstChild("Dot")
 			then
@@ -564,12 +591,11 @@ function module.LoadChar(Character)
 				Player.PlayerGui.MouseUI["Dot"]["UIStroke"].Transparency = 1
 			end
 		else
-			if Player.PlayerGui 
-				and Player.PlayerGui:FindFirstChild("MouseUI") 
-				and Player.PlayerGui.MouseUI:FindFirstChild("Dot") 
+			if Player.PlayerGui
+				and Player.PlayerGui:FindFirstChild("MouseUI")
+				and Player.PlayerGui.MouseUI:FindFirstChild("Dot")
 			then
-				Player.PlayerGui.MouseUI["Dot"]["Crosshair"].GroupTransparency = AimSpring.Position
-				Player.PlayerGui.MouseUI["Crosshair"].Value = 0
+				Player.PlayerGui.MouseUI["Dot"]["Crosshair"].GroupTransparency = 1
 				Player.PlayerGui.MouseUI["Dot"].BackgroundTransparency = 0
 				Player.PlayerGui.MouseUI["Dot"]["UIStroke"].Transparency = 0.8
 			end

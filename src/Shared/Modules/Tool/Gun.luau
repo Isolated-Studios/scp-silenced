@@ -4,6 +4,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local CollectionService = game:GetService("CollectionService")
 
 local ToolClass = require(script.Parent)
 local Utils = require(ReplicatedStorage.Modules.Utils)
@@ -105,7 +106,6 @@ export type ClassType = ToolClass.ClassType & typeof(setmetatable(
 			RunAndReload: boolean,
 			EmptyReload: boolean,
 			BoltBackWhenEmpty: boolean,
-			ScrollAffectsAim: boolean,
 
 			AimInSpeed: number,
 			AimOutSpeed: number,
@@ -402,9 +402,14 @@ function Gun:__projectBullet(randomValue) -- TODO! this function and its depende
 		Origin = ViewModel.CameraPart.CFrame
 	end
 	local MouseFilterList = {}
-	for _,thing in pairs(ViewModel:GetDescendants()) do
-		if thing:IsA("BasePart") then
-			table.insert(MouseFilterList,thing)
+	for _, ViewModelPart in pairs(ViewModel:GetDescendants()) do
+		if ViewModelPart:IsA("BasePart") then
+			table.insert(MouseFilterList, ViewModelPart)
+		end
+	end
+	for _, IgnorePart in pairs(CollectionService:GetTagged("Ignore")) do
+		if IgnorePart:IsA("BasePart") then
+			table.insert(MouseFilterList, IgnorePart)
 		end
 	end
 	CustomMouse.TargetBlackList = MouseFilterList
@@ -439,7 +444,7 @@ function Gun:__beginSpreadReduction()
 		local ReductionIncrement = self.Settings.ReductionIncrement or 0.2
 		local ReductionWait = self.Settings.ReductionWait or 0.01
 		self.BulletSpread = math.clamp(self.BulletSpread-ReductionIncrement, self.Settings.MinSpread, self.Settings.MaxSpread)
-		CrosshairPercent.Value = self.BulletSpread
+		CrosshairPercent.Value = math.clamp(self.BulletSpread, 0.001, math.huge)
 		task.wait(ReductionWait)
 	end
 	self.SpreadReduction = false
@@ -455,7 +460,7 @@ function Gun:__fire()
 	
 	-- apply spread and cast bullet
 	self.BulletSpread = math.clamp(self.BulletSpread + self.Settings.SpreadCost, self.Settings.MinSpread, self.Settings.MaxSpread)
-	CrosshairPercent.Value = self.BulletSpread
+	CrosshairPercent.Value = math.clamp(self.BulletSpread, 0.001, math.huge)
 	if not self.SpreadReduction then
 		self.SpreadReduction = true
 		task.defer(self.__beginSpreadReduction, self)

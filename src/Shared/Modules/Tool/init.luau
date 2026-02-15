@@ -13,16 +13,19 @@ local LocalPlayer = Players.LocalPlayer
 local ToolDataFolder = ReplicatedStorage.Tooling.Tools
 
 local CharacterLoaded = false
-local Character: Model, Humanoid: Humanoid
+local Character: Model, Humanoid: Humanoid, CharacterAnimator: Animator
 local ViewModel: Model, ViewModelAnimator: Animator
 local LoadedAnimations = {} -- SEEMS like we WILL be using a lot of memory because the garbage collector breaks animations now
+local LoadedCharacterAnimations = {}
 -- at least till the next character loads and clears everything.
 -- setmetatable({}, {__mode = "v"}) -- Weak table. We don't like memory leaks :blackops:
 
 local function __load_character(character)
 	LoadedAnimations = {} --setmetatable({}, {__mode = "v"})
+	LoadedCharacterAnimations = {}
 	Character = character
 	Humanoid = Character:WaitForChild("Humanoid")
+	CharacterAnimator = Humanoid:WaitForChild("Animator")
 	Humanoid.Died:Connect(function()
 		CharacterLoaded = false
 		ViewModel = nil
@@ -152,8 +155,13 @@ function Tool.new(ToolInstance: Tool): ClassType
 		if not v:IsA("Animation") then continue end
 		self.Animations[v.Name] = v
 	end
+	self.CharacterAnimations = {}
+	for _, v in ToolObjects.CharacterAnimations:GetChildren() do
+		if not v:IsA("Animation") then continue end
+		self.CharacterAnimations[v.Name] = v
+	end
 	self.__loaded_animations = {} -- Don't use this, it's only used as a strong reference to loaded animations, as the global one is a weak table.
-	
+
 	self.Bindings = {
 		["Drop"] = {
 			InputType = Enum.UserInputType.Keyboard;
@@ -211,12 +219,12 @@ function Tool:Unequip()
 	self:StopAnimation("Hold")
 	task.wait(self.Settings.UnequipSpeed)
 	if ViewModelAnimator then
-	for _, PlayingAnimation in ViewModelAnimator:GetPlayingAnimationTracks() do
-		-- this down here looks stupid, but don't remove it. you have to PLAY the animation with the desired fadeTime and weight
-		-- if you want them to work, because fadeTime and weight parameters of both :Stop() and :AdjustWeight() DON'T EVEN WORK.
-		-- in fact, im pretty sure removing the 0.0001 parameter in StopAnimation() will have NO impact whatsoever.
-		PlayingAnimation:Play(0.0001, 0.0001)
-		PlayingAnimation:Stop(0.0001)
+		for _, PlayingAnimation in ViewModelAnimator:GetPlayingAnimationTracks() do
+			-- this down here looks stupid, but don't remove it. you have to PLAY the animation with the desired fadeTime and weight
+			-- if you want them to work, because fadeTime and weight parameters of both :Stop() and :AdjustWeight() DON'T EVEN WORK.
+			-- in fact, im pretty sure removing the 0.0001 parameter in StopAnimation() will have NO impact whatsoever.
+			PlayingAnimation:Play(0.0001, 0.0001)
+			PlayingAnimation:Stop(0.0001)
 		end
 	end
 	Humanoid:UnequipTools()
@@ -242,26 +250,54 @@ function Tool:GetAnimation(name: string, Animation: Animation?): AnimationTrack?
 end
 
 --[=[
+	Gets the 'AnimationTrack' instance for the given animation name, but loads it in the character animator.
+
+	If the animation is not already loaded, it loads the animation if provided with an Animation instance.
+]=]
+function Tool:GetCharacterAnimation(name: string, CharacterAnimation: Animation?): AnimationTrack?
+	if not CharacterLoaded then return nil end
+
+	name = self.Instance.Name .. "." .. name
+	if LoadedCharacterAnimations[name] then return LoadedCharacterAnimations[name] end
+	if not CharacterAnimation then return nil end
+
+	local LoadedCharacterAnimation = CharacterAnimator:LoadAnimation(CharacterAnimation)
+	LoadedCharacterAnimation.Name = self.Instance.Name .. "." .. name
+	LoadedCharacterAnimations[name] = LoadedCharacterAnimation
+	return LoadedCharacterAnimation
+end
+
+--[=[
 	Plays the animation with the provided name.
 
 	If the animation is not already loaded, it loads and plays it.
 	This function may yield if the animation was not preloaded, or
 	if "waitForEnd" is set to true, yielding till the animation ends.
 
-	Returns the AnimationTrack if it successfully gets it.
+	Returns the AnimationTrack(s) if it successfully gets it.
 ]=]
 function Tool:PlayAnimation(name: string, fadeTime: number?, weight: number?, speed: number?, waitForEnd: boolean?): AnimationTrack?
 	local Animation = self:GetAnimation(name, self.Animations[name])
+	local CharacterAnimation = self:GetCharacterAnimation(name, self.CharacterAnimations[name])
 	if not Animation then return nil end
 	for event, callback in self.AnimationEvents do
 		self:__connect(name .. "Event" .. event, Animation:GetMarkerReachedSignal(event), callback)
 	end
 	Animation:Play(fadeTime, weight, speed)
+	if CharacterAnimation then
+		CharacterAnimation:Play(fadeTime, weight, speed)
+		CharacterAnimation:AdjustSpeed(CharacterAnimation.Length / Animation.Length)
+	end
 	if waitForEnd then
-		task.wait(Animation.Length)
+		if self.AnimationEvents.End then
+			print("well theres the end.")
+			Animation:GetMarkerReachedSignal("End"):Wait()
+		else
+			task.wait(Animation.Length)
+		end
 	end
 	
-	return Animation
+	return Animation, CharacterAnimation
 end
 
 --[=[
@@ -270,25 +306,34 @@ end
 	If the animation is not already loaded, it loads and plays it.
 	This function may yield if the animation was not preloaded.
 
-	Returns the AnimationTrack if it successfully gets it.
+	Returns the AnimationTrack(s) if it successfully gets it.
 ]=]
 function Tool:PlayAnimationFor(name: string, playTime: number, fadeTime: number?, weight: number?): AnimationTrack?
 	local Animation = self:GetAnimation(name, self.Animations[name])
+	local CharacterAnimation = self:GetCharacterAnimation(name, self.CharacterAnimations[name])
 	if not Animation then return nil end
 	Animation:Play(fadeTime, weight, Animation.Length / (playTime or 1))
-	return Animation
+	if CharacterAnimation then
+		CharacterAnimation:Play(fadeTime, weight, CharacterAnimation.Length / (playTime or 1))
+		CharacterAnimation:AdjustSpeed(CharacterAnimation.Length / Animation.Length)
+	end
+	return Animation, CharacterAnimation
 end
 
 --[=[
 	Stops the animation with the provided name.
 
-	Returns the AnimationTrack if it successfully gets it.
+	Returns the AnimationTrack(s) if it successfully gets it.
 ]=]
 function Tool:StopAnimation(name: string, fadeTime: number?): AnimationTrack?
 	local Animation = self:GetAnimation(name)
+	local CharacterAnimation = self:GetCharacterAnimation(name)
 	if not Animation then return nil end
 	Animation:Stop(fadeTime)
-	return Animation
+	if CharacterAnimation then
+		CharacterAnimation:Stop(fadeTime)
+	end
+	return Animation, CharacterAnimation
 end
 
 function Tool:Drop()
