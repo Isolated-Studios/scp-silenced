@@ -134,6 +134,7 @@ function module.LoadChar(Character)
 	local Camera = workspace.CurrentCamera
 	ViewModel = PrimeViewmodel:Clone()
 	ViewModelAnimator = ViewModel.Humanoid.Animator
+	ViewModelRootPart = ViewModel.HumanoidRootPart
 	ViewModel.Parent = Camera
 	ViewModel.PrimaryPart = ViewModel.CameraPart
 
@@ -425,11 +426,9 @@ function module.LoadChar(Character)
 
 		--//Sway that deals with Strafing
 		local AimSwayDivisor = 1
-		local Handle = ViewModel["MotorModel"]["Handle"]
-		local Aim = nil
-		if ViewModel.MotorModel:FindFirstChild("Aim") then
-			Aim = ViewModel.MotorModel.Aim
-		end
+		local MotorModel = ViewModel:FindFirstChild("MotorModel")
+		local Handle = if MotorModel ~= nil then MotorModel:FindFirstChild("Handle") else nil
+		local Aim = if MotorModel ~= nil then MotorModel:FindFirstChild("Aim") else nil
 
 		local SwayDividend = 16
 		if AimSpring.Target == 1 then
@@ -515,7 +514,9 @@ function module.LoadChar(Character)
 			end
 
 			ViewModel:PivotTo(ViewModel.PrimaryPart.CFrame*CFrame.new(updatedSwaySpring.x,updatedSwaySpring.y,updatedSwaySpring.z))
+			if Handle then
 			Handle.CFrame = Handle.CFrame*CFrame.Angles( (((updatedHandleSpring.z)^2)^0.5) / stabilityToUse , (((updatedHandleSpring.y)^2)^0.5) / (stabilityToUse*2) ,0)	
+			end
 			if AimSpring.Target == 0 then swayRotLoop(1,1.2) else swayRotLoop(0.3,0.5) end -- Apply rotational sway
 		end
 
@@ -549,9 +550,8 @@ function module.LoadChar(Character)
 		local updatedSwaySpring = SwaySpring:update(dt)
 		local updatedHandleSpring = HandleSpring:update(dt,stabilityToUse)
 		ViewModel:PivotTo(Camera.CFrame:ToWorldSpace(Offset))
-		ShowArms = 
-			if Character and Character:FindFirstChildOfClass("Tool") then false
-			else true
+		ShowArms = not (Character ~= nil and Character:FindFirstChildOfClass("Tool"))
+		ViewModelRootPart.Anchored = ShowArms
 
 		if Character and Character:FindFirstChildOfClass("Tool") and not CommonFuncs.AreInputUIsActive() then
 			if Character:FindFirstChildOfClass("Tool"):GetAttribute("ToolSource") == "Gun"
