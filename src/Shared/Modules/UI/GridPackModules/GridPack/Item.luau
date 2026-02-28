@@ -270,7 +270,8 @@ function Item.new(properties: Types.ItemProperties): Types.ItemObject
 
 			TweenService:Create(self.ItemElement.Vignette, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {ImageTransparency = 0.8, BackgroundTransparency = 0.1}):Play()
 			TweenService:Create(self.ItemElement.Vignette.UIStroke, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {Transparency = 0.2}):Play()
-			self.ItemElement.ZIndex += 10
+			self.ItemElement:SetAttribute("_originalZIndex", self.ItemElement.ZIndex)
+			self.ItemElement.ZIndex = 1000
 
 			self._draggingTrove:Add(UserInputService.InputBegan:Connect(function(input: InputObject, gameProcessedEvent: boolean)
 				if gameProcessedEvent == false then
@@ -459,7 +460,7 @@ function Item.new(properties: Types.ItemProperties): Types.ItemObject
 			TweenService:Create(self.ItemElement.Vignette, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {ImageTransparency = 0.95, BackgroundTransparency = 1, ImageColor3 = Color3.new(1, 1, 1)}):Play()
 			TweenService:Create(self.ItemElement.Vignette.UIStroke, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {Transparency = 0.8, Color = Color3.new(1, 1, 1)}):Play()
 			self.CollisionEffectApplied = nil
-			self.ItemElement.ZIndex -= 10
+			self.ItemElement.ZIndex = self.ItemElement:GetAttribute("_originalZIndex") or self.ItemElement.ZIndex
 
 			self._draggingTrove:Clean()
 
@@ -734,7 +735,6 @@ function Item:Drop(bypassDrag: boolean)
 		TweenService:Create(self.ItemElement.Vignette, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {ImageTransparency = 0.95, BackgroundTransparency = 1, ImageColor3 = Color3.new(1, 1, 1)}):Play()
 		TweenService:Create(self.ItemElement.Vignette.UIStroke, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {Transparency = 0.8, Color = Color3.new(1, 1, 1)}):Play()
 		self.CollisionEffectApplied = nil
-		self.ItemElement.ZIndex -= 10
 
 		self._draggingTrove:Clean()
 
