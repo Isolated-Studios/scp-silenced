@@ -40,6 +40,7 @@ end
 loadModule(ClientSrc.InteractHandler)
 loadModule(ClientSrc.DragHandler)
 loadModule(ClientSrc.Cursor)
+loadModule(ClientSrc.ItemSelector)
 loadModule(ClientSrc.HotbarHandler)
 loadModule(ClientSrc.HUD)
 loadModule(ClientSrc.Replication)
