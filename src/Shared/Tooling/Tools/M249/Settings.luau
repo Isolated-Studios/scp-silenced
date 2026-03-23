@@ -2,7 +2,7 @@ local Settings = {
 	Damage = 22; -- Base damage against target
 	RPM = 1000; -- The amount of rounds that can theoretically be fired in a minute
 	AP = 0; -- Value between 0 and 1 (0 being no armor penetration, 1 being complete armor penetration)
-	MagSize = 16; -- The maximum ammount of ammo held in a gun
+	MagSize = 75; -- The maximum ammount of ammo held in a gun
 	ReloadStyle = 1; -- 0 = single cartridge insert | 1 = mag reload
 	BulletsPerShot = 1; -- The amount of projectiles fired from one shot (Shotgun)
 	BurstAmount = 1; -- The amount of times fired per shot
@@ -22,7 +22,7 @@ local Settings = {
 	BulletTemplate = "OriginalTracer"; -- Tracer that is fired
 	RunType = 1; -- Controls the run animation that will play on the viewmodel. 1 is rifle running, 2 is pistol running.
 
-	Automatic = false; -- Holding down the mouse button will cause the gun to continuously fire
+	Automatic = true; -- Holding down the mouse button will cause the gun to continuously fire
 	Bolted = false; -- Must manually chamber a round
 	AutomaticBolt = false; -- Automatically bolt the gun if Bolted is true
 	HeldWhenSqueezed = false; -- Must hold down the mouse button to squeeze a trigger if SqueezeTrigger is real

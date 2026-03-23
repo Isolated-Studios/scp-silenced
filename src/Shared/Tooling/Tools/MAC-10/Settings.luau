@@ -20,7 +20,7 @@ local Settings = {
 	TravelSpeed = 3000; -- How fast the projectile is
 	Casing = ".45"; -- What casing is ejected from Casings folder
 	BulletTemplate = "OriginalTracer"; -- Tracer that is fired
-	RunType = 2; -- Controls the run animation that will play on the viewmodel. 1 is rifle running, 2 is pistol running.
+	RunType = 1; -- Controls the run animation that will play on the viewmodel. 1 is rifle running, 2 is pistol running.
 
 	Automatic = true; -- Holding down the mouse button will cause the gun to continuously fire
 	Bolted = false; -- Must manually chamber a round
@@ -33,8 +33,8 @@ local Settings = {
 	BoltBackWhenEmpty = true;
 	ScrollAffectsAim = true;
 
-	EquipSpeed = 0.66; -- Speed of equipping in seconds
-	EquipCancel = 0.2; -- Time it takes for tool to be usable/unequippable in seconds
+	EquipSpeed = 0.83; -- Speed of equipping in seconds
+	EquipCancel = 0.6; -- Time it takes for tool to be usable/unequippable in seconds
 	UnequipSpeed = 0.53;
 	AimInSpeed = 0.5; -- Speed of aiming-in in seconds
 	AimOutSpeed = 0.3; -- Speed of aiming-out in seconds
@@ -45,8 +45,8 @@ local Settings = {
 	--Reload3Speed = 0.6; -- Speed of Reload3's animation in seconds
 	--ReloadEmptySpeed = 0.5; -- Speed of ReloadEmpty's animation in seconds. Only works if EmptyReload is true
 
-	MinSpread = 1; -- Minimum bullet spread of gun
-	MaxSpread = 20; -- Maximum bullet spread of gun
+	MinSpread = 0; -- Minimum bullet spread of gun
+	MaxSpread = 4.5; -- Maximum bullet spread of gun
 	SpreadCost = 4; -- How much is added onto bullet spread
 	SpreadRegenWait = 1; -- How much time in seconds must pass before spread reduces
 	XRecoilDampFactor = 1; -- The factor by which the x in (1/x) which is then multiplied by the recoil. x is the number of subsequent shots.
@@ -60,13 +60,13 @@ local Settings = {
 	MidFallOffMult = 0.75; -- Damage Multiplier applied to when damage enters the Medium Fall Off Zone.
 	LongFallOffMult = 0.50; -- Damage Multiplier applied to when damage enters the Long Fall Off Zone.
 
-	CameraShove = Vector3.new(4,0.01,0.2); -- Shove applied to camera when recoiled
-	LinearShove = Vector3.new(0,0,0); -- Linear shove applied to viewmodel when recoiled
-	AngularShove = Vector3.new(1,0,0); -- Angular shove applied to viewmodel when recoiled
+	CameraShove = Vector3.new(0.05,0.005,00.025); -- Shove applied to camera when recoiled
+	LinearShove = Vector3.new(0,0,0.1); -- Linear shove applied to viewmodel when recoiled
+	AngularShove = Vector3.new(-0.1,0.1,-0.1); -- Angular shove applied to viewmodel when recoiled
 	AimLinearShove = nil; -- Linear shove applied to the viewmodel when aiming and recoiled.
 	AimAngularShove = nil; -- Angular shove applied to the viewmodel when aiming and recoiled.
-	Stability = nil; -- Determines the torque of the gun when recoiling. Lower number is more unstable (more torque), Higher is more stable (less torque).
-	AimStability = nil; -- Determines the torque of the gun when recoiling and aiming. Lower number is more unstable (more torque), Higher is more stable (less torque).
+	Stability = 8; -- Determines the torque of the gun when recoiling. Lower number is more unstable (more torque), Higher is more stable (less torque).
+	AimStability = 8; -- Determines the torque of the gun when recoiling and aiming. Lower number is more unstable (more torque), Higher is more stable (less torque).
 	
 	RunPosition = nil; -- Table of numbers {1,2,3,4,5,6}. Overrides the run positions, allowing custom run positions. 1 is Front position, 2 is Up position, 3 is Side position, 4 is Front angle, 5 is Up angle, 6 is Side angle.
 	CrouchPosition = nil; -- Table of numbers {1,2,3,4,5,6}. Overrides the crouch positions, allowing custom crouch positions. 1 is Front position, 2 is Up position, 3 is Side position, 4 is Front angle, 5 is Up angle, 6 is Side angle.

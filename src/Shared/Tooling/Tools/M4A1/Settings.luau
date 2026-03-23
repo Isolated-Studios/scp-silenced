@@ -62,7 +62,7 @@ local Settings = {
 	MidFallOffMult = 0.75; -- Damage Multiplier applied to when damage enters the Medium Fall Off Zone.
 	LongFallOffMult = 0.50; -- Damage Multiplier applied to when damage enters the Long Fall Off Zone.
 
-	CameraShove = Vector3.new(12,0.075,0); -- Shove applied to camera when recoiled
+	CameraShove = Vector3.new(4, 0.02, 0); -- Shove applied to camera when recoiled
 	LinearShove = Vector3.new(0.2,0.3,0.1); -- Linear shove applied to viewmodel when recoiled
 	AngularShove = Vector3.new(.1,0.05,.05); -- Angular shove applied to viewmodel when recoiled
 	AimLinearShove = Vector3.new(0,0,3); -- Linear shove applied to the viewmodel when aiming and recoiled.
