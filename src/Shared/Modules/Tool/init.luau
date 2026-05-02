@@ -207,7 +207,7 @@ function Tool:Equip()
 	self.Instance.Unequipped:Once(Utils.wrapMethod(self, self.Unequip))
 	self:PlayAnimationFor("Equip", self.Settings.EquipSpeed)
 	self.__task = task.delay(self.Settings.EquipSpeed, self.PlayAnimation, self, "Hold")
-	task.wait(self.Settings.EquipCancel)
+	task.wait(self.Settings.EquipCancel or self.Settings.EquipSpeed)
 	self:__enable()
 end
 

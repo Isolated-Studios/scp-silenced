@@ -152,9 +152,10 @@ function module.LoadChar(Character)
 	AimSpring.Speed = 16
 	local Offset = CFrame.identity
 	Humanoid = Character:WaitForChild("Humanoid")
+	local LeftUpperArm = Character:WaitForChild("LeftUpperArm")
+	local RightUpperArm = Character:WaitForChild("RightUpperArm")
 	local ViewmodelRun = Humanoid:WaitForChild("ViewmodelRun")
 	local ViewmodelCrouch = Humanoid:WaitForChild("ViewmodelCrouch")
-	local BodyColor = Character:WaitForChild("BodyColor")
 	RootPart = Character:WaitForChild("HumanoidRootPart")
 	RightHand = Character:WaitForChild("RightHand")
 
@@ -210,11 +211,16 @@ function module.LoadChar(Character)
 			addClothing(clothing)
 		end
 	end
-	ViewModel.LeftArm.Color = BodyColor.LeftArmColor3
-	ViewModel.RightArm.Color = BodyColor.RightArmColor3
-	local bodyColorChange = BodyColor.Changed:Connect(function()
-		ViewModel.LeftArm.Color = BodyColor.LeftArmColor3
-		ViewModel.RightArm.Color = BodyColor.RightArmColor3
+
+	ViewModel.LeftArm.Color = LeftUpperArm.Color
+	ViewModel.RightArm.Color = RightUpperArm.Color
+
+	local LeftArmColorChange = LeftUpperArm:GetPropertyChangedSignal("Color"):Connect(function()
+		ViewModel.LeftArm.Color = LeftUpperArm.Color
+	end)
+	
+	local RightArmColorChange = RightUpperArm:GetPropertyChangedSignal("Color"):Connect(function()
+		ViewModel.RightArm.Color = RightUpperArm.Color
 	end)
 
 	local runChange = Humanoid.Running:Connect(function(speed)
@@ -579,26 +585,25 @@ function module.LoadChar(Character)
 		ViewModel:PivotTo(Camera.CFrame:ToWorldSpace(Offset))
 		ShowArms = not (Character ~= nil and Character:FindFirstChildOfClass("Tool"))
 		ViewModelRootPart.Anchored = ShowArms
-
-		if Character and Character:FindFirstChildOfClass("Tool") and not CommonFuncs.AreInputUIsActive() then
-			if Character:FindFirstChildOfClass("Tool"):GetAttribute("ToolSource") == "Gun"
-				and Player.PlayerGui
-				and Player.PlayerGui:FindFirstChild("MouseUI")
-				and Player.PlayerGui.MouseUI:FindFirstChild("Dot")
-			then
-				Player.PlayerGui.MouseUI["Dot"]["Crosshair"].GroupTransparency = AimSpring.Position
-				Player.PlayerGui.MouseUI["Dot"].BackgroundTransparency = 1
-				Player.PlayerGui.MouseUI["Dot"]["UIStroke"].Transparency = 1
-			end
+		
+		-- Variables to check if gun is present.
+		local MouseUI = Player.PlayerGui and Player.PlayerGui:FindFirstChild("MouseUI")
+		local Dot = MouseUI and MouseUI:FindFirstChild("Dot")
+		local Tool = Character and Character:FindFirstChildOfClass("Tool")
+		local GunPresent =
+			Tool
+			and Tool:GetAttribute("ToolSource") == "Gun"
+			and not CommonFuncs.AreInputUIsActive()
+		
+		-- Hides/Shows crosshair and dot based on gun presence.
+		if GunPresent then
+			Dot.Crosshair.GroupTransparency = AimSpring.Position
+			Dot.BackgroundTransparency = 1
+			Dot.UIStroke.Transparency = 1
 		else
-			if Player.PlayerGui
-				and Player.PlayerGui:FindFirstChild("MouseUI")
-				and Player.PlayerGui.MouseUI:FindFirstChild("Dot")
-			then
-				Player.PlayerGui.MouseUI["Dot"]["Crosshair"].GroupTransparency = 1
-				Player.PlayerGui.MouseUI["Dot"].BackgroundTransparency = 0
-				Player.PlayerGui.MouseUI["Dot"]["UIStroke"].Transparency = 0.8
-			end
+			Dot.Crosshair.GroupTransparency = 1
+			Dot.BackgroundTransparency = 0
+			Dot.UIStroke.Transparency = 0.8
 		end
 
 		if ShowArms then
@@ -614,7 +619,8 @@ function module.LoadChar(Character)
 
 	Humanoid.Died:Once(function()
 		task.wait()
-		bodyColorChange:Disconnect()
+		LeftArmColorChange:Disconnect()
+		RightArmColorChange:Disconnect()
 		charChildAdd:Disconnect()
 		charChildRemove:Disconnect()
 		stateChange:Disconnect()
