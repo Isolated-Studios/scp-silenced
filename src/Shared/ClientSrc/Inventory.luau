@@ -23,10 +23,13 @@ local function loadCharacter(Character)
 
 	local InventoryUI = Player.PlayerGui:WaitForChild("Inventory")
 	local Main = InventoryUI:WaitForChild("Main")
+	local Shadow = Main:WaitForChild("Shadow")
 	local Container = Main:WaitForChild("Container")
 	local ModalFrame = InventoryUI:WaitForChild("ModalFrame")
 	local SlotTemplate = Container:WaitForChild("SlotTemplate")
 	local ItemTemplate = Container:WaitForChild("ItemTemplate")
+	local ProximityLabel = Container:WaitForChild("ProximityLabel")
+	local Separator = Container:WaitForChild("Separator")
 	
 	local InteractUI = Player.PlayerGui:WaitForChild("InteractUI")
 	local MouseUI = Player.PlayerGui:WaitForChild("MouseUI")
@@ -51,6 +54,8 @@ local function loadCharacter(Character)
 		[10] = {"Armor"},
 		[11] = {"Torso"},
 	}
+	
+	local ContainerInventory = nil -- TODO! This should be used to implement opening containers
 
 	local CTF = require(Modules.Tool.CommonToolFunctions)
 	local KeybindHandler = require(UIModules.KeybindHandler)
@@ -171,7 +176,7 @@ local function loadCharacter(Character)
 
 	local InventoryGrid = createGrid(Container.InventorySize, 5, 6)
 	local ExtraGrid = createGrid(Container.ExtraSize, 5, 3)
-	local ProximityGrid = createGrid(Container.ProximityCanvasGroup.ProximityScrollFrame.Framing, 7, 21)
+	local ContainerGrid = createGrid(Container.ProximityCanvasGroup.ProximityScrollFrame.Framing, 7, 21)
 
 	local PrimarySlot = createUniqueSlot("Primary", Container.PrimarySize)
 	local SecondarySlot = createUniqueSlot("Secondary", Container.SecondarySize)
@@ -184,6 +189,41 @@ local function loadCharacter(Character)
 	HotbarHandler.InventoryToolTypeSlotIndex[1] = PrimarySlot
 	HotbarHandler.InventoryToolTypeSlotIndex[2] = SecondarySlot
 	HotbarHandler.InventoryToolTypeSlotIndex[3] = MeleeSlot
+	
+	local GrenadeTypeOrderQueue = {}
+	HotbarHandler.RequestGrenade = function()
+		local Grenades = {}
+		for _, validItemUI in pairs(ItemList) do
+			if validItemUI.Metadata.Tool:GetAttribute("ToolType") == 6 then -- it's a grenade
+				Grenades[validItemUI.Metadata.Tool.Name] = validItemUI.Metadata.Tool -- just put the last indexed grenade of type [Tool.Name] at that index.
+			end
+		end
+		
+		local grenadeCount = 0
+		for i, v in Grenades do -- return grenade types that have not been queued up yet
+			grenadeCount += 1
+			if table.find(GrenadeTypeOrderQueue, i) then continue end
+			table.insert(GrenadeTypeOrderQueue, i)
+			return v
+		end
+		
+		if grenadeCount == 0 then
+			return nil
+		end
+		
+		-- since all grenades got queued, cycle through the queue
+		for t = 1, #GrenadeTypeOrderQueue do
+			if t == #GrenadeTypeOrderQueue then -- if we are at the back of the queue (this grenade was equipped last time) then unequip.
+				table.remove(GrenadeTypeOrderQueue, t) -- remove this grenade type from the back of the queue so that it can be equipped in the next cycle
+				return nil
+			elseif Grenades[GrenadeTypeOrderQueue[t]] ~= nil then
+				-- push the grenade type to the back end of the queue
+				table.insert(GrenadeTypeOrderQueue, GrenadeTypeOrderQueue[t])
+				table.remove(GrenadeTypeOrderQueue, t)
+				return Grenades[GrenadeTypeOrderQueue[#GrenadeTypeOrderQueue]]
+			end
+		end
+	end
 
 	local ToolTypeToSlot = {
 		[1] = PrimarySlot,
@@ -540,7 +580,7 @@ local function loadCharacter(Character)
 	local TransferLink = GridPack.createTransferLink({})
 	InventoryGrid:ConnectTransferLink(TransferLink)
 	ExtraGrid:ConnectTransferLink(TransferLink)
-	ProximityGrid:ConnectTransferLink(TransferLink)
+	ContainerGrid:ConnectTransferLink(TransferLink)
 	PrimarySlot:ConnectTransferLink(TransferLink)
 	SecondarySlot:ConnectTransferLink(TransferLink)
 	MeleeSlot:ConnectTransferLink(TransferLink)
@@ -560,19 +600,36 @@ local function loadCharacter(Character)
 				item:Drop()
 			end
 			if Main.Interactable then
-				Humanoid:SetAttribute("InventoryOpen",true)
+				if ContainerInventory ~= nil then
+					Container.Size = UDim2.fromOffset(905, 480)
+					Shadow.Size = UDim2.fromOffset(1005, 580)
+					ProximityLabel.Visible = true
+					ContainerGrid.Visible = true
+					Separator.Visible = true
+					ContainerGrid:ConnectTransferLink(TransferLink)
+					-- TODO!
+				else
+					Container.Size = UDim2.fromOffset(530, 480)
+					Shadow.Size = UDim2.fromOffset(630, 580)
+					ProximityLabel.Visible = false
+					ContainerGrid.Visible = false
+					Separator.Visible = false
+					ContainerGrid:DisconnectTransferLink(TransferLink)
+				end
+				
+				Humanoid:SetAttribute("InventoryOpen", true)
 				TweenService:Create(Main, TweenInfo.new(0.2), {GroupTransparency = 0}):Play()
 				TweenService:Create(InventoryHover.Label, TweenInfo.new(0.2), {TextTransparency = 0, TextStrokeTransparency = 0.7}):Play()
 				TweenService:Create(InventoryHover.SecondLabel, TweenInfo.new(0.2), {TextTransparency = 0, TextStrokeTransparency = 0.7}):Play()
 			else
-				Humanoid:SetAttribute("InventoryOpen",nil)
+				Humanoid:SetAttribute("InventoryOpen", nil)
 				TweenService:Create(Main, TweenInfo.new(0.2), {GroupTransparency = 1}):Play()
 				TweenService:Create(InventoryHover.Label, TweenInfo.new(0.2), {TextTransparency = 1, TextStrokeTransparency = 1}):Play()
 				TweenService:Create(InventoryHover.SecondLabel, TweenInfo.new(0.2), {TextTransparency = 1, TextStrokeTransparency = 1}):Play()
 			end
 		end
 
-		if input.KeyCode == KeybindHandler.Keybind("Drop",game.Players.LocalPlayer) and Main.Interactable then
+		if input.KeyCode == KeybindHandler.Keybind("Drop", game.Players.LocalPlayer) and Main.Interactable then
 			local HoveredTool = Main.HoveredTool
 			if HoveredTool.Value then
 				removeTool(HoveredTool.Value)
@@ -617,7 +674,7 @@ local function loadCharacter(Character)
 
 		InventoryGrid:ClearItems()
 		ExtraGrid:ClearItems()
-		ProximityGrid:ClearItems()
+		ContainerGrid:ClearItems()
 		PrimarySlot:RemoveItem()
 		SecondarySlot:RemoveItem()
 		MeleeSlot:RemoveItem()
@@ -626,6 +683,7 @@ local function loadCharacter(Character)
 		ArmorSlot:RemoveItem()
 		TorsoSlot:RemoveItem()
 		HotbarHandler.InventoryToolTypeSlotIndex = {}
+		HotbarHandler.RequestGrenade = nil
 	end)
 end
 
