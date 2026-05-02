@@ -81,11 +81,14 @@ end
 	returns true if any major input UI (Chat, Settings, Inventory) is on.
 	`exception` is the name of an input UI to be excepted from the check.
 ]=]
-function CommonFuncs.AreInputUIsActive(exception: string)
+function CommonFuncs.AreInputUIsActive(exception: string | {string})
+	if exception == nil then exception = {} end
+	if typeof(exception) ~= "table" then exception = {exception} end
 	local Player = Players.LocalPlayer
 	if (TextChatService.ChatInputBarConfiguration.IsFocused and exception ~= "Chat")
-		or (Player.PlayerGui:WaitForChild("Inventory").Main.GroupTransparency < 1 and exception ~= "Inventory")
-		or (Player.PlayerGui:WaitForChild("Settings").Main.GroupTransparency < 1 and exception ~= "Settings")
+		or (Player.PlayerGui:WaitForChild("Inventory").Main.GroupTransparency < 1 and table.find(exception, "Inventory") == nil)
+		or (Player.PlayerGui:WaitForChild("Settings").Main.GroupTransparency < 1 and table.find(exception, "Settings") == nil)
+		or (Player.PlayerGui:WaitForChild("MouseUI").Dot.ItemSelector:GetAttribute("Active") and table.find(exception, "ItemSelector") == nil)
 	then
 		return true
 	end

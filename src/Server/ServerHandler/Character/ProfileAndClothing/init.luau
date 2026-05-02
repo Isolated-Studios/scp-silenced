@@ -17,6 +17,23 @@ local HumanLooks = Looks.Humans
 local HairLooks = HumanLooks.Hair
 local TeamLooks = HumanLooks.Teams
 local Voices = ReplicatedStorage.Sounds.Chat.Voices
+local BodyPartNames = {
+	"Head",
+	"UpperTorso",
+	"LowerTorso",
+	"RightUpperArm",
+	"LeftUpperArm",
+	"RightLowerArm",
+	"LeftLowerArm",
+	"RightHand",
+	"LeftHand",
+	"RightUpperLeg",
+	"LeftUpperLeg",
+	"RightLowerLeg",
+	"LeftLowerLeg",
+	"RightFoot",
+	"LeftFoot"
+}
 
 local function weldClothing(Base: BasePart, Part: BasePart | Model)
 	if Part:IsA("Model") then
@@ -127,12 +144,20 @@ function module.Init(Character)
 	local SkinColor = raceTable[ChosenSkinColor][1][math.random(1,#raceTable[ChosenSkinColor][1])] -- get skin color
 	local HairColor = raceTable[ChosenSkinColor][2][math.random(1,#raceTable[ChosenSkinColor][2])] -- get hair color
 
-	Character.BodyColor.HeadColor3 = SkinColor -- Set the skin color
-	Character.BodyColor.LeftArmColor3 = SkinColor
-	Character.BodyColor.LeftLegColor3 = SkinColor
-	Character.BodyColor.RightArmColor3 = SkinColor
-	Character.BodyColor.RightLegColor3 = SkinColor
-	Character.BodyColor.TorsoColor3 = SkinColor
+	---- Set the skin color
+	--Character.BodyColor.HeadColor3 = SkinColor
+	--Character.BodyColor.LeftArmColor3 = SkinColor
+	--Character.BodyColor.LeftLegColor3 = SkinColor
+	--Character.BodyColor.RightArmColor3 = SkinColor
+	--Character.BodyColor.RightLegColor3 = SkinColor
+	--Character.BodyColor.TorsoColor3 = SkinColor
+	
+	-- Set the skin color because the character is r6 because of a bug and roblox SUCKS!!!!!
+	for _, BodyPart in pairs(Character:GetChildren()) do
+		if table.find(BodyPartNames, BodyPart.Name) then
+			BodyPart.Color = SkinColor
+		end
+	end
 
 	local Gender = math.random(0,1)
 	local genderTable = {

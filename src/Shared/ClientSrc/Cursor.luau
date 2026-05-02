@@ -26,7 +26,7 @@ function module.Init()
 	local MouseUI = Player:WaitForChild("PlayerGui"):WaitForChild("MouseUI")
 	Dot = MouseUI:WaitForChild("Dot")
 	local Percentage = MouseUI:WaitForChild("Percentage")
-	local CirclePercentage = MouseUI:WaitForChild("Crosshair")
+	local CrosshairPercentage = MouseUI:WaitForChild("Crosshair")
 	local ChargePercentage = MouseUI:WaitForChild("Charge")
 	local ArrowPower = MouseUI:WaitForChild("Arrow")
 	local MainCrosshairFrame = Dot:WaitForChild("Crosshair")
@@ -82,7 +82,7 @@ function module.Init()
 		end
 		ChargeBar.Size = UDim2.fromScale(1,val)
 	end)
-	CirclePercentage.Changed:Connect(function(val)
+	CrosshairPercentage.Changed:Connect(function(val)
 		if val == 0 then
 			MainCrosshairFrame.Visible = false
 		else
