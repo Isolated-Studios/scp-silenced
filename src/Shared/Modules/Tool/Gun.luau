@@ -40,7 +40,6 @@ local function __load_character(character)
 	ViewModelHandler = ViewModelHandler or require(ReplicatedStorage.ClientSrc.ViewModelHandler)
 	CTF = CTF or require(script.Parent.CommonToolFunctions) -- TODO: REMEMBER TO GET RID OF CTF LATER!!!!
 	HUDModule = HUDModule or require(ReplicatedStorage.ClientSrc.HUD)
-	CommonFuncs = CommonFuncs or require(ReplicatedStorage.Modules.CommonFuncs)
 	
 	ViewModel = ViewModelHandler.getViewModel()
 	while ViewModel == nil do
@@ -335,6 +334,7 @@ function Gun:Equip()
 	self.State = ToolClass.State.Equipping
 	CrosshairPercent.Value = math.clamp(self.BulletSpread, 0.001, math.huge)
 	ToolClass.getHumanoid():EquipTool(self.Instance)
+	self.Instance.Unequipped:Once(Utils.wrapMethod(self, self.Unequip))
 	if self.Ammo > 0 and not self.Bolted then -- play the first equip (with bolting) animation if unbolted but has ammo
 		self:PlayAnimation("FirstEquip")
 		self:Bolt(true)
@@ -668,7 +668,7 @@ function Gun:Aim(desiredState, input: InputObject?)
 	else	
 		TweenService:Create(workspace.CurrentCamera, TweenInfo.new(self.Settings.AimOutSpeed * RunMultiplier, Enum.EasingStyle.Cubic,Enum.EasingDirection.Out), {FieldOfView = 70}):Play()
 		if self.State ~= ToolClass.State.Unequipped then
-			TweenService:Create(CrosshairPercent, TweenInfo.new(self.Settings.AimOutSpeed * RunMultiplier, Enum.EasingStyle.Exponential,Enum.EasingDirection.Out), {Value = self.BulletSpread}):Play()
+			TweenService:Create(CrosshairPercent, TweenInfo.new(self.Settings.AimOutSpeed * RunMultiplier, Enum.EasingStyle.Exponential,Enum.EasingDirection.Out), {Value = math.clamp(self.BulletSpread, 0.001, math.huge)}):Play()
 		end
 	end
 end
