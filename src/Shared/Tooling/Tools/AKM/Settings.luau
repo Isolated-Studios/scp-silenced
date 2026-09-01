@@ -53,8 +53,8 @@ local Settings = {
 	ReductionWait = 0.01; --The amount of time for each wait in the reduction spread loop
 	XRecoilDampFactor = 1; -- The factor by which the x in (1/x) which is then multiplied by the recoil. x is the number of subsequent shots.
 	YRecoilDampFactor = 1; -- By increasing this factor, dampening becomes faster which means the gun will stabilize faster.
-	XRecoilDampExponent = 1/2; -- Exponent applied to each subsequent shot when accounting for recoil dampening of the x axis.
-	YRecoilDampExponent = 1/2; -- Exponent applied to each subsequent shot when accounting for recoil dampening of the y axis.
+	XRecoilDampExponent = 1/5; -- Exponent applied to each subsequent shot when accounting for recoil dampening of the x axis.
+	YRecoilDampExponent = 1/5; -- Exponent applied to each subsequent shot when accounting for recoil dampening of the y axis.
 
 	MaxDistance = 500; -- Maximum distance a bullet can travel.
 	MidFallOffDist = 100; -- Studs from Shooter to Target in which damage enters the Medium Fall Off Zone. (Base Damage will Decrease.)
@@ -62,10 +62,10 @@ local Settings = {
 	MidFallOffMult = 0.75; -- Damage Multiplier applied to when damage enters the Medium Fall Off Zone.
 	LongFallOffMult = 0.50; -- Damage Multiplier applied to when damage enters the Long Fall Off Zone.
 
-	CameraShove = Vector3.new(15,0.1,0); -- Shove applied to camera when recoiled
+	CameraShove = Vector3.new(1,0.1,0); -- Shove applied to camera when recoiled
 	LinearShove = Vector3.new(0.5,0.5,1); -- Linear shove applied to viewmodel when recoiled
 	AngularShove = Vector3.new(1,0.25,.25); -- Angular shove applied to viewmodel when recoiled
-	AimLinearShove = Vector3.new(0,0,5); -- Linear shove applied to the viewmodel when aiming and recoiled.
+	AimLinearShove = Vector3.new(0,0,0.1); -- Linear shove applied to the viewmodel when aiming and recoiled.
 	AimAngularShove = Vector3.new(0,0,0.1); -- Angular shove applied to the viewmodel when aiming and recoiled.
 	Stability = nil; -- Determines the torque of the gun when recoiling. Lower number is more unstable (more torque), Higher is more stable (less torque).
 	AimStability = nil; -- Determines the torque of the gun when recoiling and aiming. Lower number is more unstable (more torque), Higher is more stable (less torque).
