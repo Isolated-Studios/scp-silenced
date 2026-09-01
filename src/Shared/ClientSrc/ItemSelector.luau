@@ -101,11 +101,11 @@ local function flashItem(index, reverses: boolean?)
 	}):Play()
 	TweenService:Create(ItemSelectorFrame[tostring(index)].ItemName, if reverses then flashItemTweenInfoReverses else flashItemTweenInfo, {
 		TextColor3 = Color3.fromRGB(0, 0, 0),
-		TextSize = 60
+		TextSize = 25
 	}):Play()
 	TweenService:Create(ItemSelectorFrame[tostring(index)].ExtraInfo, if reverses then flashItemTweenInfoReverses else flashItemTweenInfo, {
 		TextColor3 = Color3.fromRGB(0, 0, 0),
-		TextSize = 60
+		TextSize = 25
 	}):Play()
 	TweenService:Create(ItemSelectorFrame[tostring(index)].ItemNumber, if reverses then flashItemTweenInfoReverses else flashItemTweenInfo, {
 		TextColor3 = Color3.fromRGB(108, 72, 0),
@@ -304,3 +304,23 @@ function module.Init()
 end
 
 return module
+
+--[[
+How to use the module:
+
+1. Create the item selector.
+```lua
+ItemSelector.createSelector("testSelector", nil, {"test 1", {"test 2", "x3"}, "test 3", "test 4", "test 5", {"test 6", "(sixseven)"}, "test 7", "test 8", "test 9", "test 10", "test 11", {"test 12", "&lt;&lt;&lt; <font color=\"rgb(255, 125, 0)\">orange</font>"}, "test 13"}, function(index, option)
+	print(`selected option: {option} with index {index}`)
+	lastIndex = index
+end)
+```
+
+2. Activate it.
+```lua
+if Input.KeyCode == Enum.KeyCode.Y then
+	ItemSelector.activateSelector("testSelector", lastIndex)
+	return
+end
+```
+]]
